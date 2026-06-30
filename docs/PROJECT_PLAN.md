@@ -42,7 +42,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Persona copy transformation | Done | P0 | `src/lib/persona.js` `speak()` |
 | Persona theme color generator | Done | P0 | `src/lib/persona.js` `applyTheme()` |
 | AI assistant chat panel | Done | P0 | `src/components/Assistant.jsx`; currently mocked |
-| API client module | Not started | P0 | Create `src/lib/api.js` with fetch helpers |
+| API client module | Partial | P0 | `src/lib/api.js` has `getMe`, `getStock`, `getHealth`; needs full endpoint coverage |
 | Authentication UI (login / logout) | Not started | P0 | Redirect to `/api/auth/login`; show user avatar |
 | Error boundaries and loading states | Partial | P1 | Skeletons exist; need global error handling |
 | Offline / optimistic updates | Not started | P1 | Local-first feel, sync when online |
@@ -56,11 +56,11 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 |---|---|---|---|
 | Worker project scaffold | Done | P0 | `worker/` with Hono, Wrangler config example |
 | Google OAuth 2.0 login & callback | Partial | P0 | `worker/src/auth.ts`; needs real credentials and testing |
-| JWT session cookie middleware | Partial | P0 | `worker/src/middleware.ts`; needs end-to-end test |
-| CORS configuration | Partial | P0 | Configured for Pages origin + localhost |
+| JWT session cookie middleware | Done | P0 | `worker/src/middleware.ts`; verifies cookie + loads active household |
+| CORS configuration | Done | P0 | Configured for Pages origin + localhost |
 | Health check endpoint | Done | P0 | `GET /api/health` |
 | `GET /api/me` endpoint | Done | P0 | Returns current user |
-| `GET /api/stock` endpoint | Partial | P0 | Basic query exists; needs full join with estimates |
+| `GET /api/stock` endpoint | Done | P0 | Query with location/q filters, ordered by run-out + expiry |
 | Stock CRUD endpoints (`PATCH /api/stock/:id`) | Not started | P0 | |
 | Household endpoints | Not started | P0 | Create/list households, set active |
 | Location endpoints | Not started | P0 | `GET/POST/DELETE /api/locations` |
@@ -125,7 +125,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Cloudflare Worker deployment config | Partial | P0 | `worker/wrangler.toml.example`; user must copy and fill |
 | D1 database creation guide | Done | P0 | `scripts/setup-db.js` + README |
 | R2 bucket creation guide | Not started | P0 | Add to README or script |
-| GitHub Actions CI | Not started | P1 | Build + typecheck on PR |
+| GitHub Actions CI | Done | P1 | Build + typecheck on push/PR to main |
 | Preview deployments for PRs | Not started | P1 | Cloudflare Pages preview branches |
 | Secrets management documentation | Partial | P0 | Listed in `docs/ARCHITECTURE.md`; add step-by-step |
 | Environment-specific configs | Not started | P1 | `.dev.vars` for local, secrets for prod |
@@ -144,10 +144,82 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 ---
 
-## Immediate next steps (recommended order)
+## P0 Implementation Plan — Pull Request Basis
 
-1. **Set up live Cloudflare resources** (D1, R2, secrets) and verify Google OAuth end-to-end.
-2. **Build the API client** on the frontend and replace mock data with real endpoints.
-3. **Implement remaining CRUD endpoints** in the Worker with Zod validation.
-4. **Encrypt and store AI keys**, then build the AI proxy endpoints.
-5. **Add tests** for persona logic and core API routes.
+This plan translates the remaining P0 work into a sequence of user-impact-focused Pull Requests. Each PR delivers a complete, testable piece of functionality and builds on the previous one. Zod validation, centralized error handling, and multi-household isolation are established in PR 1 and extended per PR.
+
+Dependency order:
+
+```
+PR 1 (Auth) → PR 2 (Settings) → PR 3 (Inventory)
+                                   ↓
+                         PR 4 (Receipt Scan → Stock)
+                                   ↓
+                         PR 5 (AI Shopping Plans)
+                                   ↓
+                         PR 6 (History + Ship)
+```
+
+### PR 1 — Authentication
+*User impact: sign in with Google, see profile, sign out.*
+
+- Configure real Google OAuth credentials in Cloudflare secrets; verify login/callback/logout flow end-to-end.
+- Seed default locations (kulkas, freezer, lemari, rak) and stores (indomaret, alfamart, pasar) during household creation.
+- Add auth UI: login button, user avatar/name from `getMe()`, logout.
+- Expand API client with `getMe()`, `getHealth()`, and auth helpers.
+- Establish centralized error handling + JSON error response pattern.
+- Add integration tests for the OAuth flow and auth middleware.
+
+### PR 2 — Settings & Preferences
+*User impact: configure AI key, locations, stores, persona, language, motion, and currency — all persisted.*
+
+- Implement `GET /api/settings` and `PATCH /api/settings` with AES-GCM encryption for the AI key.
+- Implement `GET/POST/DELETE /api/locations` and `GET/POST/DELETE /api/stores`.
+- Wire Settings page fully: provider/key, persona, locations, stores, language, motion, currency.
+- Wire `UsageMeter` to `GET /api/ai/usage`.
+- Add tests for settings CRUD, encryption round-trip, and location/store CRUD.
+
+### PR 3 — Inventory Dashboard
+*User impact: see real stock on Home and Inventory, search/filter/update items.*
+
+- Implement run-out estimate computation from purchase history and stock qty.
+- Implement `PATCH /api/stock/:id` for qty, location, and expiry updates.
+- Wire Home page: stats, needs-attention list, next trip, quick refill.
+- Wire Inventory page: search, location filter, time signals, urgency sort.
+- Add tests for stock queries, run-out calculation, and PATCH validation.
+
+### PR 4 — Receipt Scan → Stock
+*User impact: take a receipt photo, AI reads the items, review them, and stock updates.*
+
+- Implement `POST /api/purchases/scan`: receipt upload to R2, AI OCR, parsed item extraction.
+- Implement `POST /api/purchases` for manual purchase entry.
+- Wire AddFromReceipt page through the 4-phase flow (capture → scanning → review → done).
+- Create/update `items`, `stock`, `purchases`, and `purchase_items` in one transaction.
+- Add tests for scan endpoint, purchase creation, and R2 upload handling.
+
+### PR 5 — AI Shopping Plans
+*User impact: get an auto-generated per-store shopping plan from low stock, expiries, and history.*
+
+- Implement `GET/POST /api/plans` and `POST /api/plans/generate` (AI groups items by store).
+- Implement `PATCH /api/plans/items/:id` to mark items bought or skipped.
+- Wire Plan page: per-store trip cards, check-off, regenerate, all-bought state, key-missing state.
+- Add tests for plan CRUD, generate endpoint, and check-off flow.
+
+### PR 6 — Purchase History + Ship
+*User impact: review past purchases and spending patterns; app goes live.*
+
+- Implement `GET /api/purchases` with date/store/month-grouping filters.
+- Wire History page: month-grouped table, totals, pattern detection.
+- Refine run-out estimates from actual purchase history.
+- Finalize Cloudflare Pages and Worker deployment configs.
+- Update deployment documentation (secrets guide, R2 setup, deploy steps).
+- Update this plan: mark all P0 items as `Done`.
+- Run end-to-end verification on the live URL.
+
+---
+
+## Immediate next steps
+
+1. Open **PR 1 — Authentication** on a new branch from `main`.
+2. Configure Google OAuth credentials and run the login flow against Miniflare.
+3. Ensure `npm test` and `npx tsc --noEmit` pass before opening the PR.
