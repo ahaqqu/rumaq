@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "wrangler dev",
-    "deploy": "wrangler deploy",
-    "deploy:prod": "wrangler deploy --env production",
+    "dev": "wrangler dev --config wrangler.local.toml",
+    "deploy": "wrangler deploy --config wrangler.cloudflare.toml",
+    "deploy:prod": "wrangler deploy --config wrangler.cloudflare.toml --env production",
     "db:create": "node ../scripts/setup-db.js",
     "db:migrate": "wrangler d1 migrations apply rumaq",
     "test": "vitest run",

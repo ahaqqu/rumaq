@@ -69,48 +69,23 @@ docs/                 # Architecture & API docs
 - Google Cloud project with OAuth 2.0 credentials
 - Wrangler CLI (`npm install -g wrangler`) and authenticated (`wrangler login` or `export CLOUDFLARE_API_TOKEN=...`)
 
-### Local setup (database + dependencies)
-
-One command, whether from a *clean checkout* or an *update*:
+### Run locally
 
 ```bash
-./scripts/deploy.sh local
+./scripts/deploy.sh
 ```
 
-What it does:
-- Creates `worker/wrangler.toml` from the example (with local defaults)
-- Creates `worker/.dev.vars` template for local secrets
-- `npm install` in root and worker
-- Sets up local D1 database + schema migration
-- Builds the frontend
+Prepares env (config, deps, DB, build) then starts dev servers on `localhost:5173` / `:8787`. Idempotent — safe from clean checkout or update.
 
-> Edit `worker/.dev.vars` with real secrets (Google OAuth, JWT secret, encryption key) before running the dev server.
-
-### Run the dev servers
-
-Both (frontend + backend) start with a single command:
-
-```bash
-./scripts/deploy.sh dev
-```
+> Edit `worker/.dev.vars` with real secrets (Google OAuth, JWT secret, encryption key) before the first run.
 
 ### Deploy to Cloudflare
 
 ```bash
-# First time: create database + R2 + deploy Worker + Pages
 ./scripts/deploy.sh cloudflare
-
-# Update (idempotent)
-./scripts/deploy.sh cloudflare
-
-# All at once (local + Cloudflare)
-./scripts/deploy.sh
-
-# Dry-run: build only, no deploy
-./scripts/deploy.sh dry-run
 ```
 
-> `./scripts/deploy.sh cloudflare` will prompt for `account_id` and create the D1 database + R2 bucket if they don't exist. After deploying, set production secrets via `cd worker && wrangler secret put <NAME>`.
+Creates D1 database + R2 bucket if missing, deploys Worker and Pages. Idempotent. Prompts for `account_id` first time.
 
 ### Further docs
 

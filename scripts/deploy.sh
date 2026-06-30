@@ -8,15 +8,11 @@ set -euo pipefail
 # update an existing local / Cloudflare deployment.
 #
 # Usage:
-#   ./scripts/deploy.sh              # local + cloudflare
-#   ./scripts/deploy.sh local        # setup local dev environment
-#   ./scripts/deploy.sh dev          # run both dev servers concurrently
+#   ./scripts/deploy.sh              # prepare local env + start dev servers
 #   ./scripts/deploy.sh cloudflare   # deploy (or update) Cloudflare
-#   ./scripts/deploy.sh all          # same as default
-#   ./scripts/deploy.sh dry-run      # build frontend only
 # ============================================================
 
-MODE="${1:-all}"
+MODE="${1:-local}"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WORKER_DIR="$ROOT_DIR/worker"
 
@@ -47,8 +43,9 @@ ok()    { echo -e "  ok  $1"; }
 warn()  { echo -e "  warn $1"; }
 
 wrangler_cmd() {
+  local config=$1; shift
   local db=$1; shift
-  wrangler d1 migrations apply "$db" "$@"
+  wrangler d1 migrations apply "$db" --config "$config" "$@"
 }
 
 # ------------------------------------------------------------------
@@ -65,34 +62,40 @@ check_prereqs() {
 # ------------------------------------------------------------------
 ensure_wrangler_toml() {
   local mode=$1
-  if [[ -f $WORKER_DIR/wrangler.toml ]]; then
-    return
-  fi
-
-  info "worker/wrangler.toml not found – creating from example."
 
   if [[ ! -f $WORKER_DIR/wrangler.toml.example ]]; then
     echo "Error: worker/wrangler.toml.example not found."
     exit 1
   fi
 
-  cp "$WORKER_DIR/wrangler.toml.example" "$WORKER_DIR/wrangler.toml"
-
   if [[ $mode == local ]]; then
+    if [[ -f $WORKER_DIR/wrangler.local.toml ]]; then
+      ok "worker/wrangler.local.toml already exists."
+      return
+    fi
+
+    info "Creating worker/wrangler.local.toml from example..."
+    cp "$WORKER_DIR/wrangler.toml.example" "$WORKER_DIR/wrangler.local.toml"
     sed -i \
       -e 's/YOUR_ACCOUNT_ID/LOCAL/' \
       -e 's/YOUR_DATABASE_ID/00000000-0000-0000-0000-000000000000/' \
-      "$WORKER_DIR/wrangler.toml"
-    ok "Created worker/wrangler.toml with local defaults."
+      "$WORKER_DIR/wrangler.local.toml"
+    ok "Created worker/wrangler.local.toml with local defaults."
   else
+    local config_file="$WORKER_DIR/wrangler.cloudflare.toml"
+
+    info "Creating worker/wrangler.cloudflare.toml from example..."
+
+    cp "$WORKER_DIR/wrangler.toml.example" "$config_file"
+
     local account_id="${CLOUDFLARE_ACCOUNT_ID:-}"
     if [[ -z $account_id ]]; then
       read -r -p "Cloudflare account ID: " account_id
     fi
-    sed -i "s|YOUR_ACCOUNT_ID|$account_id|" "$WORKER_DIR/wrangler.toml"
+    sed -i "s|YOUR_ACCOUNT_ID|$account_id|" "$config_file"
 
     # database_id will be filled by setup_database_remote later.
-    ok "Created worker/wrangler.toml (account_id set)."
+    ok "Created worker/wrangler.cloudflare.toml (account_id set)."
   fi
 }
 
@@ -139,9 +142,8 @@ install_deps() {
 setup_database_local() {
   info "Setting up local D1 database (${DB_NAME})..."
 
-  # wrangler.d1.migrations.apply --local is idempotent
   cd "$WORKER_DIR"
-  wrangler_cmd "$DB_NAME" --local
+  wrangler_cmd "wrangler.local.toml" "$DB_NAME" --local
   cd "$ROOT_DIR"
 
   ok "Local database ready."
@@ -153,11 +155,12 @@ setup_database_local() {
 setup_database_remote() {
   info "Setting up remote D1 database (${DB_NAME})..."
 
+  local config_file="wrangler.cloudflare.toml"
   cd "$WORKER_DIR"
 
-  # Ensure database_id is set in wrangler.toml.
+  # Ensure database_id is set in wrangler.cloudflare.toml.
   local db_id
-  db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$WORKER_DIR/wrangler.toml" 2>/dev/null || true)
+  db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2>/dev/null || true)
 
   if [[ $db_id == "YOUR_DATABASE_ID" || -z $db_id ]]; then
     # Fetch or create the remote D1 database.
@@ -175,16 +178,16 @@ setup_database_remote() {
     fi
 
     if [[ -n $db_id ]]; then
-      sed -i "s|database_id = \".*\"|database_id = \"$db_id\"|" "$WORKER_DIR/wrangler.toml"
-      ok "Updated database_id in wrangler.toml."
+      sed -i "s|database_id = \".*\"|database_id = \"$db_id\"|" "$config_file"
+      ok "Updated database_id in wrangler.cloudflare.toml."
     else
       warn "Could not determine database_id."
-      warn "Manually copy the database_id into worker/wrangler.toml."
+      warn "Manually copy the database_id into worker/wrangler.cloudflare.toml."
     fi
   fi
 
   # Apply migrations remotely (no --local flag)
-  wrangler_cmd "$DB_NAME"
+  wrangler_cmd "$config_file" "$DB_NAME"
 
   cd "$ROOT_DIR"
 }
@@ -199,10 +202,10 @@ ensure_r2_bucket() {
 
   cd "$WORKER_DIR"
 
-  if wrangler r2 bucket list --json 2>/dev/null | grep -q "\"name\": *\"$bucket_name\""; then
+  if wrangler r2 bucket list --config wrangler.cloudflare.toml --json 2>/dev/null | grep -q "\"name\": *\"$bucket_name\""; then
     ok "R2 bucket \"$bucket_name\" already exists."
   else
-    wrangler r2 bucket create "$bucket_name"
+    wrangler r2 bucket create "$bucket_name" --config wrangler.cloudflare.toml
     ok "Created R2 bucket \"$bucket_name\"."
   fi
 
@@ -217,13 +220,13 @@ deploy_worker() {
 
   cd "$WORKER_DIR"
 
-  if [[ ! -f wrangler.toml ]]; then
-    echo "Error: worker/wrangler.toml not found."
+  if [[ ! -f wrangler.cloudflare.toml ]]; then
+    echo "Error: worker/wrangler.cloudflare.toml not found."
     echo "Run \`./scripts/deploy.sh cloudflare\` first to create it."
     exit 1
   fi
 
-  npm run deploy
+  wrangler deploy --config wrangler.cloudflare.toml
   cd "$ROOT_DIR"
   ok "Worker deployed."
 }
@@ -237,7 +240,7 @@ deploy_frontend() {
   npm run build
 
   info "Deploying to Cloudflare Pages (project: ${PAGES_PROJECT})..."
-  wrangler pages deploy dist --project-name "$PAGES_PROJECT"
+  wrangler pages deploy dist --project-name "$PAGES_PROJECT" --config wrangler.cloudflare.toml
   ok "Frontend deployed."
 }
 
@@ -268,6 +271,24 @@ check_login() {
 }
 
 # ------------------------------------------------------------------
+# Put worker secrets from environment variables
+# ------------------------------------------------------------------
+put_secrets() {
+  local config=$1
+  local secrets=(GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY)
+
+  for name in "${secrets[@]}"; do
+    local val="${!name:-}"
+    if [[ -n $val ]]; then
+      info "Setting secret: $name"
+      echo "$val" | wrangler secret put "$name" --config "$config" 2>&1 | tail -1
+    else
+      warn "Skipping $name — not set in environment."
+    fi
+  done
+}
+
+# ------------------------------------------------------------------
 # Print summary after local setup
 # ------------------------------------------------------------------
 summary_local() {
@@ -293,22 +314,17 @@ summary_cloudflare() {
   echo "  Cloudflare deployment complete!"
   echo "============================================"
   echo ""
-  echo "  Remind: set production secrets via:"
-  echo "    cd worker && wrangler secret put GOOGLE_CLIENT_ID"
-  echo "    cd worker && wrangler secret put GOOGLE_CLIENT_SECRET"
-  echo "    cd worker && wrangler secret put WORKER_JWT_SECRET"
-  echo "    cd worker && wrangler secret put WORKER_ENCRYPTION_KEY"
+  echo "  Secrets set from .env (if present)."
   echo ""
   echo "  Verify at your Pages URL:"
   echo "    https://${PAGES_PROJECT}.pages.dev"
   echo "============================================"
 }
 
-# ==================================================================
-# MODE: local
-# ==================================================================
-do_local() {
-  echo "=== RumaQ: local environment setup ==="
+# ------------------------------------------------------------------
+# Prepare local environment (idempotent)
+# ------------------------------------------------------------------
+prepare_local() {
   check_prereqs
   ensure_wrangler_toml local
   ensure_dev_vars
@@ -331,15 +347,16 @@ do_cloudflare() {
   ensure_r2_bucket
   deploy_worker
   deploy_frontend
+  put_secrets "wrangler.cloudflare.toml"
   summary_cloudflare
 }
 
 # ==================================================================
-# MODE: dev – run both servers concurrently
+# MODE: local – run both servers concurrently
 # ==================================================================
-do_dev() {
-  echo "=== RumaQ: dev servers ==="
-  check_prereqs
+do_local() {
+  echo "=== RumaQ: local environment ==="
+  prepare_local
 
   cleanup() {
     echo ""
@@ -355,7 +372,7 @@ do_dev() {
 
   info "Starting backend (Worker) on http://localhost:8787..."
   cd "$WORKER_DIR"
-  npm run dev &
+  wrangler dev --config wrangler.local.toml &
   BACKEND_PID=$!
   cd "$ROOT_DIR"
 
@@ -378,26 +395,15 @@ do_dry_run() {
 # Main dispatch
 # ==================================================================
 case "$MODE" in
-  all|"")
+  local|"")
     do_local
-    echo ""
-    do_cloudflare
-    ;;
-  local)
-    do_local
-    ;;
-  dev)
-    do_dev
     ;;
   cloudflare)
     do_cloudflare
     ;;
-  dry-run)
-    do_dry_run
-    ;;
   *)
     echo "Unknown mode: $MODE"
-    echo "Usage: $0 [all|local|dev|cloudflare|dry-run]"
+    echo "Usage: $0 [local|cloudflare]"
     exit 1
     ;;
 esac
