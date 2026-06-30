@@ -1,8 +1,11 @@
 import { STOCK, PLAN, locLabel, storeLabel, formatRp, relUpdated } from '../data/mock.js'
 import { LocChip, TimeSignal } from '../components/ui.jsx'
+import { usePersona } from '../context/PersonaContext.jsx'
+import { speak } from '../lib/persona.js'
 import { IconReceipt, IconSpark, IconLeaf, IconBox, IconRefresh } from '../components/icons.jsx'
 
 export default function Home({ setView, askAssistant }) {
+  const { persona } = usePersona()
   const expiring = STOCK.filter((s) => s.expiryDays != null && s.expiryDays <= 2)
   const low = STOCK.filter((s) => s.runOut <= 3)
   const needs = [...expiring, ...low.filter((l) => !expiring.find((e) => e.id === l.id))]
@@ -13,7 +16,7 @@ export default function Home({ setView, askAssistant }) {
     <>
       <div className="page__head">
         <p className="page__lead">
-          Stok terpantau otomatis dari struk belanja. Sisa dihitung dari kebiasaanmu, bukan diisi manual.
+          {speak('Stok terpantau otomatis dari struk belanja. Sisa dihitung dari kebiasaanmu, bukan diisi manual.', persona)}
         </p>
       </div>
 

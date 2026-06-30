@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { LOCATIONS, STORES } from '../data/mock.js'
 import { UsageMeter } from '../components/ui.jsx'
+import { usePersona } from '../context/PersonaContext.jsx'
+import { speak } from '../lib/persona.js'
 import { IconKey, IconCheck, IconTrash, IconPin, IconBolt } from '../components/icons.jsx'
 
 const MOTION_OPTS = [
@@ -17,6 +19,19 @@ export default function Settings({ aiKey, setAiKey, motion, setMotion }) {
   const [testOk, setTestOk] = useState(null)
   const [locs, setLocs] = useState(LOCATIONS)
   const [newLoc, setNewLoc] = useState('')
+  const { persona, setPersona } = usePersona()
+  const [personaDraft, setPersonaDraft] = useState({
+    userRole: persona.userRole,
+    aiRole: persona.aiRole,
+    enabled: persona.enabled,
+  })
+  const [personaApplied, setPersonaApplied] = useState(false)
+
+  const applyPersona = () => {
+    setPersona({ ...personaDraft })
+    setPersonaApplied(true)
+    setTimeout(() => setPersonaApplied(false), 2000)
+  }
 
   const save = () => {
     setAiKey(draft.trim() || null)
@@ -43,7 +58,7 @@ export default function Settings({ aiKey, setAiKey, motion, setMotion }) {
   return (
     <>
       <div className="page__head">
-        <p className="page__lead">Bawa kunci AI sendiri, kelola lokasi penyimpanan, dan atur kenyamanan tampilan.</p>
+        <p className="page__lead">{speak('Bawa kunci AI sendiri, kelola lokasi penyimpanan, dan atur kenyamanan tampilan.', persona)}</p>
       </div>
 
       {/* AI keys */}
@@ -109,6 +124,68 @@ export default function Settings({ aiKey, setAiKey, motion, setMotion }) {
         <div className="section__head"><h2>Penggunaan AI</h2></div>
         <div className="panel">
           <UsageMeter />
+        </div>
+      </section>
+
+      {/* Persona personalization */}
+      <section className="section">
+        <div className="section__head"><h2>Personalisasi peran</h2></div>
+        <div className="panel">
+          <div className="settings-group">
+            <div className="setting" style={{ flexWrap: 'wrap' }}>
+              <div className="setting__main" style={{ width: '100%', marginBottom: 'var(--sp-3)' }}>
+                <div className="setting__title">Saya adalah … Kamu adalah …</div>
+                <div className="setting__desc">
+                  Tentukan bagaimana RumaQ berbicara kepadamu dan warna tema aplikasi.
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', width: '100%' }}>
+                <label style={{ flex: 1, minWidth: 160 }}>
+                  <span className="sr-only">Peran saya</span>
+                  <input
+                    value={personaDraft.userRole}
+                    onChange={(e) => setPersonaDraft((p) => ({ ...p, userRole: e.target.value }))}
+                    placeholder="raja"
+                    aria-label="Saya adalah"
+                  />
+                </label>
+                <label style={{ flex: 1, minWidth: 160 }}>
+                  <span className="sr-only">Peran AI</span>
+                  <input
+                    value={personaDraft.aiRole}
+                    onChange={(e) => setPersonaDraft((p) => ({ ...p, aiRole: e.target.value }))}
+                    placeholder="prajurit"
+                    aria-label="Kamu adalah"
+                  />
+                </label>
+                <button className="btn btn--primary btn--sm" onClick={applyPersona}>
+                  {personaApplied ? <><IconCheck size={15} /> Tersimpan</> : 'Terapkan'}
+                </button>
+              </div>
+            </div>
+            <div className="setting">
+              <div className="setting__main">
+                <div className="setting__title">Pratinjau</div>
+                <div className="setting__desc">
+                  {persona.enabled && persona.userRole && persona.aiRole
+                    ? speak('Stok terpantau otomatis dari struk belanja.', persona)
+                    : 'Isi peran lalu tekan Terapkan untuk melihat pratinjau.'}
+                </div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-2)' }}>
+                <input
+                  id="persona-toggle"
+                  type="checkbox"
+                  checked={personaDraft.enabled}
+                  onChange={(e) => setPersonaDraft((p) => ({ ...p, enabled: e.target.checked }))}
+                  style={{ width: 'auto', padding: 0, accentColor: 'var(--accent)' }}
+                />
+                <label htmlFor="persona-toggle" style={{ fontSize: 'var(--fs-sm)', color: 'var(--text-muted)' }}>
+                  Aktifkan persona
+                </label>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

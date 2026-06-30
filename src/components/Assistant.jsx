@@ -3,6 +3,8 @@ import {
   IconSpark, IconClose, IconPlan, IconShop, IconLeaf, IconBolt, IconCheck, IconKey,
 } from './icons.jsx'
 import { formatRp, AI_USAGE, usageState } from '../data/mock.js'
+import { usePersona } from '../context/PersonaContext.jsx'
+import { speak } from '../lib/persona.js'
 
 const QUICK = [
   { id: 'plan', label: 'Susun rencana belanja minggu ini', desc: 'Dari stok menipis & riwayat', Icon: IconPlan },
@@ -23,6 +25,7 @@ export default function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) 
   const [busy, setBusy] = useState(false)
   const [proposal, setProposal] = useState(null)
   const { warn, danger } = usageState()
+  const { persona } = usePersona()
 
   const trigger = (id) => {
     if (!aiKey) return
@@ -85,7 +88,8 @@ export default function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) 
             ) : (
               <div className="assistant__body">
                 <p className="assistant__msg">
-                  Saya sudah cek stokmu. <strong>5 item</strong> perlu perhatian: 2 mendekati kedaluwarsa, 3 hampir habis. Mau saya buatkan rencananya?
+                  {speak('Saya sudah cek stokmu. ', persona)}
+                  <strong>5 item</strong> perlu perhatian: 2 mendekati kedaluwarsa, 3 hampir habis. {speak('Mau saya buatkan rencananya?', persona)}
                 </p>
 
                 <div className="assistant__actions">

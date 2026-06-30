@@ -1,7 +1,10 @@
 import { HISTORY, formatRp, storeLabel } from '../data/mock.js'
+import { usePersona } from '../context/PersonaContext.jsx'
+import { speak } from '../lib/persona.js'
 import { IconHistory, IconSpark } from '../components/icons.jsx'
 
 export default function History({ askAssistant }) {
+  const { persona } = usePersona()
   // group by month YYYY-MM
   const groups = []
   let lastMonth = null
@@ -30,7 +33,7 @@ export default function History({ askAssistant }) {
     <>
       <div className="page__head">
         <p className="page__lead">
-          Catatan pembelian menjadi dasar perkiraan sisa stok. Bandingkan harga dan ritme belanjamu di sini.
+          {speak('Catatan pembelian menjadi dasar perkiraan sisa stok. Bandingkan harga dan ritme belanjamu di sini.', persona)}
         </p>
       </div>
 

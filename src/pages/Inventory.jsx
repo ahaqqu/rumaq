@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react'
 import { STOCK, LOCATIONS, locLabel, relUpdated } from '../data/mock.js'
 import { LocChip, TimeSignal, EmptyState } from '../components/ui.jsx'
+import { usePersona } from '../context/PersonaContext.jsx'
+import { speak } from '../lib/persona.js'
 import { IconSearch, IconBox, IconRefresh } from '../components/icons.jsx'
 
 export default function Inventory() {
+  const { persona } = usePersona()
   const [q, setQ] = useState('')
   const [loc, setLoc] = useState('all')
 
@@ -18,7 +21,7 @@ export default function Inventory() {
     <>
       <div className="page__head">
         <p className="page__lead">
-          Jelajahi dan bandingkan stok. Saring berdasarkan lokasi penyimpanan, urut otomatis dari yang paling mendesak.
+          {speak('Jelajahi dan bandingkan stok. Saring berdasarkan lokasi penyimpanan, urut otomatis dari yang paling mendesak.', persona)}
         </p>
       </div>
 

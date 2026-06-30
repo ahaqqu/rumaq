@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import AppShell from './components/AppShell.jsx'
+import { PersonaProvider } from './context/PersonaContext.jsx'
 import Home from './pages/Home.jsx'
 import Inventory from './pages/Inventory.jsx'
 import AddFromReceipt from './pages/AddFromReceipt.jsx'
@@ -32,20 +33,22 @@ export default function App() {
   const meta = TITLES[view] || TITLES.home
 
   return (
-    <AppShell
-      view={view}
-      setView={go}
-      title={meta}
-      aiKey={aiKey}
-      assistantOpen={assistantOpen}
-      setAssistantOpen={setAssistantOpen}
-    >
-      {view === 'home' && <Home setView={go} askAssistant={askAssistant} />}
-      {view === 'inventory' && <Inventory />}
-      {view === 'add' && <AddFromReceipt onDone={() => go('inventory')} />}
-      {view === 'plan' && <Plan aiKey={aiKey} askAssistant={askAssistant} setView={go} />}
-      {view === 'history' && <History askAssistant={askAssistant} />}
-      {view === 'settings' && <Settings aiKey={aiKey} setAiKey={setAiKey} motion={motion} setMotion={setMotion} />}
-    </AppShell>
+    <PersonaProvider>
+      <AppShell
+        view={view}
+        setView={go}
+        title={meta}
+        aiKey={aiKey}
+        assistantOpen={assistantOpen}
+        setAssistantOpen={setAssistantOpen}
+      >
+        {view === 'home' && <Home setView={go} askAssistant={askAssistant} />}
+        {view === 'inventory' && <Inventory />}
+        {view === 'add' && <AddFromReceipt onDone={() => go('inventory')} />}
+        {view === 'plan' && <Plan aiKey={aiKey} askAssistant={askAssistant} setView={go} />}
+        {view === 'history' && <History askAssistant={askAssistant} />}
+        {view === 'settings' && <Settings aiKey={aiKey} setAiKey={setAiKey} motion={motion} setMotion={setMotion} />}
+      </AppShell>
+    </PersonaProvider>
   )
 }
