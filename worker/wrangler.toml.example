@@ -1,0 +1,28 @@
+name = "rumaq-api"
+main = "src/index.ts"
+compatibility_date = "2024-06-30"
+compatibility_flags = ["nodejs_compat"]
+
+# Replace with your Cloudflare account_id
+account_id = "YOUR_ACCOUNT_ID"
+
+# CORS: allow the Pages frontend origin
+[vars]
+PAGES_ORIGIN = "https://rumaq.pages.dev"
+
+# D1 database binding
+[[d1_databases]]
+binding = "DB"
+database_name = "rumaq"
+database_id = "YOUR_DATABASE_ID"
+
+# R2 bucket binding for receipt images
+[[r2_buckets]]
+binding = "RECEIPTS"
+bucket_name = "rumaq-receipts"
+
+# Secrets to set with `wrangler secret put`:
+# GOOGLE_CLIENT_ID
+# GOOGLE_CLIENT_SECRET
+# WORKER_JWT_SECRET
+# WORKER_ENCRYPTION_KEY
