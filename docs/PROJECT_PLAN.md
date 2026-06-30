@@ -96,6 +96,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Session JWT signing | Partial | P0 | `worker/src/auth.ts`; verify key rotation story |
 | Secure AI key encryption | Not started | P0 | AES-GCM with `WORKER_ENCRYPTION_KEY` |
 | R2 signed URLs for receipts | Not started | P0 | Don't expose bucket directly |
+| AI prompt data isolation | Not started | P0 | System prompt + context must never include another household's data |
 | HTTPS-only cookies | Partial | P0 | Set `Secure`; verify on deployed domain |
 | CORS restricted to Pages origin | Partial | P0 | Configured; verify in production |
 | CSRF protection via OAuth state | Done | P0 | `state` + PKCE in `worker/src/auth.ts` |
@@ -196,6 +197,7 @@ PR 1 (Auth) → PR 2 (Settings) → PR 3 (Inventory)
 - Wire AddFromReceipt page through the 4-phase flow (capture → scanning → review → done).
 - Create/update `items`, `stock`, `purchases`, and `purchase_items` in one transaction.
 - Add tests for scan endpoint, purchase creation, and R2 upload handling.
+- Verify AI prompt context is scoped to the current household only.
 
 ### PR 5 — AI Shopping Plans
 *User impact: get an auto-generated per-store shopping plan from low stock, expiries, and history.*
@@ -204,6 +206,7 @@ PR 1 (Auth) → PR 2 (Settings) → PR 3 (Inventory)
 - Implement `PATCH /api/plans/items/:id` to mark items bought or skipped.
 - Wire Plan page: per-store trip cards, check-off, regenerate, all-bought state, key-missing state.
 - Add tests for plan CRUD, generate endpoint, and check-off flow.
+- Ensure plan generation prompt context is scoped to the current household only.
 
 ### PR 6 — Purchase History + Ship
 *User impact: review past purchases and spending patterns; app goes live.*
