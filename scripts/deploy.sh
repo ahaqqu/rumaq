@@ -54,7 +54,7 @@ wrangler_cmd() {
 check_prereqs() {
   require_cmd node "Install Node.js (https://nodejs.org)."
   require_cmd npm "Install Node.js first."
-  require_cmd wrangler "Install Wrangler: npm install -g wrangler"
+  require_cmd wrangler "Install Wrangler: npm install --no-fund -g wrangler"
 }
 
 # ------------------------------------------------------------------
@@ -83,6 +83,11 @@ ensure_wrangler_toml() {
     ok "Created worker/wrangler.local.toml with local defaults."
   else
     local config_file="$WORKER_DIR/wrangler.cloudflare.toml"
+
+    if [[ -f $config_file ]]; then
+      ok "worker/wrangler.cloudflare.toml already exists."
+      return
+    fi
 
     info "Creating worker/wrangler.cloudflare.toml from example..."
 
@@ -128,11 +133,11 @@ EOF
 # ------------------------------------------------------------------
 install_deps() {
   info "Installing frontend dependencies..."
-  npm install
+  npm install --no-fund
 
   info "Installing worker dependencies..."
   cd "$WORKER_DIR"
-  npm install
+  npm install --no-fund
   cd "$ROOT_DIR"
 }
 
@@ -158,25 +163,11 @@ setup_database_remote() {
   local config_file="wrangler.cloudflare.toml"
   cd "$WORKER_DIR"
 
-  # Ensure database_id is set in wrangler.cloudflare.toml.
   local db_id
   db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2>/dev/null || true)
 
   if [[ $db_id == "YOUR_DATABASE_ID" || -z $db_id ]]; then
-    # Fetch or create the remote D1 database.
-    if wrangler d1 list --json 2>/dev/null | grep -q "\"name\": *\"$DB_NAME\""; then
-      ok "Remote database \"$DB_NAME\" already exists – fetching its ID."
-      db_id=$(wrangler d1 list --json 2>/dev/null \
-              | grep -oP "\"name\": *\"$DB_NAME\".*?\"uuid\": *\"\K[^\"]+" \
-              | head -1 || true)
-    else
-      echo "Creating remote D1 database \"$DB_NAME\"..."
-      local create_out
-      create_out=$(wrangler d1 create "$DB_NAME" 2>&1)
-      echo "$create_out"
-      db_id=$(echo "$create_out" | grep -oP 'database_id\s*=\s*"\K[^"]+' || true)
-    fi
-
+    db_id=$(node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" d1-setup)
     if [[ -n $db_id ]]; then
       sed -i "s|database_id = \".*\"|database_id = \"$db_id\"|" "$config_file"
       ok "Updated database_id in wrangler.cloudflare.toml."
@@ -186,9 +177,7 @@ setup_database_remote() {
     fi
   fi
 
-  # Apply migrations remotely (no --local flag)
   wrangler_cmd "$config_file" "$DB_NAME"
-
   cd "$ROOT_DIR"
 }
 
@@ -197,18 +186,14 @@ setup_database_remote() {
 # ------------------------------------------------------------------
 ensure_r2_bucket() {
   local bucket_name="${R2_BUCKET_NAME:-rumaq-receipts}"
-
   info "Ensuring R2 bucket \"${bucket_name}\"..."
-
   cd "$WORKER_DIR"
-
-  if wrangler r2 bucket list --config wrangler.cloudflare.toml --json 2>/dev/null | grep -q "\"name\": *\"$bucket_name\""; then
+  result=$(node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" r2-ensure)
+  if [[ $result == "EXISTS" ]]; then
     ok "R2 bucket \"$bucket_name\" already exists."
   else
-    wrangler r2 bucket create "$bucket_name" --config wrangler.cloudflare.toml
     ok "Created R2 bucket \"$bucket_name\"."
   fi
-
   cd "$ROOT_DIR"
 }
 
@@ -236,11 +221,11 @@ deploy_worker() {
 # ------------------------------------------------------------------
 deploy_frontend() {
   info "Building frontend..."
-  npm install
+  npm install --no-fund
   npm run build
 
   info "Deploying to Cloudflare Pages (project: ${PAGES_PROJECT})..."
-  wrangler pages deploy dist --project-name "$PAGES_PROJECT" --config wrangler.cloudflare.toml
+  wrangler pages deploy dist --project-name "$PAGES_PROJECT"
   ok "Frontend deployed."
 }
 
@@ -249,7 +234,7 @@ deploy_frontend() {
 # ------------------------------------------------------------------
 build_frontend() {
   info "Building frontend (dry-run)..."
-  npm install
+  npm install --no-fund
   npm run build
   ok "Frontend build succeeded (no deployment was made)."
 }
@@ -274,18 +259,10 @@ check_login() {
 # Put worker secrets from environment variables
 # ------------------------------------------------------------------
 put_secrets() {
-  local config=$1
-  local secrets=(GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY)
-
-  for name in "${secrets[@]}"; do
-    local val="${!name:-}"
-    if [[ -n $val ]]; then
-      info "Setting secret: $name"
-      echo "$val" | wrangler secret put "$name" --config "$config" 2>&1 | tail -1
-    else
-      warn "Skipping $name — not set in environment."
-    fi
-  done
+  info "Setting worker secrets..."
+  cd "$WORKER_DIR"
+  node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" put-secrets
+  cd "$ROOT_DIR"
 }
 
 # ------------------------------------------------------------------
@@ -347,7 +324,7 @@ do_cloudflare() {
   ensure_r2_bucket
   deploy_worker
   deploy_frontend
-  put_secrets "wrangler.cloudflare.toml"
+  put_secrets
   summary_cloudflare
 }
 
