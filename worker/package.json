@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "wrangler dev",
     "deploy": "wrangler deploy",
+    "deploy:prod": "wrangler deploy --env production",
     "db:create": "node ../scripts/setup-db.js",
     "db:migrate": "wrangler d1 migrations apply rumaq"
   },

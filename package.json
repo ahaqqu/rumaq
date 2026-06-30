@@ -8,7 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "db:setup": "node scripts/setup-db.js",
-    "deploy:pages": "vite build && wrangler pages deploy dist"
+    "deploy": "./scripts/deploy.sh",
+    "deploy:frontend": "./scripts/deploy.sh frontend",
+    "deploy:backend": "./scripts/deploy.sh backend",
+    "deploy:dry-run": "./scripts/deploy.sh dry-run"
   },
   "dependencies": {
     "react": "^18.3.1",
