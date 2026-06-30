@@ -103,12 +103,15 @@ npm run db:migrate
 ### Deploy
 
 ```bash
-# Backend
-cd worker && npm run deploy
+# Deploy Worker + Pages sekaligus
+npm run deploy
 
-# Frontend
-npm run build
-npx wrangler pages deploy dist
+# Atau terpisah
+npm run deploy:backend
+npm run deploy:frontend
+
+# Dry-run: build saja tanpa deploy
+npm run deploy:dry-run
 ```
 
 ### Dokumen lebih lanjut
@@ -121,8 +124,10 @@ npx wrangler pages deploy dist
 
 Fitur persona mengubah:
 
-- **Salinan UI:** lead text dan petunjuk di setiap halaman disesuaikan dengan pasangan peran pengguna dan AI.
+- **Salinan UI:** lead text dan petunjuk di setiap halaman ditulis ulang oleh AI berdasarkan peran bebas yang kamu masukkan.
 - **Prompt AI:** system prompt asisten menyertakan peran yang dipilih.
 - **Tema warna:** hue tema dihasilkan dari pasangan peran sehingga setiap persona punya identitas visual unik.
+
+Cara kerja: masukkan peran di **Pengaturan**, tekan **Terapkan**. Jika kunci AI tersedia, AI dipanggil sekali untuk menulis ulang semua teks aplikasi. Hasilnya dicache; refresh atau logout-login tidak memanggil AI lagi. Tanpa kunci AI, persona tetap aktif dengan gaya bawaan (fallback) berdasarkan peran yang dikenali.
 
 Logika persona tinggal di `src/lib/persona.js` dan diatur melalui `PersonaContext`. Saat prototype, pengaturan disimpan di `localStorage`; di produksi disinkronkan dengan endpoint `GET /api/settings` dan `PATCH /api/settings`.
