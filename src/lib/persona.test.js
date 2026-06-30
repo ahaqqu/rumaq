@@ -2,7 +2,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   DEFAULT_PERSONA,
   PERSONA_KEY,
-  COPY,
   loadPersona,
   savePersona,
   personaText,
@@ -12,6 +11,29 @@ import {
   applyTheme,
   generatePersonaCopy,
 } from './persona.js'
+
+const ID_TEMPLATES = {
+  'persona.mood.servant-to-royal': 'Yang Mulia {{user}}, izinkan hamba {{ai}} melaporkan: {{text}} Demikian yang dapat hamba sampaikan, Yang Mulia.',
+  'persona.mood.student-to-teacher': 'Maaf mengganggu, {{user}}. Saya {{ai}} ingin menyampaikan: {{text}} Terima kasih, {{user}}.',
+  'persona.mood.medical': 'Selamat datang, {{user}}. Saya {{ai}} Anda. {{text}}',
+  'persona.mood.employee-to-boss': 'Permisi, {{user}}. Izin melaporkan dari {{ai}}: {{text}}',
+  'persona.mood.casual': 'Hei {{user}}, {{ai}} di sini. {{text}}',
+  'persona.mood.generic': 'Halo {{user}}, saya {{ai}}. {{text}}',
+  'persona.homeLead': 'Stok terpantau otomatis dari struk belanja. Sisa dihitung dari kebiasaanmu, bukan diisi manual.',
+  'persona.systemPrompt': 'Kamu adalah asisten inventaris dan belanja rumah tangga bernama RumaQ. Jawab dengan jelas, singkat, dan praktis.',
+  'persona.roleInstructionBase': 'Bayangkan kamu adalah {{ai}} dan pengguna adalah {{user}}. Seluruh jawabanmu harus sesuai peran tersebut.',
+}
+
+function idT(key, opts) {
+  let template = ID_TEMPLATES[key]
+  if (!template) return key
+  if (opts) {
+    for (const [k, v] of Object.entries(opts)) {
+      template = template.replace(`{{${k}}}`, v)
+    }
+  }
+  return template
+}
 
 beforeEach(() => {
   localStorage.clear()
@@ -59,16 +81,16 @@ describe('deriveHue', () => {
 
 describe('speak', () => {
   it('returns base text when persona is not enabled', () => {
-    expect(speak('hello', { ...DEFAULT_PERSONA })).toBe('hello')
+    expect(speak('hello', { ...DEFAULT_PERSONA }, idT)).toBe('hello')
   })
 
   it('returns base text when roles are empty', () => {
-    expect(speak('hello', { enabled: true, userRole: '', aiRole: '' })).toBe('hello')
+    expect(speak('hello', { enabled: true, userRole: '', aiRole: '' }, idT)).toBe('hello')
   })
 
   it('servant-to-royal mood', () => {
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit' }
-    const result = speak('stok aman.', p)
+    const result = speak('stok aman.', p, idT)
     expect(result).toContain('Yang Mulia')
     expect(result).toContain('prajurit')
     expect(result).toContain('stok aman.')
@@ -76,32 +98,32 @@ describe('speak', () => {
 
   it('student-to-teacher mood', () => {
     const p = { enabled: true, userRole: 'guru', aiRole: 'murid' }
-    const result = speak('tugas selesai.', p)
+    const result = speak('tugas selesai.', p, idT)
     expect(result).toContain('Maaf mengganggu')
     expect(result).toContain('guru')
   })
 
   it('medical mood', () => {
     const p = { enabled: true, userRole: 'dokter', aiRole: 'pasien' }
-    const result = speak('obat sudah diminum.', p)
+    const result = speak('obat sudah diminum.', p, idT)
     expect(result).toContain('Selamat datang')
   })
 
   it('employee-to-boss mood', () => {
     const p = { enabled: true, userRole: 'bos', aiRole: 'pegawai' }
-    const result = speak('laporan siap.', p)
+    const result = speak('laporan siap.', p, idT)
     expect(result).toContain('Izin melaporkan')
   })
 
   it('casual mood (teman)', () => {
     const p = { enabled: true, userRole: 'Andi', aiRole: 'teman' }
-    const result = speak('gimana kabar?', p)
+    const result = speak('gimana kabar?', p, idT)
     expect(result).toContain('Hei')
   })
 
   it('generic fallback mood', () => {
     const p = { enabled: true, userRole: 'tamu', aiRole: 'host' }
-    const result = speak('selamat datang.', p)
+    const result = speak('selamat datang.', p, idT)
     expect(result).toContain('Halo')
     expect(result).toContain('tamu')
   })
@@ -109,7 +131,7 @@ describe('speak', () => {
 
 describe('personaText', () => {
   it('returns base text when persona is not enabled', () => {
-    expect(personaText('homeLead', DEFAULT_PERSONA)).toBe(COPY.homeLead)
+    expect(personaText('homeLead', DEFAULT_PERSONA, idT)).toBe(ID_TEMPLATES['persona.homeLead'])
   })
 
   it('returns AI-generated copy when available', () => {
@@ -120,26 +142,26 @@ describe('personaText', () => {
       hue: 270,
       generatedCopy: { homeLead: 'AI version' },
     }
-    expect(personaText('homeLead', p)).toBe('AI version')
+    expect(personaText('homeLead', p, idT)).toBe('AI version')
   })
 
   it('falls back to speak() when no AI copy', () => {
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270, generatedCopy: null }
-    const result = personaText('homeLead', p)
+    const result = personaText('homeLead', p, idT)
     expect(result).toContain('Yang Mulia')
-    expect(result).toContain(COPY.homeLead)
+    expect(result).toContain(ID_TEMPLATES['persona.homeLead'])
   })
 })
 
 describe('buildSystemPrompt', () => {
   it('returns base prompt when persona is not enabled', () => {
-    const p = buildSystemPrompt(DEFAULT_PERSONA)
+    const p = buildSystemPrompt(DEFAULT_PERSONA, idT)
     expect(p).toContain('RumaQ')
     expect(p).not.toContain('Bayangkan')
   })
 
   it('includes role instruction for enabled persona', () => {
-    const p = buildSystemPrompt({ enabled: true, userRole: 'raja', aiRole: 'prajurit' })
+    const p = buildSystemPrompt({ enabled: true, userRole: 'raja', aiRole: 'prajurit' }, idT)
     expect(p).toContain('Bayangkan')
     expect(p).toContain('raja')
     expect(p).toContain('prajurit')
@@ -164,20 +186,19 @@ describe('applyTheme', () => {
 
 describe('generatePersonaCopy', () => {
   it('returns null when persona is not enabled', async () => {
-    const result = await generatePersonaCopy(DEFAULT_PERSONA, 'sk-test', 'opencode')
+    const result = await generatePersonaCopy(DEFAULT_PERSONA, 'sk-test', 'opencode', idT)
     expect(result).toBeNull()
   })
 
   it('returns null when aiKey is missing', async () => {
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit' }
-    const result = await generatePersonaCopy(p, null, 'opencode')
+    const result = await generatePersonaCopy(p, null, 'opencode', idT)
     expect(result).toBeNull()
   })
 
   it('returns null when AI call fails', async () => {
-    // Fetch will fail because there is no server — caught by the try/catch
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit' }
-    const result = await generatePersonaCopy(p, 'sk-invalid', 'opencode')
+    const result = await generatePersonaCopy(p, 'sk-invalid', 'opencode', idT)
     expect(result).toBeNull()
   })
 })
