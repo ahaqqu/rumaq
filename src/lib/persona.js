@@ -1,10 +1,4 @@
-/**
- * RumaQ persona engine.
- *
- * Users declare "saya adalah X, kamu adalah Y" as free text. The AI then
- * rewrites all UI copy so the app (role Y) speaks to the user (role X).
- * Generated copy is cached; the theme color is derived from the role pair.
- */
+import i18n from '../i18n/index.js'
 
 export const PERSONA_KEY = 'rumaq:persona'
 
@@ -14,19 +8,6 @@ export const DEFAULT_PERSONA = {
   aiRole: '',
   hue: 230,
   generatedCopy: null,
-}
-
-// Base copy for every screen that supports personalization.
-export const COPY = {
-  homeLead: 'Stok terpantau otomatis dari struk belanja. Sisa dihitung dari kebiasaanmu, bukan diisi manual.',
-  inventoryLead: 'Jelajahi dan bandingkan stok. Saring berdasarkan lokasi penyimpanan, urut otomatis dari yang paling mendesak.',
-  planLeadNoKey: 'Hubungkan kunci API dulu, lalu AI menyusun rencana belanja dari stok yang menipis.',
-  planLead: 'AI mengelompokkan item per toko menjadi satu perjalanan. Centang yang sudah dibeli, sisanya otomatis tercatat.',
-  historyLead: 'Catatan pembelian menjadi dasar perkiraan sisa stok. Bandingkan harga dan ritme belanjamu di sini.',
-  receiptLead: 'Foto atau unggah struk. AI membaca item, jumlah, harga, dan toko, lalu kamu konfirmasi.',
-  settingsLead: 'Bawa kunci AI sendiri, kelola lokasi penyimpanan, dan atur kenyamanan tampilan.',
-  assistantGreeting: 'Saya sudah cek stokmu.',
-  assistantQuestion: 'Mau saya buatkan rencananya?',
 }
 
 export function loadPersona() {
@@ -44,15 +25,11 @@ export function savePersona(persona) {
   localStorage.setItem(PERSONA_KEY, JSON.stringify(persona))
 }
 
-/**
- * Return personalized copy for a key. Uses AI-generated copy if available,
- * otherwise falls back to the rule-based rewriter.
- */
-export function personaText(key, persona) {
-  const base = COPY[key]
+export function personaText(key, persona, t) {
+  const base = t ? t(`persona.${key}`) : i18n.t(`persona.${key}`)
   if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole) return base
   if (persona.generatedCopy?.[key]) return persona.generatedCopy[key]
-  return speak(base, persona)
+  return speak(base, persona, t)
 }
 
 export function deriveHue(userRole = '', aiRole = '') {
@@ -70,80 +47,127 @@ function normalize(role = '') {
   return role.trim().toLowerCase().replace(/[^a-z]/g, '')
 }
 
+// Mood is triggered by user role, except 'casual' which is triggered by AI role.
 function detectMood(userRole, aiRole) {
   const u = normalize(userRole)
   const a = normalize(aiRole)
 
-  if ((u.includes('raja') || u.includes('ratu')) && (a.includes('prajurit') || a.includes('abdi') || a.includes('pelayan'))) {
-    return 'servant-to-royal'
-  }
-  if ((u.includes('guru') || u.includes('dosen')) && (a.includes('murid') || a.includes('siswa') || a.includes('mahasiswa'))) {
-    return 'student-to-teacher'
-  }
-  if ((u.includes('dokter')) && (a.includes('pasien') || a.includes('suster'))) {
-    return 'medical'
-  }
-  if ((u.includes('bos') || u.includes('manajer') || u.includes('manager')) && (a.includes('pegawai') || a.includes('karyawan'))) {
-    return 'employee-to-boss'
-  }
-  if (a.includes('teman') || a.includes('sahabat') || a.includes('bestie')) {
-    return 'casual'
-  }
+  // servant-to-royal — user is royalty
+  if (/(raja|ratu|pangeran|putri|king|queen|prince|princess|majesty|lord|lad)/i.test(u)) return 'servant-to-royal'
+  // student-to-teacher — user is teacher
+  if (/(guru|dosen|teacher|professor|lecturer|master|sensei)/i.test(u)) return 'student-to-teacher'
+  // medical — user is medical professional
+  if (/(dokter|doctor|physician|nurse)/i.test(u)) return 'medical'
+  // employee-to-boss — user is boss
+  if (/(bos|manajer|manager|boss|ceo|director|supervisor|employer)/i.test(u)) return 'employee-to-boss'
+  // casual — AI is a friend
+  if (/(teman|sahabat|bestie|friend|buddy|pal|mate)/i.test(a)) return 'casual'
+
   return 'generic'
 }
 
-export function speak(text, persona) {
+export function speak(text, persona, t) {
   if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole) return text
 
   const u = persona.userRole
   const a = persona.aiRole
   const mood = detectMood(u, a)
 
-  switch (mood) {
-    case 'servant-to-royal':
-      return `Yang Mulia ${u}, izinkan hamba ${a} melaporkan: ${text} Demikian yang dapat hamba sampaikan, Yang Mulia.`
-    case 'student-to-teacher':
-      return `Maaf mengganggu, ${u}. Saya ${a} ingin menyampaikan: ${text} Terima kasih, ${u}.`
-    case 'medical':
-      return `Selamat datang, ${u}. Saya ${a} Anda. ${text}`
-    case 'employee-to-boss':
-      return `Permisi, ${u}. Izin melaporkan dari ${a}: ${text}`
-    case 'casual':
-      return `Hei ${u}, ${a} di sini. ${text}`
-    default:
-      return `Halo ${u}, saya ${a}. ${text}`
-  }
+  const template = t
+    ? t(`persona.mood.${mood}`, { user: u, ai: a, text })
+    : i18n.t(`persona.mood.${mood}`, { user: u, ai: a, text })
+
+  return template
 }
 
-export function buildSystemPrompt(persona) {
-  const base = 'Kamu adalah asisten inventaris dan belanja rumah tangga bernama RumaQ. Jawab dengan jelas, singkat, dan praktis.'
+export function buildSystemPrompt(persona, t) {
+  const base = t ? t('persona.systemPrompt') : i18n.t('persona.systemPrompt')
   if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole) return base
 
   const u = persona.userRole
   const a = persona.aiRole
   const mood = detectMood(u, a)
 
-  let roleInstruction = `Bayangkan kamu adalah ${a} dan pengguna adalah ${u}. Seluruh jawabanmu harus sesuai peran tersebut.`
+  const roleInstruction = t
+    ? t('persona.roleInstructionBase', { user: u, ai: a })
+    : i18n.t('persona.roleInstructionBase', { user: u, ai: a })
 
-  switch (mood) {
-    case 'servant-to-royal':
-      roleInstruction = `Bayangkan kamu adalah ${a} yang setia dan pengguna adalah ${u}. Gunakan bahasa yang sangat hormat, sopan, dan layaknya laporan kepada raja/raja.`
-      break
-    case 'student-to-teacher':
-      roleInstruction = `Bayangkan kamu adalah ${a} dan pengguna adalah ${u}. Gunakan bahasa yang sopan seperti anak didik berbicara kepada gurunya.`
-      break
-    case 'medical':
-      roleInstruction = `Bayangkan kamu adalah ${a} dan pengguna adalah ${u}. Gunakan bahasa yang tenang, jelas, dan profesional.`
-      break
-    case 'employee-to-boss':
-      roleInstruction = `Bayangkan kamu adalah ${a} dan pengguna adalah ${u}. Gunakan bahasa formal dan ringkas seperti laporan kepada atasan.`
-      break
-    case 'casual':
-      roleInstruction = `Bayangkan kamu adalah ${a} dan pengguna adalah ${u}. Gunakan bahasa santai dan akrab.`
-      break
+  const moodInstruction = mood !== 'generic'
+    ? ` ${resolveMoodInstruction(mood, persona, t)}`
+    : ''
+
+  return `${base} ${roleInstruction}${moodInstruction}`
+}
+
+function resolveMoodInstruction(mood, persona, t) {
+  const instructions = {
+    'servant-to-royal': 'Gunakan bahasa yang sangat hormat, sopan, dan layaknya laporan kepada raja/ratu.',
+    'student-to-teacher': 'Gunakan bahasa yang sopan seperti anak didik berbicara kepada gurunya.',
+    'medical': 'Gunakan bahasa yang tenang, jelas, dan profesional.',
+    'employee-to-boss': 'Gunakan bahasa formal dan ringkas seperti laporan kepada atasan.',
+    'casual': 'Gunakan bahasa santai dan akrab.',
+  }
+  const enInstructions = {
+    'servant-to-royal': 'Use very respectful, polite language befitting a report to royalty.',
+    'student-to-teacher': 'Use polite language like a student speaking to a teacher.',
+    'medical': 'Use calm, clear, and professional language.',
+    'employee-to-boss': 'Use formal, concise language like a report to a superior.',
+    'casual': 'Use casual, friendly language.',
+  }
+  const lang = (t && t.language) || i18n.language
+  const dict = lang === 'id' ? instructions : enInstructions
+  return dict[mood] || instructions[mood]
+}
+
+export function generatePersonaCopy(persona, aiKey, provider, t) {
+  if (!persona.enabled || !persona.userRole || !persona.aiRole || !aiKey) {
+    return Promise.resolve(null)
   }
 
-  return `${base} ${roleInstruction}`
+  const translate = t || i18n.t
+  const lang = i18n.language
+
+  const copyEntries = [
+    'homeLead', 'inventoryLead', 'planLeadNoKey', 'planLead',
+    'historyLead', 'receiptLead', 'settingsLead', 'assistantGreeting', 'assistantQuestion',
+  ]
+
+  const copyBlock = copyEntries
+    .map((key) => `${key}: """${translate(`persona.${key}`)}"""`)
+    .join('\n')
+
+  const isId = lang === 'id'
+
+  const intro = isId
+    ? `Kamu sedang menyesuaikan bahasa aplikasi RumaQ (asisten inventaris rumah tangga) agar sesuai peran.\n\nPengguna menyatakan: "saya adalah ${persona.userRole}, kamu adalah ${persona.aiRole}".\nArtinya, seluruh teks aplikasi harus ditulis seolah-olah aplikasi/kamu (${persona.aiRole}) sedang berbicara kepada pengguna (${persona.userRole}).`
+    : `You are adapting the language of RumaQ (a household inventory assistant) to match roles.\n\nThe user declared: "I am ${persona.userRole}, you are ${persona.aiRole}".\nThis means all app text should be written as if the app/you (${persona.aiRole}) are speaking to the user (${persona.userRole}).`
+
+  const task = isId
+    ? `Tugas:\n1. Tulis ulang setiap teks di atas dengan gaya, pilihan kata, dan tingkat formalitas yang cocok untuk peran "${persona.aiRole}" berbicara kepada "${persona.userRole}".\n2. Jangan ubah makna atau informasi penting (misalnya tetap sebutkan struk, stok, rencana, dll).\n3. Jangan membuat teks terlalu panjang; tetap singkat dan nyaman dibaca di layar kecil.\n4. Kembalikan hasil dalam format JSON murni, kunci sama persis dengan daftar di atas, tanpa markdown atau penjelasan tambahan.`
+    : `Task:\n1. Rewrite each text above with style, word choice, and formality matching the role "${persona.aiRole}" speaking to "${persona.userRole}".\n2. Do not change the meaning or key information (e.g., still mention receipts, stock, plans, etc.).\n3. Keep text concise and comfortable to read on a small screen.\n4. Return the result in pure JSON format, exact same keys as listed above, no markdown or extra explanation.`
+
+  const example = isId
+    ? 'Contoh output:\n{\n  "homeLead": "...",\n  "inventoryLead": "..."\n}'
+    : 'Example output:\n{\n  "homeLead": "...",\n  "inventoryLead": "..."\n}'
+
+  const prompt = `${intro}\n\nBerikut teks dasar yang perlu ditulis ulang:\n${copyBlock}\n\n${task}\n\n${example}`
+
+  return callAI(prompt, aiKey, provider)
+    .then((raw) => {
+      const json = stripJsonMarkdown(raw)
+      let parsed
+      try {
+        parsed = JSON.parse(json)
+      } catch {
+        return null
+      }
+      const result = {}
+      for (const key of copyEntries) {
+        result[key] = typeof parsed[key] === 'string' ? parsed[key] : translate(`persona.${key}`)
+      }
+      return result
+    })
+    .catch(() => null)
 }
 
 function stripJsonMarkdown(text) {
@@ -213,60 +237,6 @@ async function callAI(prompt, aiKey, provider) {
     default:
       return callOpenAICompatible(prompt, aiKey, 'https://api.opencode.ai/v1', 'opencode-mini')
   }
-}
-
-/**
- * Ask AI to rewrite all COPY entries for the given persona.
- * Returns an object keyed like COPY.
- */
-export async function generatePersonaCopy(persona, aiKey, provider) {
-  if (!persona.enabled || !persona.userRole || !persona.aiRole || !aiKey) {
-    return null
-  }
-
-  const prompt = `Kamu sedang menyesuaikan bahasa aplikasi RumaQ (asisten inventaris rumah tangga) agar sesuai peran.
-
-Pengguna menyatakan: "saya adalah ${persona.userRole}, kamu adalah ${persona.aiRole}".
-Artinya, seluruh teks aplikasi harus ditulis seolah-olah aplikasi/kamu (${persona.aiRole}) sedang berbicara kepada pengguna (${persona.userRole}).
-
-Berikut teks dasar yang perlu ditulis ulang:
-${Object.entries(COPY)
-  .map(([key, text]) => `${key}: """${text}"""`)
-  .join('\n')}
-
-Tugas:
-1. Tulis ulang setiap teks di atas dengan gaya, pilihan kata, dan tingkat formalitas yang cocok untuk peran "${persona.aiRole}" berbicara kepada "${persona.userRole}".
-2. Jangan ubah makna atau informasi penting (misalnya tetap sebutkan struk, stok, rencana, dll).
-3. Jangan membuat teks terlalu panjang; tetap singkat dan nyaman dibaca di layar kecil.
-4. Kembalikan hasil dalam format JSON murni, kunci sama persis dengan daftar di atas, tanpa markdown atau penjelasan tambahan.
-
-Contoh output:
-{
-  "homeLead": "...",
-  "inventoryLead": "..."
-}`
-
-  let raw
-  try {
-    raw = await callAI(prompt, aiKey, provider)
-  } catch {
-    return null
-  }
-
-  const json = stripJsonMarkdown(raw)
-  let parsed
-  try {
-    parsed = JSON.parse(json)
-  } catch {
-    return null
-  }
-
-  // Ensure every key exists; fall back to base text if AI missed one.
-  const result = {}
-  for (const key of Object.keys(COPY)) {
-    result[key] = typeof parsed[key] === 'string' ? parsed[key] : COPY[key]
-  }
-  return result
 }
 
 function oklch(l, c, h) {

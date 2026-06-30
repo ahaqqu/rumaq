@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import AppShell from './components/AppShell.jsx'
 import { PersonaProvider } from './context/PersonaContext.jsx'
 import Home from './pages/Home.jsx'
@@ -8,16 +9,10 @@ import Plan from './pages/Plan.jsx'
 import History from './pages/History.jsx'
 import Settings from './pages/Settings.jsx'
 
-const TITLES = {
-  home: 'Beranda',
-  inventory: 'Inventaris',
-  add: 'Tambah dari struk',
-  plan: 'Rencana belanja',
-  history: 'Riwayat',
-  settings: 'Pengaturan',
-}
+const VIEWS = ['home', 'inventory', 'add', 'plan', 'history', 'settings']
 
 export default function App() {
+  const { t } = useTranslation()
   const [view, setView] = useState('home')
   const [aiKey, setAiKey] = useState(null)
   const [assistantOpen, setAssistantOpen] = useState(false)
@@ -30,7 +25,8 @@ export default function App() {
   const askAssistant = () => setAssistantOpen(true)
   const go = (v) => { setView(v); window.scrollTo(0, 0) }
 
-  const meta = TITLES[view] || TITLES.home
+  const navKey = VIEWS.includes(view) ? view : 'home'
+  const meta = t(`nav.${navKey}`, { defaultValue: t('nav.home') })
 
   return (
     <PersonaProvider>

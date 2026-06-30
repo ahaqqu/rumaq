@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { STOCK, PLAN, locLabel, storeLabel, formatRp, relUpdated } from '../data/mock.js'
 import { LocChip, TimeSignal } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
@@ -5,6 +6,7 @@ import { personaText } from '../lib/persona.js'
 import { IconReceipt, IconSpark, IconLeaf, IconBox, IconRefresh } from '../components/icons.jsx'
 
 export default function Home({ setView, askAssistant }) {
+  const { t } = useTranslation()
   const { persona } = usePersona()
   const expiring = STOCK.filter((s) => s.expiryDays != null && s.expiryDays <= 2)
   const low = STOCK.filter((s) => s.runOut <= 3)
@@ -16,43 +18,43 @@ export default function Home({ setView, askAssistant }) {
     <>
       <div className="page__head">
         <p className="page__lead">
-          {personaText('homeLead', persona)}
+          {personaText('homeLead', persona, t)}
         </p>
       </div>
 
       <div className="section__head" style={{ marginTop: 'var(--sp-2)', marginBottom: 'var(--sp-4)' }}>
-        <h2>Status stok</h2>
+        <h2>{t('home.stockStatus')}</h2>
       </div>
       <div className="stats">
         <div className="stat">
           <div className="stat__num">{STOCK.length}</div>
-          <div className="stat__label">item terpantau</div>
+          <div className="stat__label">{t('home.itemsMonitored')}</div>
         </div>
         <div className="stat">
           <div className="stat__num is-warn">{expiring.length}</div>
-          <div className="stat__label">akan kedaluwarsa</div>
+          <div className="stat__label">{t('home.expiring')}</div>
         </div>
         <div className="stat">
           <div className="stat__num is-warn">{low.length}</div>
-          <div className="stat__label">hampir habis</div>
+          <div className="stat__label">{t('home.nearlyOut')}</div>
         </div>
         <div className="stat">
           <div className="stat__num">{stores.size}</div>
-          <div className="stat__label">toko tercatat</div>
+          <div className="stat__label">{t('home.storesRecorded')}</div>
         </div>
       </div>
 
       <section className="section">
         <div className="section__head">
-          <h2>Butuh perhatian</h2>
-          <button className="btn btn--ghost btn--sm" onClick={() => setView('inventory')}>Lihat semua</button>
+          <h2>{t('home.needsAttention')}</h2>
+          <button className="btn btn--ghost btn--sm" onClick={() => setView('inventory')}>{t('home.seeAll')}</button>
         </div>
         <div className="panel">
           {needs.length === 0 ? (
             <div className="empty">
               <div className="empty__icon"><IconBox size={40} /></div>
-              <div className="empty__title">Semua aman</div>
-              <div className="empty__desc">Tidak ada item yang kedaluwarsa atau habis dalam 3 hari.</div>
+              <div className="empty__title">{t('home.allSafe')}</div>
+              <div className="empty__desc">{t('home.allSafeDesc')}</div>
             </div>
           ) : (
             <div className="list">
@@ -66,7 +68,7 @@ export default function Home({ setView, askAssistant }) {
                   </div>
                   <div className="row__side">
                     <div className="row__qty">{s.qty} {s.unit}</div>
-                    <div className="row__updated"><IconRefresh size={12} /> Diperbarui {relUpdated(s.updated)}</div>
+                    <div className="row__updated"><IconRefresh size={12} /> {t('common.updated')} {relUpdated(s.updated, t)}</div>
                   </div>
                 </div>
               ))}
@@ -77,14 +79,14 @@ export default function Home({ setView, askAssistant }) {
 
       <section className="section">
         <div className="section__head">
-          <h2>Usulan berikutnya</h2>
-          <button className="btn btn--ghost btn--sm" onClick={askAssistant}><IconSpark size={15} /> Minta rencana</button>
+          <h2>{t('home.nextTrip')}</h2>
+          <button className="btn btn--ghost btn--sm" onClick={askAssistant}><IconSpark size={15} /> {t('home.askPlan')}</button>
         </div>
         <div className="tripcard">
           <div>
-            <div className="tripcard__title">Belanja di {storeLabel(nextTrip.store)}</div>
+            <div className="tripcard__title">{t('home.shopAt', { store: storeLabel(nextTrip.store) })}</div>
             <div className="tripcard__sub">
-              {nextTrip.items.length} item · perkiraan {formatRp(nextTrip.items.reduce((a, b) => a + b.price, 0))}
+              {t('home.itemCount', { count: nextTrip.items.length })} · {t('home.estimated', { amount: formatRp(nextTrip.items.reduce((a, b) => a + b.price, 0)) })}
             </div>
             <div className="tripcard__items">
               {nextTrip.items.map((it) => (
@@ -92,24 +94,24 @@ export default function Home({ setView, askAssistant }) {
               ))}
             </div>
           </div>
-          <button className="btn btn--primary" onClick={() => setView('plan')}>Lihat rencana</button>
+          <button className="btn btn--primary" onClick={() => setView('plan')}>{t('home.seePlan')}</button>
         </div>
       </section>
 
       <section className="section">
         <div className="section__head">
-          <h2>Cara cepat isi stok</h2>
+          <h2>{t('home.quickRefill')}</h2>
         </div>
         <div className="panel" style={{ padding: 'var(--sp-6)', display: 'flex', gap: 'var(--sp-5)', alignItems: 'center', flexWrap: 'wrap' }}>
           <div className="dropzone__icon" style={{ margin: 0, width: 48, height: 48, borderRadius: 'var(--r-md)' }}><IconReceipt size={24} /></div>
           <div style={{ flex: 1, minWidth: 220 }}>
-            <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)' }}>Foto struk, stok terisi otomatis</div>
+            <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)' }}>{t('home.quickRefillTitle')}</div>
             <div style={{ color: 'var(--text-muted)', fontSize: 'var(--fs-sm)', marginTop: 'var(--sp-2)' }}>
-              AI membaca item, harga, dan toko. Kamu cukup konfirmasi.
+              {t('home.quickRefillDesc')}
             </div>
           </div>
           <button className="btn btn--primary" onClick={() => setView('add')}>
-            <IconReceipt size={18} /> Tambah dari struk
+            <IconReceipt size={18} /> {t('home.addFromReceipt')}
           </button>
         </div>
       </section>
@@ -118,10 +120,10 @@ export default function Home({ setView, askAssistant }) {
         <div className="tiptip">
           <div className="tiptip__icon"><IconLeaf size={20} /></div>
           <div>
-            <div className="tiptip__title">Saran hemat</div>
-            <div className="tiptip__text">Bayam dan roti tawar kedaluwarsa besok. Minta asisten menyarankan resep untuk menghabiskannya.</div>
+            <div className="tiptip__title">{t('home.savingsTip')}</div>
+            <div className="tiptip__text">{t('home.savingsTipText')}</div>
           </div>
-          <button className="btn btn--primary btn--sm" onClick={askAssistant}><IconSpark size={15} /> Minta resep</button>
+          <button className="btn btn--primary btn--sm" onClick={askAssistant}><IconSpark size={15} /> {t('home.askRecipe')}</button>
         </div>
       </section>
     </>

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { PLAN, formatRp, storeLabel } from '../data/mock.js'
 import { SkeletonRows, EmptyState } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
@@ -6,10 +7,11 @@ import { personaText } from '../lib/persona.js'
 import { IconSpark, IconShop, IconCheck, IconKey, IconPlan, IconBolt } from '../components/icons.jsx'
 
 export default function Plan({ aiKey, askAssistant, setView }) {
+  const { t } = useTranslation()
   const { persona } = usePersona()
   const [loading, setLoading] = useState(false)
   const [plan, setPlan] = useState(aiKey ? PLAN : null)
-  const [done, setDone] = useState({}) // planItemId -> true
+  const [done, setDone] = useState({})
 
   const regenerate = () => {
     if (!aiKey) return
@@ -26,14 +28,14 @@ export default function Plan({ aiKey, askAssistant, setView }) {
     return (
       <>
         <div className="page__head">
-          <p className="page__lead">{personaText('planLeadNoKey', persona)}</p>
+          <p className="page__lead">{personaText('planLeadNoKey', persona, t)}</p>
         </div>
         <div className="panel">
           <EmptyState
             icon={IconKey}
-            title="Hubungkan kunci API"
-            desc="Bawa kunci AI sendiri, misalnya OpenCode. Setelah terhubung, tekan satu tombol untuk membuat rencana."
-            action={<button className="btn btn--primary" onClick={() => setView('settings')}><IconKey size={18} /> Tambah kunci API</button>}
+            title={t('plan.connectApiKey')}
+            desc={t('plan.bringYourOwnKey')}
+            action={<button className="btn btn--primary" onClick={() => setView('settings')}><IconKey size={18} /> {t('plan.addApiKey')}</button>}
           />
         </div>
       </>
@@ -44,17 +46,17 @@ export default function Plan({ aiKey, askAssistant, setView }) {
     <>
       <div className="page__head">
         <p className="page__lead">
-          {personaText('planLead', persona)}
+          {personaText('planLead', persona, t)}
         </p>
       </div>
 
       <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)', flexWrap: 'wrap' }}>
         <button className="btn btn--secondary" onClick={regenerate} disabled={loading}>
-          <IconSpark size={18} /> Susun ulang rencana
+          <IconSpark size={18} /> {t('plan.regenerate')}
         </button>
         {plan && (
           <div className="chip" style={{ alignSelf: 'center' }}>
-            {plan.length} toko · {formatRp(grandTotal)}
+            {t('plan.stores', { count: plan.length })} · {formatRp(grandTotal)}
           </div>
         )}
       </div>
@@ -67,7 +69,7 @@ export default function Plan({ aiKey, askAssistant, setView }) {
         <div className="trip" key={trip.store} style={{ marginBottom: 'var(--sp-4)' }}>
           <div className="trip__head">
             <div className="trip__store"><IconShop size={18} /> {storeLabel(trip.store)}</div>
-            <div className="trip__total">{trip.items.length} item · {formatRp(tripTotal(trip.items))}</div>
+            <div className="trip__total">{t('home.itemCount', { count: trip.items.length })} · {formatRp(tripTotal(trip.items))}</div>
           </div>
           <div className="trip__items">
             {trip.items.map((it) => (
@@ -93,7 +95,7 @@ export default function Plan({ aiKey, askAssistant, setView }) {
         <div className="panel" style={{ padding: 'var(--sp-5)', display: 'flex', gap: 'var(--sp-4)', alignItems: 'center' }}>
           <div style={{ color: 'var(--ok)' }}><IconCheck size={22} /></div>
           <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
-            <strong>Semua item sudah dibeli.</strong> Stok diperbarui otomatis dari struk berikutnya.
+            <strong>{t('plan.allBought')}</strong> {t('plan.allBoughtDesc')}
           </div>
         </div>
       )}
@@ -102,9 +104,9 @@ export default function Plan({ aiKey, askAssistant, setView }) {
         <div className="panel" style={{ padding: 'var(--sp-5)', display: 'flex', gap: 'var(--sp-4)', alignItems: 'center' }}>
           <div style={{ color: 'var(--accent)' }}><IconBolt size={20} /></div>
           <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
-            Rencana ini disusun dari 5 item yang menipis. Minta asisten menggabungkan agar cukup satu perjalanan per toko.
+            {t('plan.basedOnItems', { count: 5 })}
           </div>
-          <button className="btn btn--ghost btn--sm" onClick={askAssistant}>Tanya asisten</button>
+          <button className="btn btn--ghost btn--sm" onClick={askAssistant}>{t('plan.askAssistant')}</button>
         </div>
       )}
     </>
