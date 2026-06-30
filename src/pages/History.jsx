@@ -1,6 +1,6 @@
 import { HISTORY, formatRp, storeLabel } from '../data/mock.js'
 import { usePersona } from '../context/PersonaContext.jsx'
-import { speak } from '../lib/persona.js'
+import { personaText } from '../lib/persona.js'
 import { IconHistory, IconSpark } from '../components/icons.jsx'
 
 export default function History({ askAssistant }) {
@@ -33,7 +33,7 @@ export default function History({ askAssistant }) {
     <>
       <div className="page__head">
         <p className="page__lead">
-          {speak('Catatan pembelian menjadi dasar perkiraan sisa stok. Bandingkan harga dan ritme belanjamu di sini.', persona)}
+          {personaText('historyLead', persona)}
         </p>
       </div>
 

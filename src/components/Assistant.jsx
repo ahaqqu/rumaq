@@ -4,7 +4,7 @@ import {
 } from './icons.jsx'
 import { formatRp, AI_USAGE, usageState } from '../data/mock.js'
 import { usePersona } from '../context/PersonaContext.jsx'
-import { speak } from '../lib/persona.js'
+import { personaText } from '../lib/persona.js'
 
 const QUICK = [
   { id: 'plan', label: 'Susun rencana belanja minggu ini', desc: 'Dari stok menipis & riwayat', Icon: IconPlan },
@@ -88,8 +88,8 @@ export default function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) 
             ) : (
               <div className="assistant__body">
                 <p className="assistant__msg">
-                  {speak('Saya sudah cek stokmu. ', persona)}
-                  <strong>5 item</strong> perlu perhatian: 2 mendekati kedaluwarsa, 3 hampir habis. {speak('Mau saya buatkan rencananya?', persona)}
+                  {personaText('assistantGreeting', persona)}{' '}
+                  <strong>5 item</strong> perlu perhatian: 2 mendekati kedaluwarsa, 3 hampir habis. {personaText('assistantQuestion', persona)}
                 </p>
 
                 <div className="assistant__actions">

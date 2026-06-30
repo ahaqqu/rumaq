@@ -1,7 +1,7 @@
 import { STOCK, PLAN, locLabel, storeLabel, formatRp, relUpdated } from '../data/mock.js'
 import { LocChip, TimeSignal } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
-import { speak } from '../lib/persona.js'
+import { personaText } from '../lib/persona.js'
 import { IconReceipt, IconSpark, IconLeaf, IconBox, IconRefresh } from '../components/icons.jsx'
 
 export default function Home({ setView, askAssistant }) {
@@ -16,7 +16,7 @@ export default function Home({ setView, askAssistant }) {
     <>
       <div className="page__head">
         <p className="page__lead">
-          {speak('Stok terpantau otomatis dari struk belanja. Sisa dihitung dari kebiasaanmu, bukan diisi manual.', persona)}
+          {personaText('homeLead', persona)}
         </p>
       </div>
 

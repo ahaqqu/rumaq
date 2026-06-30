@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { PARSED_RECEIPT, formatRp, storeLabel } from '../data/mock.js'
 import { usePersona } from '../context/PersonaContext.jsx'
-import { speak } from '../lib/persona.js'
+import { personaText } from '../lib/persona.js'
 import { IconCamera, IconUpload, IconCheck, IconBolt, IconReceipt } from '../components/icons.jsx'
 
 export default function AddFromReceipt({ onDone }) {
@@ -23,7 +23,7 @@ export default function AddFromReceipt({ onDone }) {
     <>
       <div className="page__head">
         <p className="page__lead">
-          {speak('Foto atau unggah struk. AI membaca item, jumlah, harga, dan toko, lalu kamu konfirmasi.', persona)}
+          {personaText('receiptLead', persona)}
         </p>
       </div>
 

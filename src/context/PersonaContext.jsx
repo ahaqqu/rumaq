@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { loadPersona, savePersona, deriveHue, applyTheme } from '../lib/persona.js'
+import { loadPersona, savePersona, deriveHue, applyTheme, generatePersonaCopy } from '../lib/persona.js'
 
 const PersonaContext = createContext(null)
 
@@ -8,10 +8,22 @@ export function PersonaProvider({ children }) {
 
   const setPersona = (next) => {
     setPersonaState((prev) => {
-      const updated = { ...prev, ...next, hue: deriveHue(next.userRole ?? prev.userRole, next.aiRole ?? prev.aiRole) }
+      const updated = {
+        ...prev,
+        ...next,
+        hue: deriveHue(next.userRole ?? prev.userRole, next.aiRole ?? prev.aiRole),
+      }
       savePersona(updated)
       return updated
     })
+  }
+
+  const regenerateCopy = async (aiKey, provider, draftPersona = persona) => {
+    const generated = await generatePersonaCopy(draftPersona, aiKey, provider)
+    if (generated) {
+      setPersona({ generatedCopy: generated })
+    }
+    return generated
   }
 
   useEffect(() => {
@@ -19,7 +31,7 @@ export function PersonaProvider({ children }) {
   }, [persona])
 
   return (
-    <PersonaContext.Provider value={{ persona, setPersona }}>
+    <PersonaContext.Provider value={{ persona, setPersona, regenerateCopy }}>
       {children}
     </PersonaContext.Provider>
   )

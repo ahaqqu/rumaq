@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { PLAN, formatRp, storeLabel } from '../data/mock.js'
 import { SkeletonRows, EmptyState } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
-import { speak } from '../lib/persona.js'
+import { personaText } from '../lib/persona.js'
 import { IconSpark, IconShop, IconCheck, IconKey, IconPlan, IconBolt } from '../components/icons.jsx'
 
 export default function Plan({ aiKey, askAssistant, setView }) {
@@ -26,7 +26,7 @@ export default function Plan({ aiKey, askAssistant, setView }) {
     return (
       <>
         <div className="page__head">
-          <p className="page__lead">{speak('Hubungkan kunci API dulu, lalu AI menyusun rencana belanja dari stok yang menipis.', persona)}</p>
+          <p className="page__lead">{personaText('planLeadNoKey', persona)}</p>
         </div>
         <div className="panel">
           <EmptyState
@@ -44,7 +44,7 @@ export default function Plan({ aiKey, askAssistant, setView }) {
     <>
       <div className="page__head">
         <p className="page__lead">
-          {speak('AI mengelompokkan item per toko menjadi satu perjalanan. Centang yang sudah dibeli, sisanya otomatis tercatat.', persona)}
+          {personaText('planLead', persona)}
         </p>
       </div>
 

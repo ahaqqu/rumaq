@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { LOCATIONS, STORES } from '../data/mock.js'
 import { UsageMeter } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
-import { speak } from '../lib/persona.js'
+import { personaText, deriveHue } from '../lib/persona.js'
 import { IconKey, IconCheck, IconTrash, IconPin, IconBolt } from '../components/icons.jsx'
 
 const MOTION_OPTS = [
@@ -19,18 +19,35 @@ export default function Settings({ aiKey, setAiKey, motion, setMotion }) {
   const [testOk, setTestOk] = useState(null)
   const [locs, setLocs] = useState(LOCATIONS)
   const [newLoc, setNewLoc] = useState('')
-  const { persona, setPersona } = usePersona()
+  const { persona, setPersona, regenerateCopy } = usePersona()
   const [personaDraft, setPersonaDraft] = useState({
     userRole: persona.userRole,
     aiRole: persona.aiRole,
     enabled: persona.enabled,
   })
   const [personaApplied, setPersonaApplied] = useState(false)
+  const [personaLoading, setPersonaLoading] = useState(false)
+  const [personaError, setPersonaError] = useState(null)
 
-  const applyPersona = () => {
-    setPersona({ ...personaDraft })
-    setPersonaApplied(true)
-    setTimeout(() => setPersonaApplied(false), 2000)
+  const applyPersona = async () => {
+    setPersonaError(null)
+    setPersonaLoading(true)
+    try {
+      // First apply the role settings so theme changes immediately.
+      setPersona({ ...personaDraft, generatedCopy: null })
+
+      // If AI key exists, ask AI to generate copy for all screens in one request.
+      if (personaDraft.enabled && personaDraft.userRole && personaDraft.aiRole && aiKey) {
+        await regenerateCopy(aiKey, provider, { ...personaDraft, hue: deriveHue(personaDraft.userRole, personaDraft.aiRole) })
+      }
+
+      setPersonaApplied(true)
+      setTimeout(() => setPersonaApplied(false), 2000)
+    } catch (err) {
+      setPersonaError(err.message || 'Gagal membuat teks persona. Coba lagi atau pakai fallback tanpa AI.')
+    } finally {
+      setPersonaLoading(false)
+    }
   }
 
   const save = () => {
@@ -58,7 +75,7 @@ export default function Settings({ aiKey, setAiKey, motion, setMotion }) {
   return (
     <>
       <div className="page__head">
-        <p className="page__lead">{speak('Bawa kunci AI sendiri, kelola lokasi penyimpanan, dan atur kenyamanan tampilan.', persona)}</p>
+        <p className="page__lead">{personaText('settingsLead', persona)}</p>
       </div>
 
       {/* AI keys */}
@@ -158,8 +175,8 @@ export default function Settings({ aiKey, setAiKey, motion, setMotion }) {
                     aria-label="Kamu adalah"
                   />
                 </label>
-                <button className="btn btn--primary btn--sm" onClick={applyPersona}>
-                  {personaApplied ? <><IconCheck size={15} /> Tersimpan</> : 'Terapkan'}
+                <button className="btn btn--primary btn--sm" onClick={applyPersona} disabled={personaLoading}>
+                  {personaLoading ? <><IconBolt size={15} className="spin" /> Membuat…</> : personaApplied ? <><IconCheck size={15} /> Tersimpan</> : 'Terapkan'}
                 </button>
               </div>
             </div>
@@ -168,7 +185,7 @@ export default function Settings({ aiKey, setAiKey, motion, setMotion }) {
                 <div className="setting__title">Pratinjau</div>
                 <div className="setting__desc">
                   {persona.enabled && persona.userRole && persona.aiRole
-                    ? speak('Stok terpantau otomatis dari struk belanja.', persona)
+                    ? personaText('homeLead', persona)
                     : 'Isi peran lalu tekan Terapkan untuk melihat pratinjau.'}
                 </div>
               </div>
@@ -185,6 +202,22 @@ export default function Settings({ aiKey, setAiKey, motion, setMotion }) {
                 </label>
               </div>
             </div>
+            <div className="setting">
+              <div className="setting__main">
+                <div className="setting__desc" style={{ fontSize: 'var(--fs-xs)' }}>
+                  {aiKey
+                    ? 'Tombol Terapkan akan memanggil AI sekali untuk menulis ulang semua teks aplikasi sesuai peran bebas yang kamu masukkan.'
+                    : 'Tanpa kunci AI, persona tetap aktif dengan gaya bawaan (fallback) berdasarkan peran yang dikenali.'}
+                </div>
+              </div>
+            </div>
+            {personaError && (
+              <div className="setting" style={{ background: 'var(--danger-soft)', borderColor: 'var(--danger-border)' }}>
+                <div className="setting__main">
+                  <div className="setting__desc" style={{ color: 'var(--danger)' }}>{personaError}</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </section>
