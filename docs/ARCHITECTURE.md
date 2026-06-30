@@ -34,16 +34,17 @@ rumaq/
 │   ├── src/
 │   │   ├── index.ts        # Hono app entrypoint
 │   │   ├── auth.ts         # Google OAuth 2.0 + JWT sessions
-│   │   ├── middleware.ts   # auth, household context, error handling
-│   │   ├── routes/         # domain route modules
-│   │   └── db/             # D1 query helpers
+│   │   ├── middleware.ts   # auth, household context
+│   │   └── __tests__/      # Worker tests
 │   ├── migrations/         # D1 schema migrations
-│   └── wrangler.toml       # Worker + D1 + R2 bindings
-├── migrations/             # Shared D1 migrations
-├── scripts/                # Setup and utility scripts
+│   ├── wrangler.local.toml # Local dev config
+│   ├── wrangler.cloudflare.toml # Production config
+│   └── wrangler.toml.example # Template
+├── scripts/                # Setup and deployment scripts
 └── docs/
     ├── ARCHITECTURE.md     # this file
-    └── API.md              # REST API contract
+    ├── API.md              # REST API contract
+    └── PROJECT_PLAN.md     # work items and PR plan
 ```
 
 ## 4. Request flow
@@ -75,8 +76,8 @@ Google OAuth 2.0 is implemented inside the Worker using the [Authorization Code 
 
 2. `GET /api/auth/callback`
    - Validates the `state` parameter.
-   - Exchanges the authorization code for an ID token.
-   - Fetches user info (`email`, `name`, `picture`, `sub`).
+   - Exchanges the authorization code for an access token.
+   - Fetches user info (`email`, `name`, `picture`, `sub`) from Google's userinfo endpoint.
    - Upserts the user in D1.
    - Issues a long-lived signed JWT in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie named `rumaq_session`.
 
@@ -84,7 +85,7 @@ Google OAuth 2.0 is implemented inside the Worker using the [Authorization Code 
    - Clears the session cookie.
 
 4. Protected-route middleware
-   - Reads `rumaq_session`, verifies the HMAC signature and expiration, and attaches `ctx.userId`.
+   - Reads `rumaq_session`, verifies the HMAC signature and expiration, and attaches `userId` and `householdId` to the Hono context.
    - Loads the active household from `user_settings.active_household_id` (or the first household the user belongs to).
 
 **Why not Cloudflare Access?** Access is simpler, but in-app OAuth keeps the API self-contained, lets us store the user record in D1 for personalization, and makes local development straightforward with wrangler.
@@ -130,29 +131,36 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 
 ### One-time setup
 
-1. Create the D1 database:
+1. Create the D1 database (run from `worker/`):
    ```bash
-   npm run db:create
+   cd worker && npm run db:create
    ```
-2. Apply migrations:
+2. Apply migrations (run from `worker/`):
    ```bash
-   npm run db:migrate
+   cd worker && npm run db:migrate
    ```
-3. Set secrets:
+3. Set secrets (run from `worker/`):
    ```bash
-   wrangler secret put GOOGLE_CLIENT_ID
-   wrangler secret put GOOGLE_CLIENT_SECRET
-   wrangler secret put WORKER_JWT_SECRET
-   wrangler secret put WORKER_ENCRYPTION_KEY
+   cd worker && wrangler secret put GOOGLE_CLIENT_ID
+   cd worker && wrangler secret put GOOGLE_CLIENT_SECRET
+   cd worker && wrangler secret put WORKER_JWT_SECRET
+   cd worker && wrangler secret put WORKER_ENCRYPTION_KEY
    ```
-4. Deploy the Worker:
+4. Deploy the Worker (run from `worker/`):
    ```bash
-   npm run deploy:worker
+   cd worker && npm run deploy
    ```
-5. Connect the frontend to Pages:
+5. Deploy the frontend to Pages (run from root):
    ```bash
-   npm run deploy:pages
+   npm run deploy:frontend
    ```
+
+Or run the full-stack deploy script from root:
+```bash
+npm run deploy
+```
+
+To serve the Worker under `api.rumaq.pages.dev`, configure a Cloudflare Workers route or custom domain for the `rumaq-api` service. Otherwise the default URL is `rumaq-api.YOUR_SUBDOMAIN.workers.dev`.
 
 ### Environment variables
 
@@ -162,7 +170,7 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 | `GOOGLE_CLIENT_SECRET` | Worker secret | Google OAuth client secret |
 | `WORKER_JWT_SECRET` | Worker secret | HMAC key for session JWT |
 | `WORKER_ENCRYPTION_KEY` | Worker secret | AES-GCM key for AI keys |
-| `VITE_API_BASE` | Pages env | `https://api.rumaq.pages.dev` |
+| `VITE_API_BASE` | Pages env | `https://api.rumaq.pages.dev` (must match the deployed Worker URL) |
 
 ## 9. Free-tier headroom
 
@@ -177,10 +185,10 @@ If usage grows, the first upgrade is Workers Paid ($5/mo) for higher request and
 
 ## 10. Security checklist
 
-- [ ] Session JWT is `HttpOnly`, `Secure`, `SameSite=Lax`, and signed.
+- [x] Session JWT is `HttpOnly`, `Secure`, `SameSite=Lax`, and signed.
 - [ ] AI API keys are encrypted at rest and only decrypted in the Worker.
-- [ ] Google OAuth `state` and PKCE verifier prevent CSRF/replay.
+- [x] Google OAuth `state` and PKCE verifier prevent CSRF/replay.
 - [ ] R2 objects are private; frontend receives time-limited signed URLs.
-- [ ] D1 queries are parameterized; no string concatenation.
-- [ ] CORS allows only the Pages origin in production.
+- [x] D1 queries are parameterized; no string concatenation.
+- [x] CORS allows only the Pages origin in production.
 - [ ] AI prompts never expose another user's data.

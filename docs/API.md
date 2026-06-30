@@ -2,11 +2,13 @@
 
 Base URL: `https://api.rumaq.pages.dev/api`
 
-All protected endpoints require the `rumaq_session` cookie issued by Google OAuth. Responses are JSON. Errors use `{ "error": "..." }`.
+All paths below are relative to this base. The Worker mounts routes under `/api/*`; for example, `GET /me` resolves to `https://api.rumaq.pages.dev/api/me`.
+
+Protected endpoints require the `rumaq_session` cookie issued by Google OAuth. Responses are JSON. Errors use `{ "error": "..." }`.
 
 ## Auth
 
-### `GET /auth/me`
+### `GET /me`
 Returns the currently logged-in user.
 
 **Response:**
@@ -29,6 +31,18 @@ Google OAuth callback. Sets the session cookie and redirects to `/`.
 
 ### `POST /auth/logout`
 Clears the session cookie.
+
+**Response:**
+```json
+{ "ok": true }
+```
+
+---
+
+## Health
+
+### `GET /health`
+Public health check.
 
 **Response:**
 ```json
