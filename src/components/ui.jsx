@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { IconBox, IconPin, IconClock, IconShop } from './icons.jsx'
 import { AI_USAGE, usageState } from '../data/mock.js'
 
@@ -5,23 +6,21 @@ export function LocChip({ loc }) {
   return <span className="chip chip--loc"><IconPin size={13} />{loc}</span>
 }
 
-// Single time signal per item. Shows whichever constraint binds first:
-// expiry ("kedaluwarsa ...") or run-out ("habis ~..."). Basis moves to a tooltip
-// so it stays accessible without crowding the row with three time facts.
 export function TimeSignal({ expiryDays, runOut, basis }) {
+  const { t } = useTranslation()
   const hasExpiry = expiryDays != null
   const useExpiry = hasExpiry && expiryDays <= runOut
-  const title = basis ? `Perkiraan berdasar ${basis}` : undefined
+  const title = basis ? t('ui.estimatedBy', { basis }) : undefined
 
   if (useExpiry) {
     if (expiryDays <= 1)
-      return <span className="ts ts--danger" title={title}><IconClock size={13} /> kedaluwarsa besok</span>
+      return <span className="ts ts--danger" title={title}><IconClock size={13} /> {t('ui.expiringTomorrow')}</span>
     const tone = expiryDays <= 3 ? 'warn' : 'muted'
-    return <span className={`ts ts--${tone}`} title={title}><IconClock size={13} /> kedaluwarsa {expiryDays} hari lagi</span>
+    return <span className={`ts ts--${tone}`} title={title}><IconClock size={13} /> {t('ui.expiringIn', { days: expiryDays })}</span>
   }
 
   const tone = runOut <= 2 ? 'danger' : runOut <= 3 ? 'warn' : 'muted'
-  return <span className={`ts ts--${tone}`} title={title}><IconClock size={13} /> habis ~{runOut} hari</span>
+  return <span className={`ts ts--${tone}`} title={title}><IconClock size={13} /> {t('ui.runsOutIn', { days: runOut })}</span>
 }
 
 export function EmptyState({ icon: Icon = IconBox, title, desc, action }) {
@@ -52,6 +51,7 @@ export function SkeletonRows({ n = 5 }) {
 }
 
 export function UsageMeter({ usage = AI_USAGE }) {
+  const { t } = useTranslation()
   const { pct, remaining, warn, danger } = usageState(usage)
   const tone = danger ? 'is-danger' : warn ? 'is-warn' : ''
   return (
@@ -59,7 +59,7 @@ export function UsageMeter({ usage = AI_USAGE }) {
       <div className="usage__head">
         <div>
           <div className="usage__title">{usage.provider}</div>
-          <div className="usage__sub">{usage.used} dari {usage.limit} permintaan hari ini</div>
+          <div className="usage__sub">{t('ui.requestsToday', { used: usage.used, limit: usage.limit })}</div>
         </div>
         <div className={`usage__count ${tone}`}>{usage.used}/{usage.limit}</div>
       </div>
@@ -67,11 +67,11 @@ export function UsageMeter({ usage = AI_USAGE }) {
         <div className={`usage__fill ${tone}`} style={{ width: pct + '%' }} />
       </div>
       {danger ? (
-        <div className="usage__note is-danger">Batas harian tercapai. AI tersedia lagi besok.</div>
+        <div className="usage__note is-danger">{t('ui.dailyLimitReachedDesc')}</div>
       ) : warn ? (
-        <div className="usage__note is-warn">Hampir mencapai batas harian. Sisa {remaining} permintaan.</div>
+        <div className="usage__note is-warn">{t('ui.closeToLimitDesc', { remaining })}</div>
       ) : (
-        <div className="usage__note">Sisa {remaining} permintaan hari ini.</div>
+        <div className="usage__note">{t('ui.remainingRequests', { remaining })}</div>
       )}
     </div>
   )

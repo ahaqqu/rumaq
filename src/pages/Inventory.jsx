@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { STOCK, LOCATIONS, locLabel, relUpdated } from '../data/mock.js'
 import { LocChip, TimeSignal, EmptyState } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
@@ -6,6 +7,7 @@ import { personaText } from '../lib/persona.js'
 import { IconSearch, IconBox, IconRefresh } from '../components/icons.jsx'
 
 export default function Inventory() {
+  const { t } = useTranslation()
   const { persona } = usePersona()
   const [q, setQ] = useState('')
   const [loc, setLoc] = useState('all')
@@ -21,7 +23,7 @@ export default function Inventory() {
     <>
       <div className="page__head">
         <p className="page__lead">
-          {personaText('inventoryLead', persona)}
+          {personaText('inventoryLead', persona, t)}
         </p>
       </div>
 
@@ -31,15 +33,15 @@ export default function Inventory() {
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Cari item, mis. susu, beras"
-            aria-label="Cari item"
+            placeholder={t('inventory.searchPlaceholder')}
+            aria-label={t('inventory.searchAriaLabel')}
             style={{ paddingLeft: 40 }}
           />
         </div>
       </div>
 
       <div style={{ display: 'flex', gap: 'var(--sp-2)', flexWrap: 'wrap', marginBottom: 'var(--sp-5)' }}>
-        <button className="chip chip--filter" aria-pressed={loc === 'all'} onClick={() => setLoc('all')}>Semua</button>
+        <button className="chip chip--filter" aria-pressed={loc === 'all'} onClick={() => setLoc('all')}>{t('inventory.all')}</button>
         {LOCATIONS.map((l) => (
           <button key={l.id} className="chip chip--filter" aria-pressed={loc === l.id} onClick={() => setLoc(l.id)}>
             {l.label}
@@ -51,8 +53,8 @@ export default function Inventory() {
         {rows.length === 0 ? (
           <EmptyState
             icon={IconBox}
-            title="Tidak ada item cocok"
-            desc="Coba kata kunci lain atau ganti filter lokasi penyimpanan."
+            title={t('inventory.noMatch')}
+            desc={t('inventory.noMatchDesc')}
           />
         ) : (
           <div className="list">
@@ -66,7 +68,7 @@ export default function Inventory() {
                 </div>
                 <div className="row__side">
                   <div className="row__qty">{s.qty} {s.unit}</div>
-                  <div className="row__updated"><IconRefresh size={12} /> Diperbarui {relUpdated(s.updated)}</div>
+                  <div className="row__updated"><IconRefresh size={12} /> {t('common.updated')} {relUpdated(s.updated, t)}</div>
                 </div>
               </div>
             ))}

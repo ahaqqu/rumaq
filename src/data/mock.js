@@ -1,23 +1,18 @@
-// rumaq mock data — Indonesian household grocery context
-// Prototype data only. No backend.
+import i18n from '../i18n/index.js'
 
 export const LOCATIONS = [
-  { id: 'kulkas', label: 'Kulkas' },
-  { id: 'freezer', label: 'Freezer' },
-  { id: 'lemari', label: 'Lemari dapur' },
-  { id: 'rak', label: 'Rak atas' },
+  { id: 'kulkas', labelKey: 'data.locations.kulkas' },
+  { id: 'freezer', labelKey: 'data.locations.freezer' },
+  { id: 'lemari', labelKey: 'data.locations.lemari' },
+  { id: 'rak', labelKey: 'data.locations.rak' },
 ]
 
 export const STORES = [
-  { id: 'indomaret', label: 'Indomaret' },
-  { id: 'alfamart', label: 'Alfamart' },
-  { id: 'pasar', label: 'Pasar' },
+  { id: 'indomaret', labelKey: 'data.stores.indomaret' },
+  { id: 'alfamart', labelKey: 'data.stores.alfamart' },
+  { id: 'pasar', labelKey: 'data.stores.pasar' },
 ]
 
-// runOut: estimated days until empty, based on purchase history
-// expiryDays: days until expiry (null = no expiry / non-perishable)
-// updated: last time stock was inserted/adjusted (receipt confirmed or estimate recomputed).
-// Shown in rows because users rarely touch stock — recency must be visible at a glance.
 export const STOCK = [
   { id: 's1', name: 'Susu cair', unit: 'L', qty: 0.8, location: 'kulkas', store: 'indomaret', expiryDays: 3, runOut: 2, basis: '4 minggu terakhir', updated: '2026-06-28' },
   { id: 's2', name: 'Telur', unit: 'pcs', qty: 4, location: 'kulkas', store: 'pasar', expiryDays: 10, runOut: 3, basis: '4 minggu terakhir', updated: '2026-06-25' },
@@ -36,7 +31,6 @@ export const STOCK = [
   { id: 's15', name: 'Bawang merah', unit: 'kg', qty: 0.3, location: 'lemari', store: 'pasar', expiryDays: 12, runOut: 7, basis: '4 minggu terakhir', updated: '2026-06-15' },
 ]
 
-// AI-proposed shopping plan grouped by store into executable trips
 export const PLAN = [
   {
     store: 'indomaret',
@@ -61,7 +55,6 @@ export const PLAN = [
   },
 ]
 
-// Purchase history — substrate for run-out estimates
 export const HISTORY = [
   { date: '2026-06-28', store: 'indomaret', item: 'Susu cair', qty: '1 L', price: 18500 },
   { date: '2026-06-28', store: 'indomaret', item: 'Roti tawar', qty: '1 pack', price: 15000 },
@@ -79,7 +72,6 @@ export const HISTORY = [
   { date: '2026-06-08', store: 'indomaret', item: 'Keju slice', qty: '1 pkg', price: 22000 },
 ]
 
-// Parsed receipt used by Add-from-receipt flow after "scan"
 export const PARSED_RECEIPT = {
   store: 'indomaret',
   date: '2026-06-29',
@@ -93,24 +85,32 @@ export const PARSED_RECEIPT = {
   ],
 }
 
-export const formatRp = (n) =>
-  'Rp' + n.toLocaleString('id-ID')
-
-export const locLabel = (id) => LOCATIONS.find((l) => l.id === id)?.label ?? id
-export const storeLabel = (id) => STORES.find((s) => s.id === id)?.label ?? id
-
-// "today" in the mock world — keeps relative labels stable regardless of the real date.
-export const TODAY = new Date('2026-06-29T00:00:00')
-
-export function relUpdated(iso) {
-  const d = new Date(iso + 'T00:00:00')
-  const days = Math.round((TODAY - d) / 86400000)
-  if (days <= 0) return 'hari ini'
-  if (days === 1) return 'kemarin'
-  return `${days} hari lalu`
+export const formatRp = (n) => {
+  const locale = i18n.language === 'id' ? 'id-ID' : 'en-US'
+  const currency = i18n.language === 'id' ? 'IDR' : 'IDR'
+  return new Intl.NumberFormat(locale, { style: 'currency', currency, minimumFractionDigits: 0 }).format(n)
 }
 
-// AI usage — Gemini-style daily quota (20 requests/day).
+export const locLabel = (id) => {
+  const loc = LOCATIONS.find((l) => l.id === id)
+  return loc ? i18n.t(loc.labelKey) : id
+}
+
+export const storeLabel = (id) => {
+  const store = STORES.find((s) => s.id === id)
+  return store ? i18n.t(store.labelKey) : id
+}
+
+export const TODAY = new Date('2026-06-29T00:00:00')
+
+export function relUpdated(iso, t) {
+  const d = new Date(iso + 'T00:00:00')
+  const days = Math.round((TODAY - d) / 86400000)
+  if (days <= 0) return t ? t('common.today') : 'today'
+  if (days === 1) return t ? t('common.yesterday') : 'yesterday'
+  return t ? t('common.daysAgo', { days }) : `${days} days ago`
+}
+
 export const AI_USAGE = { provider: 'Gemini', used: 17, limit: 20 }
 
 export function usageState(u = AI_USAGE) {
