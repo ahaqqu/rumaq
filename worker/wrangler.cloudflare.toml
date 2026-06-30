@@ -14,7 +14,7 @@ PAGES_ORIGIN = "https://rumaq.pages.dev"
 [[d1_databases]]
 binding = "DB"
 database_name = "rumaq"
-database_id = "YOUR_DATABASE_ID"
+database_id = "0591e773-0f1b-48c9-b931-8280a00b9068"
 
 # R2 bucket binding for receipt images
 [[r2_buckets]]
