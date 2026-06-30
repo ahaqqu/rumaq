@@ -1,0 +1,28 @@
+{
+  "name": "rumaq",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "db:setup": "node scripts/setup-db.js",
+    "deploy": "./scripts/deploy.sh",
+    "deploy:frontend": "./scripts/deploy.sh frontend",
+    "deploy:backend": "./scripts/deploy.sh backend",
+    "deploy:dry-run": "./scripts/deploy.sh dry-run",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "jsdom": "^29.1.1",
+    "vite": "^5.4.0",
+    "vitest": "^4.1.9"
+  }
+}

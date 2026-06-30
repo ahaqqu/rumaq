@@ -1,0 +1,10 @@
+node_modules
+**/dist
+dist-ssr
+.shots
+*.local
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+worker/wrangler.toml
+worker/.dev.vars

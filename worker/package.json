@@ -1,0 +1,26 @@
+{
+  "name": "rumaq-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "deploy:prod": "wrangler deploy --env production",
+    "db:create": "node ../scripts/setup-db.js",
+    "db:migrate": "wrangler d1 migrations apply rumaq",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.8.0",
+    "hono": "^4.4.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240620.0",
+    "typescript": "^5.5.0",
+    "vitest": "^4.1.9",
+    "wrangler": "^3.60.0"
+  }
+}
