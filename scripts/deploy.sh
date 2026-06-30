@@ -54,7 +54,7 @@ wrangler_cmd() {
 check_prereqs() {
   require_cmd node "Install Node.js (https://nodejs.org)."
   require_cmd npm "Install Node.js first."
-  require_cmd wrangler "Install Wrangler: npm install -g wrangler"
+  require_cmd wrangler "Install Wrangler: npm install --no-fund -g wrangler"
 }
 
 # ------------------------------------------------------------------
@@ -133,11 +133,11 @@ EOF
 # ------------------------------------------------------------------
 install_deps() {
   info "Installing frontend dependencies..."
-  npm install
+  npm install --no-fund
 
   info "Installing worker dependencies..."
   cd "$WORKER_DIR"
-  npm install
+  npm install --no-fund
   cd "$ROOT_DIR"
 }
 
@@ -221,7 +221,7 @@ deploy_worker() {
 # ------------------------------------------------------------------
 deploy_frontend() {
   info "Building frontend..."
-  npm install
+  npm install --no-fund
   npm run build
 
   info "Deploying to Cloudflare Pages (project: ${PAGES_PROJECT})..."
@@ -234,7 +234,7 @@ deploy_frontend() {
 # ------------------------------------------------------------------
 build_frontend() {
   info "Building frontend (dry-run)..."
-  npm install
+  npm install --no-fund
   npm run build
   ok "Frontend build succeeded (no deployment was made)."
 }
