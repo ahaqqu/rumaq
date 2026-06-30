@@ -246,9 +246,20 @@ Contoh output:
   "inventoryLead": "..."
 }`
 
-  const raw = await callAI(prompt, aiKey, provider)
+  let raw
+  try {
+    raw = await callAI(prompt, aiKey, provider)
+  } catch {
+    return null
+  }
+
   const json = stripJsonMarkdown(raw)
-  const parsed = JSON.parse(json)
+  let parsed
+  try {
+    parsed = JSON.parse(json)
+  } catch {
+    return null
+  }
 
   // Ensure every key exists; fall back to base text if AI missed one.
   const result = {}

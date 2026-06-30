@@ -11,7 +11,9 @@
     "deploy": "./scripts/deploy.sh",
     "deploy:frontend": "./scripts/deploy.sh frontend",
     "deploy:backend": "./scripts/deploy.sh backend",
-    "deploy:dry-run": "./scripts/deploy.sh dry-run"
+    "deploy:dry-run": "./scripts/deploy.sh dry-run",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -19,6 +21,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.1",
-    "vite": "^5.4.0"
+    "jsdom": "^29.1.1",
+    "vite": "^5.4.0",
+    "vitest": "^4.1.9"
   }
 }

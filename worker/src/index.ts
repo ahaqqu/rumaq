@@ -1,6 +1,8 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { z } from 'zod'
+import { zValidator } from '@hono/zod-validator'
 import { authApp } from './auth.js'
 import { requireAuth } from './middleware.js'
 
@@ -19,6 +21,11 @@ export type Env = {
     householdId: string
   }
 }
+
+const stockQuery = z.object({
+  location: z.string().optional(),
+  q: z.string().optional(),
+})
 
 const app = new Hono<Env>()
 
@@ -47,17 +54,28 @@ app.get('/api/me', async (c) => {
   return c.json({ user })
 })
 
-app.get('/api/stock', async (c) => {
-  const { results } = await c.env.DB.prepare(
-    `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
+app.get('/api/stock', zValidator('query', stockQuery), async (c) => {
+  const { location, q } = c.req.valid('query')
+
+  let sql = `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
      FROM stock s
      JOIN items i ON i.id = s.item_id
      LEFT JOIN locations l ON l.id = s.location_id
-     WHERE s.household_id = ?
-     ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date`
-  )
-    .bind(c.get('householdId'))
-    .all()
+     WHERE s.household_id = ?`
+  const params: unknown[] = [c.get('householdId')]
+
+  if (location) {
+    sql += ' AND l.id = ?'
+    params.push(location)
+  }
+  if (q) {
+    sql += ' AND i.name LIKE ?'
+    params.push(`%${q}%`)
+  }
+
+  sql += ' ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date'
+
+  const { results } = await c.env.DB.prepare(sql).bind(...params).all()
   return c.json({ stock: results })
 })
 

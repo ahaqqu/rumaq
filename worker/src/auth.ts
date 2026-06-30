@@ -6,6 +6,7 @@ const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
 const GOOGLE_USERINFO_URL = 'https://openidconnect.googleapis.com/v1/userinfo'
 const COOKIE_NAME = 'rumaq_session'
+const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 
 const authApp = new Hono<Env>()
 
@@ -21,7 +22,17 @@ function base64UrlEncode(buffer: ArrayBuffer | Uint8Array) {
     .replace(/=+$/, '')
 }
 
-async function signJwt(payload: object, secret: string) {
+function base64UrlDecode(str: string): ArrayBuffer {
+  const normalized = str.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)).buffer as ArrayBuffer
+}
+
+async function sha256(input: string): Promise<ArrayBuffer> {
+  return crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
+}
+
+async function signJwt(payload: Record<string, unknown>, secret: string) {
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw',
@@ -39,8 +50,9 @@ async function signJwt(payload: object, secret: string) {
 }
 
 export async function verifyJwt(token: string, secret: string) {
-  const [h, p, s] = token.split('.')
-  if (!h || !p || !s) return null
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  const [h, p, s] = parts
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw',
@@ -49,9 +61,22 @@ export async function verifyJwt(token: string, secret: string) {
     false,
     ['verify']
   )
-  const ok = await crypto.subtle.verify('HMAC', key, Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')).split('').map((c) => c.charCodeAt(0))), encoder.encode(`${h}.${p}`))
+  const ok = await crypto.subtle.verify(
+    'HMAC',
+    key,
+    base64UrlDecode(s),
+    encoder.encode(`${h}.${p}`)
+  )
   if (!ok) return null
-  return JSON.parse(new TextDecoder().decode(Uint8Array.from(atob(p.replace(/-/g, '+').replace(/_/g, '/')).split('').map((c) => c.charCodeAt(0)))))
+
+  const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(p)))
+
+  // Check expiration
+  if (payload.exp && typeof payload.exp === 'number' && Date.now() > payload.exp) {
+    return null
+  }
+
+  return payload
 }
 
 function randomState() {
@@ -62,6 +87,7 @@ authApp.get('/login', async (c) => {
   const state = randomState()
   const verifier = randomState()
   const redirectUri = `${new URL(c.req.url).origin}/api/auth/callback`
+  const challenge = base64UrlEncode(await sha256(verifier))
 
   setCookie(c, 'rumaq_oauth_state', `${state}:${verifier}`, {
     path: '/',
@@ -77,8 +103,8 @@ authApp.get('/login', async (c) => {
     response_type: 'code',
     scope: 'openid email profile',
     state,
-    code_challenge: verifier,
-    code_challenge_method: 'plain',
+    code_challenge: challenge,
+    code_challenge_method: 'S256',
   })
 
   return c.redirect(`${GOOGLE_AUTH_URL}?${params.toString()}`)
@@ -91,7 +117,7 @@ authApp.get('/callback', async (c) => {
   const [expectedState, verifier] = cookie.split(':')
 
   if (!code || !state || state !== expectedState) {
-    return c.text('Invalid OAuth state', 400)
+    return c.json({ error: 'Invalid OAuth state' }, 400)
   }
 
   const redirectUri = `${new URL(c.req.url).origin}/api/auth/callback`
@@ -109,7 +135,7 @@ authApp.get('/callback', async (c) => {
   })
 
   if (!tokenRes.ok) {
-    return c.text('Failed to exchange OAuth code', 400)
+    return c.json({ error: 'Failed to exchange OAuth code' }, 400)
   }
 
   const { access_token } = (await tokenRes.json()) as { access_token: string }
@@ -118,7 +144,7 @@ authApp.get('/callback', async (c) => {
   })
 
   if (!userRes.ok) {
-    return c.text('Failed to fetch user info', 400)
+    return c.json({ error: 'Failed to fetch user info' }, 400)
   }
 
   const googleUser = (await userRes.json()) as {
@@ -128,50 +154,49 @@ authApp.get('/callback', async (c) => {
     picture?: string
   }
 
-  const userId = crypto.randomUUID()
-  await c.env.DB.prepare(
+  const finalUserId = crypto.randomUUID()
+  const householdId = crypto.randomUUID()
+  const settingsId = crypto.randomUUID()
+  const now = new Date().toISOString()
+
+  // Upsert user first, then set up household + settings in a batch.
+  const userStmt = c.env.DB.prepare(
     `INSERT INTO users (id, email, name, picture, google_id)
      VALUES (?, ?, ?, ?, ?)
      ON CONFLICT(google_id) DO UPDATE SET
        name = excluded.name,
        picture = excluded.picture,
        updated_at = datetime('now')`
-  )
-    .bind(userId, googleUser.email, googleUser.name || null, googleUser.picture || null, googleUser.sub)
-    .run()
+  ).bind(finalUserId, googleUser.email, googleUser.name || null, googleUser.picture || null, googleUser.sub)
 
-  const existing = await c.env.DB.prepare('SELECT id FROM users WHERE google_id = ?')
-    .bind(googleUser.sub)
-    .first<{ id: string }>()
+  // Fetch the actual id for this google_id (handles existing users)
+  const lookupStmt = c.env.DB.prepare('SELECT id FROM users WHERE google_id = ?').bind(googleUser.sub)
 
-  const finalUserId = existing?.id || userId
+  const batchResults = await c.env.DB.batch([userStmt, lookupStmt])
+  const rows = batchResults[1]?.results as { id?: string }[] | undefined
+  const actualUserId = rows?.[0]?.id || finalUserId
 
-  // Ensure a default household exists for new users.
-  const hasHousehold = await c.env.DB.prepare(
+  // Check if this user already has a household
+  const existingMember = await c.env.DB.prepare(
     'SELECT 1 FROM household_members WHERE user_id = ?'
-  )
-    .bind(finalUserId)
-    .first()
+  ).bind(actualUserId).first()
 
-  if (!hasHousehold) {
-    const householdId = crypto.randomUUID()
-    await c.env.DB.prepare('INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)')
-      .bind(householdId, 'Rumahku', finalUserId)
-      .run()
-    await c.env.DB.prepare(
-      'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
-    )
-      .bind(householdId, finalUserId, 'owner')
-      .run()
-    await c.env.DB.prepare(
-      'INSERT INTO user_settings (id, user_id, active_household_id) VALUES (?, ?, ?)'
-    )
-      .bind(crypto.randomUUID(), finalUserId, householdId)
-      .run()
+  if (!existingMember) {
+    await c.env.DB.batch([
+      c.env.DB.prepare('INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)')
+        .bind(householdId, 'Rumahku', actualUserId),
+      c.env.DB.prepare(
+        'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
+      ).bind(householdId, actualUserId, 'owner'),
+      c.env.DB.prepare(
+        'INSERT INTO user_settings (id, user_id, active_household_id) VALUES (?, ?, ?)'
+      ).bind(settingsId, actualUserId, householdId),
+    ])
   }
 
+  const iat = Date.now()
   const jwt = await signJwt(
-    { sub: finalUserId, email: googleUser.email, iat: Date.now() },
+    { sub: actualUserId, email: googleUser.email, iat, exp: iat + SESSION_DURATION_MS },
     c.env.WORKER_JWT_SECRET
   )
 
