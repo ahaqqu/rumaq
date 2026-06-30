@@ -126,7 +126,7 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 - Node.js 20+
 - A Cloudflare account
 - A Google Cloud project with OAuth 2.0 credentials
-- Wrangler CLI authenticated (`wrangler login`)
+- Wrangler CLI authenticated (`wrangler login` or `export CLOUDFLARE_API_TOKEN=...`)
 
 ### One-time setup
 

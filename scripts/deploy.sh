@@ -19,6 +19,14 @@ set -euo pipefail
 MODE="${1:-all}"
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WORKER_DIR="$ROOT_DIR/worker"
+
+# Load .env from project root (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, etc.)
+if [[ -f $ROOT_DIR/.env ]]; then
+  set -a
+  source "$ROOT_DIR/.env"
+  set +a
+fi
+
 DB_NAME="${D1_DATABASE_NAME:-rumaq}"
 PAGES_PROJECT="${PAGES_PROJECT_NAME:-rumaq}"
 
@@ -247,9 +255,13 @@ build_frontend() {
 # Check Cloudflare login
 # ------------------------------------------------------------------
 check_login() {
+  if [ -n "$CLOUDFLARE_API_TOKEN" ]; then
+    ok "Authenticated via CLOUDFLARE_API_TOKEN."
+    return 0
+  fi
   if ! wrangler whoami &>/dev/null; then
     echo "Error: not logged in to Cloudflare."
-    echo "Run: wrangler login"
+    echo "Set CLOUDFLARE_API_TOKEN or run: wrangler login"
     exit 1
   fi
   ok "Logged in to Cloudflare."

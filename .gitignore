@@ -8,3 +8,5 @@ dist-ssr
 !.vscode/extensions.json
 worker/wrangler.toml
 worker/.dev.vars
+worker/.wrangler
+.env

@@ -67,7 +67,7 @@ docs/                 # Architecture & API docs
 - Node.js 20+
 - Cloudflare account
 - Google Cloud project with OAuth 2.0 credentials
-- Wrangler CLI (`npm install -g wrangler`) and logged in (`wrangler login`)
+- Wrangler CLI (`npm install -g wrangler`) and authenticated (`wrangler login` or `export CLOUDFLARE_API_TOKEN=...`)
 
 ### Local setup (database + dependencies)
 

@@ -160,7 +160,7 @@ CREATE TABLE IF NOT EXISTS ai_usage (
   date TEXT NOT NULL,
   provider TEXT,
   used INTEGER NOT NULL DEFAULT 0,
-  limit INTEGER NOT NULL DEFAULT 20,
+  daily_limit INTEGER NOT NULL DEFAULT 20,
   UNIQUE (user_id, date)
 );
 
