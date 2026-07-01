@@ -22,7 +22,9 @@
     "react-i18next": "^17.0.8"
   },
   "devDependencies": {
+    "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^4.7.0",
+    "@vitest/coverage-v8": "^4.1.9",
     "cloudflare": "^6.5.0",
     "jsdom": "^29.1.1",
     "vite": "^7.3.6",
