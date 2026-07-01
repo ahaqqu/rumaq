@@ -6,7 +6,7 @@ import id from './locales/id.json'
 
 const LANG_KEY = 'rumaq:lang'
 
-function loadLang() {
+export function loadLang() {
   try {
     return localStorage.getItem(LANG_KEY) || 'en'
   } catch {

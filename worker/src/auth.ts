@@ -10,7 +10,7 @@ const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000 // 30 days
 
 const authApp = new Hono<Env>()
 
-function base64UrlEncode(buffer: ArrayBuffer | Uint8Array) {
+export function base64UrlEncode(buffer: ArrayBuffer | Uint8Array) {
   const bytes = new Uint8Array(buffer)
   let binary = ''
   for (let i = 0; i < bytes.length; i++) {
@@ -22,7 +22,7 @@ function base64UrlEncode(buffer: ArrayBuffer | Uint8Array) {
     .replace(/=+$/, '')
 }
 
-function base64UrlDecode(str: string): ArrayBuffer {
+export function base64UrlDecode(str: string): ArrayBuffer {
   const normalized = str.replace(/-/g, '+').replace(/_/g, '/')
   const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
   return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)).buffer as ArrayBuffer
@@ -32,7 +32,7 @@ async function sha256(input: string): Promise<ArrayBuffer> {
   return crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
 }
 
-async function signJwt(payload: Record<string, unknown>, secret: string) {
+export async function signJwt(payload: Record<string, unknown>, secret: string) {
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw',
@@ -79,7 +79,7 @@ export async function verifyJwt(token: string, secret: string) {
   return payload
 }
 
-function randomState() {
+export function randomState() {
   return base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)).buffer)
 }
 

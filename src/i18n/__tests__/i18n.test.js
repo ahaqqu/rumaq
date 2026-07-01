@@ -70,11 +70,37 @@ describe('i18n initialisation', () => {
   it('switches language and updates html lang attribute', async () => {
     const mod = await import('../index.js')
     mod.default.changeLanguage('id')
-    await new Promise((r) => setTimeout(r, 50)) // wait for languageChanged event
+    await new Promise((r) => setTimeout(r, 50))
     expect(document.documentElement.lang).toBe('id')
-    // restore
     mod.default.changeLanguage('en')
     await new Promise((r) => setTimeout(r, 50))
     expect(document.documentElement.lang).toBe('en')
+  })
+
+  it('saves language preference to localStorage', async () => {
+    localStorage.removeItem('rumaq:lang')
+    const mod = await import('../index.js')
+    expect(mod.default.language).toBe('en')
+    mod.default.changeLanguage('id')
+    await new Promise((r) => setTimeout(r, 50))
+    expect(localStorage.getItem('rumaq:lang')).toBe('id')
+    mod.default.changeLanguage('en')
+  })
+
+  it('loadLang falls back to en when localStorage throws', async () => {
+    const origGetItem = Storage.prototype.getItem
+    Storage.prototype.getItem = () => { throw new Error('denied') }
+    const mod = await import('../index.js')
+    const lang = mod.loadLang()
+    expect(lang).toBe('en')
+    Storage.prototype.getItem = origGetItem
+  })
+
+  it('saveLang falls back silently when localStorage.setItem throws', async () => {
+    const origSetItem = Storage.prototype.setItem
+    Storage.prototype.setItem = () => { throw new Error('denied') }
+    const mod = await import('../index.js')
+    expect(() => mod.default.changeLanguage('id')).not.toThrow()
+    Storage.prototype.setItem = origSetItem
   })
 })

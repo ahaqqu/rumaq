@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
   DEFAULT_PERSONA,
   PERSONA_KEY,
@@ -166,6 +166,16 @@ describe('buildSystemPrompt', () => {
     expect(p).toContain('raja')
     expect(p).toContain('prajurit')
   })
+
+  it('includes mood instruction for employee-to-boss mood', () => {
+    const p = buildSystemPrompt({ enabled: true, userRole: 'bos', aiRole: 'pegawai' }, idT)
+    expect(p).toContain('formal')
+  })
+
+  it('does not include mood instruction for generic mood', () => {
+    const p = buildSystemPrompt({ enabled: true, userRole: 'tamu', aiRole: 'host' }, idT)
+    expect(p).not.toContain('form')
+  })
 })
 
 describe('applyTheme', () => {
@@ -181,6 +191,18 @@ describe('applyTheme', () => {
     applyTheme({ enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }, el)
     expect(el.style.setProperty).toHaveBeenCalledWith('--accent', expect.any(String))
     expect(el.dataset.persona).toBe('raja|prajurit')
+  })
+
+  it('derives hue when persona hue is null', () => {
+    const el = { style: { setProperty: vi.fn() }, dataset: {} }
+    applyTheme({ enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: null }, el)
+    expect(el.style.setProperty).toHaveBeenCalled()
+  })
+
+  it('handles persona without enabled field', () => {
+    const el = { style: { removeProperty: vi.fn() }, dataset: {} }
+    applyTheme(null, el)
+    expect(el.style.removeProperty).toHaveBeenCalled()
   })
 })
 
@@ -199,6 +221,90 @@ describe('generatePersonaCopy', () => {
   it('returns null when AI call fails', async () => {
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit' }
     const result = await generatePersonaCopy(p, 'sk-invalid', 'opencode', idT)
+    expect(result).toBeNull()
+  })
+
+  it('returns null when AI returns non-JSON', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: 'not json' }] } }] }),
+    })
+    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
+    const result = await generatePersonaCopy(p, 'sk-valid', 'gemini', idT)
+    expect(result).toBeNull()
+  })
+
+  it('succeeds with valid Gemini response', async () => {
+    const jsonResponse = JSON.stringify({
+      homeLead: 'AI home lead',
+      inventoryLead: 'AI inventory lead',
+      planLeadNoKey: 'AI plan lead no key',
+      planLead: 'AI plan lead',
+      historyLead: 'AI history lead',
+      receiptLead: 'AI receipt lead',
+      settingsLead: 'AI settings lead',
+      assistantGreeting: 'AI greeting',
+      assistantQuestion: 'AI question',
+    })
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: jsonResponse }] } }] }),
+    })
+    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270, generatedCopy: null }
+    const result = await generatePersonaCopy(p, 'sk-valid', 'gemini', idT)
+    expect(result).not.toBeNull()
+    expect(result.homeLead).toBe('AI home lead')
+  })
+
+  it('succeeds with markdown-wrapped JSON', async () => {
+    const jsonResponse = '```json\n{"homeLead": "MD lead"}\n```'
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: jsonResponse }] } }] }),
+    })
+    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
+    const result = await generatePersonaCopy(p, 'sk-valid', 'gemini', idT)
+    expect(result).not.toBeNull()
+    expect(result.homeLead).toBe('MD lead')
+  })
+
+  it('generates with openai provider', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '{"homeLead":"AI"}' } }] }),
+    })
+    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
+    const result = await generatePersonaCopy(p, 'sk-valid', 'openai', idT)
+    expect(result).not.toBeNull()
+  })
+
+  it('generates with anthropic provider', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({ content: [{ text: '{"homeLead":"AI"}' }] }),
+    })
+    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
+    const result = await generatePersonaCopy(p, 'sk-valid', 'anthropic', idT)
+    expect(result).not.toBeNull()
+  })
+
+  it('generates with opencode provider (default)', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({ choices: [{ message: { content: '{"homeLead":"AI"}' } }] }),
+    })
+    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
+    const result = await generatePersonaCopy(p, 'sk-valid', 'opencode', idT)
+    expect(result).not.toBeNull()
+  })
+
+  it('returns null when AI response is empty', async () => {
+    globalThis.fetch = async () => ({
+      ok: true,
+      json: async () => ({ candidates: [{ content: { parts: [{ text: '' }] } }] }),
+    })
+    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
+    const result = await generatePersonaCopy(p, 'sk-valid', 'gemini', idT)
     expect(result).toBeNull()
   })
 })
