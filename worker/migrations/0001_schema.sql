@@ -1,9 +1,3 @@
--- RumaQ D1 schema v1
--- Cloudflare D1 uses SQLite. TEXT dates are ISO 8601.
-
--- ---------------------------------------------------------------------------
--- Accounts & households
--- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   email TEXT NOT NULL UNIQUE,

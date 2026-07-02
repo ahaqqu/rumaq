@@ -1,7 +1,3 @@
--- Test seed data for integration tests
--- IDs are deterministic and match tests/.env values
-
--- User
 INSERT INTO users (id, email, name, picture, google_id)
 VALUES (
   'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',

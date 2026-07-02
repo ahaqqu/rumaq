@@ -1,5 +1,3 @@
--- Truncate all tables in FK-safe order (child tables first)
-
 DELETE FROM plan_items;
 DELETE FROM plans;
 DELETE FROM purchase_items;

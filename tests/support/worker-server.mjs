@@ -44,8 +44,21 @@ const mf = new Miniflare({
 
 // --- Apply migrations & seed ---
 const db = await mf.getD1Database('DB')
-await db.exec(migrationSql)
-await db.exec(seedSql)
+
+// Miniflare's db.exec() processes SQL line-by-line, so we need to
+// flatten multi-line statements: strip comments, then remove newlines
+// within each statement.
+function flattenSql(sql) {
+  return sql
+    .replace(/--.*$/gm, '')           // strip single-line comments
+    .replace(/\n\s*/g, ' ')            // collapse multi-line into single line
+    .replace(/\s*;\s*/g, ';\n')        // put each statement on its own line
+    .replace(/\n{2,}/g, '\n')          // collapse blank lines
+    .trim()
+}
+
+await db.exec(flattenSql(migrationSql))
+await db.exec(flattenSql(seedSql))
 
 console.log('✓ D1 migrations applied and database seeded')
 
@@ -57,13 +70,13 @@ const server = createServer(async (req, res) => {
     // Test-only admin endpoints
     if (process.env.TEST_MODE === 'true') {
       if (url.pathname === '/api/__test/reset' && req.method === 'POST') {
-        await db.exec(resetSql)
+        await db.exec(flattenSql(resetSql))
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true }))
         return
       }
       if (url.pathname === '/api/__test/seed' && req.method === 'POST') {
-        await db.exec(seedSql)
+        await db.exec(flattenSql(seedSql))
         res.writeHead(200, { 'Content-Type': 'application/json' })
         res.end(JSON.stringify({ ok: true }))
         return
