@@ -13,7 +13,10 @@
     "deploy:backend": "./scripts/deploy.sh backend",
     "deploy:dry-run": "./scripts/deploy.sh dry-run",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:api": "vitest run --config vitest.config.integration.mjs",
+    "test:e2e": "playwright test",
+    "test:docker": "docker compose -f docker-compose.test.yml up --build --abort-on-container-exit"
   },
   "dependencies": {
     "i18next": "^26.3.4",
@@ -22,11 +25,14 @@
     "react-i18next": "^17.0.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@testing-library/react": "^16.3.2",
     "@vitejs/plugin-react": "^4.7.0",
     "@vitest/coverage-v8": "^4.1.9",
     "cloudflare": "^6.5.0",
+    "esbuild": "^0.28.1",
     "jsdom": "^29.1.1",
+    "miniflare": "^4.20260630.0",
     "vite": "^7.3.6",
     "vitest": "^4.1.9"
   }

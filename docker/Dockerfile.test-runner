@@ -1,0 +1,24 @@
+ARG PLAYWRIGHT_VERSION=1.61.1
+FROM mcr.microsoft.com/playwright:v1.61.1-jammy
+
+WORKDIR /app
+
+# Install dependencies for root project + worker (test helpers import from worker/src/auth.ts)
+COPY package.json package-lock.json ./
+COPY worker/package.json worker/package-lock.json ./worker/
+
+RUN npm ci --ignore-scripts && \
+    cd worker && npm ci --ignore-scripts
+
+# Copy source needed by tests
+COPY src/ ./src/
+COPY worker/src/ ./worker/src/
+COPY worker/tsconfig.json ./worker/
+COPY worker/migrations/ ./worker/migrations/
+COPY tests/ ./tests/
+COPY playwright.config.js ./playwright.config.js
+COPY vitest.config.integration.mjs ./vitest.config.integration.mjs
+
+ENV TEST_BASE_URL=http://proxy:3000
+
+CMD ["sh", "-c", "npm run test:api && npm run test:e2e"]

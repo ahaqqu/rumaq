@@ -11,3 +11,5 @@ worker/.dev.vars
 worker/.wrangler
 .env
 coverage
+playwright-report
+test-results

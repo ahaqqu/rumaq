@@ -1,0 +1,15 @@
+node_modules
+**/dist
+coverage
+.git
+.github
+docs
+.dockerignore
+*.md
+.commandcode
+.shots
+playwright-report
+test-results
+worker/.wrangler
+worker/.dev.vars
+worker/wrangler.toml

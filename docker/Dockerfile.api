@@ -1,0 +1,28 @@
+FROM node:20-slim AS api
+
+WORKDIR /app
+
+# Root + worker dependencies (worker-server.mjs needs both)
+COPY package.json package-lock.json ./
+COPY worker/package.json worker/package-lock.json ./worker/
+
+RUN npm ci --ignore-scripts && \
+    cd worker && npm ci --ignore-scripts
+
+# Worker source & configs
+COPY worker/src/ ./worker/src/
+COPY worker/tsconfig.json ./worker/
+COPY worker/migrations/ ./worker/migrations/
+
+# Test support files
+COPY tests/ ./tests/
+
+# Build worker TypeScript → bundled JS (platform=neutral for Cloudflare Workers runtime)
+RUN cd worker && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --outfile=dist/index.mjs
+
+EXPOSE 8787
+
+ENV NODE_ENV=test
+ENV TEST_MODE=true
+
+CMD ["node", "tests/support/worker-server.mjs"]
