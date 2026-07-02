@@ -2,22 +2,23 @@ FROM node:20-slim AS api
 
 WORKDIR /app
 
-# Root + worker dependencies (worker-server.mjs needs both)
+# Layer 1: dependencies (cached until lockfiles change)
 COPY package.json package-lock.json ./
 COPY worker/package.json worker/package-lock.json ./worker/
+RUN npm ci --no-audit --no-fund --omit=scripts && \
+    cd worker && npm ci --no-audit --no-fund --omit=scripts
 
-RUN npm ci --ignore-scripts && \
-    cd worker && npm ci --ignore-scripts
-
-# Worker source & configs
-COPY worker/src/ ./worker/src/
+# Layer 2: stable configs & migrations (rarely change)
 COPY worker/tsconfig.json ./worker/
 COPY worker/migrations/ ./worker/migrations/
 
-# Test support files
+# Layer 3: test support files (change moderately)
 COPY tests/ ./tests/
 
-# Build worker TypeScript → bundled JS (platform=neutral for Cloudflare Workers runtime)
+# Layer 4: worker source (changes most frequently)
+COPY worker/src/ ./worker/src/
+
+# Layer 5: build (invalidated when src changes)
 RUN cd worker && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --outfile=dist/index.mjs
 
 EXPOSE 8787

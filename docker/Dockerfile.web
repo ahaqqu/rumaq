@@ -2,12 +2,16 @@ FROM node:20-slim AS build
 
 WORKDIR /app
 
+# Layer 1: dependencies (cached until lockfiles change)
 COPY package.json package-lock.json ./
-RUN npm ci --ignore-scripts
+RUN npm ci --no-audit --no-fund --omit=scripts
 
-COPY src/ ./src/
+# Layer 2: stable configs & templates (rarely change)
 COPY index.html ./index.html
 COPY vite.config.js ./
+
+# Layer 3: src (changes most frequently)
+COPY src/ ./src/
 
 RUN npm run build
 

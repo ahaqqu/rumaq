@@ -13,3 +13,9 @@ test-results
 worker/.wrangler
 worker/.dev.vars
 worker/wrangler.toml
+scripts
+**/.DS_Store
+*.local
+**/__pycache__
+.agents
+AGENTS.md
