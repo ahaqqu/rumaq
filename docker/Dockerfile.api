@@ -17,8 +17,8 @@ COPY worker/migrations/ ./worker/migrations/
 # Test support files
 COPY tests/ ./tests/
 
-# Build worker TypeScript → bundled JS
-RUN cd worker && npx esbuild src/index.ts --bundle --platform=node --format=esm --outfile=dist/index.mjs
+# Build worker TypeScript → bundled JS (platform=neutral for Cloudflare Workers runtime)
+RUN cd worker && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --outfile=dist/index.mjs
 
 EXPOSE 8787
 
