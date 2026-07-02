@@ -4,7 +4,7 @@ import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const ROOT = resolve(__dirname, '../..')
+const ROOT = resolve(__dirname, '../../..')
 const WORKER_DIR = resolve(ROOT, 'worker')
 
 // --- Read SQL files ---
@@ -13,11 +13,11 @@ const migrationSql = readFileSync(
   'utf-8'
 )
 const seedSql = readFileSync(
-  resolve(ROOT, 'tests/fixtures/seed.sql'),
+  resolve(ROOT, 'automation/tests/fixtures/seed.sql'),
   'utf-8'
 )
 const resetSql = readFileSync(
-  resolve(ROOT, 'tests/fixtures/reset.sql'),
+  resolve(ROOT, 'automation/tests/fixtures/reset.sql'),
   'utf-8'
 )
 

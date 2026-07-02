@@ -22,7 +22,7 @@ COPY worker/src/ ./worker/src/
 COPY src/ ./src/
 
 # Layer 4: tests (changes most frequently)
-COPY automation/tests/ ./tests/
+COPY automation/tests/ ./automation/tests/
 
 ENV TEST_BASE_URL=http://proxy:3000
 
