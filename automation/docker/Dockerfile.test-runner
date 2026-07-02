@@ -6,8 +6,10 @@ WORKDIR /app
 # Layer 1: dependencies (cached until lockfiles change)
 COPY package.json package-lock.json ./
 COPY worker/package.json worker/package-lock.json ./worker/
-RUN npm ci --no-audit --no-fund --omit=scripts
-RUN cd worker && npm ci --no-audit --no-fund --omit=scripts
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci --no-audit --no-fund
+RUN --mount=type=cache,target=/root/.npm \
+  cd worker && npm ci --no-audit --no-fund
 
 # Layer 2: stable configs & migrations (rarely change)
 COPY worker/tsconfig.json ./worker/
