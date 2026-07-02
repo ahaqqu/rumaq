@@ -16,50 +16,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Public health checks
-        run: |
-          # Check frontend loads
-          STATUS=$(curl -s -o /dev/null -w '%{http_code}' https://rumaq.pages.dev/)
-          echo "Frontend status: $STATUS"
-          if [ "$STATUS" != "200" ]; then echo "::error::Frontend returned $STATUS"; exit 1; fi
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
 
-          # Check API health
-          STATUS=$(curl -s -o /dev/null -w '%{http_code}' https://rumaq.pages.dev/api/health)
-          echo "API health status: $STATUS"
-          if [ "$STATUS" != "200" ]; then echo "::error::API health returned $STATUS"; exit 1; fi
+      - run: npm ci
 
-      - name: Authenticated checks
-        if: ${{ secrets.RUMAQ_PROD_SESSION != '' }}
+      - name: Run production smoke tests
+        run: ./automation/scripts/smoke.sh
         env:
-          SESSION: ${{ secrets.RUMAQ_PROD_SESSION }}
-        run: |
-          # Check /api/me
-          BODY=$(curl -s -b "rumaq_session=$SESSION" https://rumaq.pages.dev/api/me)
-          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "rumaq_session=$SESSION" https://rumaq.pages.dev/api/me)
-          echo "/api/me status: $STATUS"
-          if [ "$STATUS" != "200" ]; then echo "::error::/api/me returned $STATUS"; exit 1; fi
-
-          # Validate response shape (has user object)
-          echo "$BODY" | python3 -c "
-          import sys, json
-          data = json.load(sys.stdin)
-          assert 'user' in data, 'Missing user in /api/me response'
-          print('/api/me shape OK')
-          "
-
-          # Check /api/stock
-          BODY=$(curl -s -b "rumaq_session=$SESSION" https://rumaq.pages.dev/api/stock)
-          STATUS=$(curl -s -o /dev/null -w '%{http_code}' -b "rumaq_session=$SESSION" https://rumaq.pages.dev/api/stock)
-          echo "/api/stock status: $STATUS"
-          if [ "$STATUS" != "200" ]; then echo "::error::/api/stock returned $STATUS"; exit 1; fi
-
-          # Validate response shape (has stock array)
-          echo "$BODY" | python3 -c "
-          import sys, json
-          data = json.load(sys.stdin)
-          assert 'stock' in data and isinstance(data['stock'], list), 'Missing stock array in /api/stock response'
-          print('/api/stock shape OK')
-          "
+          RUMAQ_PROD_SESSION: ${{ secrets.RUMAQ_PROD_SESSION }}
 
       - name: Create issue on failure
         if: failure()

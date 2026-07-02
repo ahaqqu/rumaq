@@ -13,3 +13,4 @@ worker/.wrangler
 coverage
 playwright-report
 test-results
+vitest-report

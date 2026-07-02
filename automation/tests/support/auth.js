@@ -7,7 +7,7 @@
  * Uses Web Crypto API (HMAC-SHA256) which is available in Node 20+.
  */
 
-import { signJwt } from '../../worker/src/auth.ts'
+import { signJwt } from '../../../worker/src/auth.ts'
 
 const DEFAULT_SECRET = process.env.TEST_JWT_SECRET || 'test-jwt-secret'
 

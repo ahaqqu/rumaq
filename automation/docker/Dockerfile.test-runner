@@ -12,16 +12,16 @@ RUN cd worker && npm ci --no-audit --no-fund --omit=scripts
 # Layer 2: stable configs & migrations (rarely change)
 COPY worker/tsconfig.json ./worker/
 COPY worker/migrations/ ./worker/migrations/
-COPY playwright.config.js ./
-COPY vitest.config.integration.mjs ./
+COPY automation/playwright.config.js ./playwright.config.js
+COPY automation/vitest.config.integration.mjs ./vitest.config.integration.mjs
 
 # Layer 3: app source (changes moderately)
 COPY worker/src/ ./worker/src/
 COPY src/ ./src/
 
 # Layer 4: tests (changes most frequently)
-COPY tests/ ./tests/
+COPY automation/tests/ ./tests/
 
 ENV TEST_BASE_URL=http://proxy:3000
 
-CMD ["sh", "-c", "npm run test:api && npm run test:e2e"]
+CMD ["sh", "-c", "npm run test:api && npm run test:e2e && sync"]

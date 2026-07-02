@@ -58,10 +58,16 @@ src/                  # React SPA
 worker/               # Cloudflare Workers backend
   src/                # Hono routes, auth, middleware
   migrations/         # D1 schema migrations
-scripts/              # Setup and utility scripts
+scripts/              # Setup and deployment scripts
 docs/                 # Architecture & API docs
-tests/                # Integration & E2E tests
-docker/               # Dockerfiles and nginx configs for the test harness
+automation/           # All test automation (integration, E2E, smoke)
+  tests/              # Feature files, step definitions, fixtures
+  docker/             # Dockerfiles and nginx configs
+  scripts/            # Test runner and report scripts
+  test-results/       # Consolidated report output
+  docker-compose.yml  # Docker Compose for the test harness
+  playwright.config.js
+  vitest.config.integration.mjs
 ```
 
 ### Prerequisites
@@ -106,7 +112,7 @@ cd worker && npm test # backend (Node, mocked D1)
 npm run test:docker
 ```
 
-This builds four containers (API via Miniflare, web build via nginx, a reverse proxy on `:3000`, and a Playwright test runner) and runs the API integration tests then the E2E smoke test. Requires Docker + Docker Compose only.
+This builds four containers (API via Miniflare, web build via nginx, a reverse proxy on `:3000`, and a Playwright test runner) and runs the API integration tests then the E2E smoke test. Requires Docker + Docker Compose only. All test automation files live under `automation/`.
 
 Run the integration or E2E tests individually against an already-running stack:
 

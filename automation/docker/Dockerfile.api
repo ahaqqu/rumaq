@@ -13,7 +13,7 @@ COPY worker/tsconfig.json ./worker/
 COPY worker/migrations/ ./worker/migrations/
 
 # Layer 3: test support files (change moderately)
-COPY tests/ ./tests/
+COPY automation/tests/ ./tests/
 
 # Layer 4: worker source (changes most frequently)
 COPY worker/src/ ./worker/src/

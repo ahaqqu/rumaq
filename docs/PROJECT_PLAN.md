@@ -139,9 +139,9 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Frontend production build | Done | P0 | `npm run build` passes |
 | Worker TypeScript typecheck | Done | P0 | `npx tsc --noEmit` passes |
 | Unit tests | Done | P1 | Vitest: 16+ frontend suites, 3 worker suites with coverage thresholds |
-| API integration tests | Done | P1 | `tests/api/` — Vitest + fetch against Docker Miniflare; `npm run test:api` |
-| End-to-end tests | Partial | P2 | Playwright smoke test in `tests/e2e/`; `npm run test:e2e` |
-| Docker test automation | Done | P1 | `docker compose -f docker-compose.test.yml` runs all tests; CI workflow |
+| API integration tests | Done | P1 | `automation/tests/local/api/` — Vitest BDD + fetch against Docker Miniflare; `npm run test:api` |
+| End-to-end tests | Partial | P2 | Playwright BDD smoke test in `automation/tests/local/e2e/`; `npm run test:e2e` |
+| Docker test automation | Done | P1 | `docker compose -f automation/docker-compose.yml` runs all tests; CI workflow |
 | Production smoke tests | Done | P1 | Scheduled GitHub Actions check `rumaq.pages.dev` every 6 hours |
 | Accessibility audit | Not started | P1 | Keyboard navigation, contrast, labels |
 | Performance budget | Not started | P2 | Bundle size, First Contentful Paint |

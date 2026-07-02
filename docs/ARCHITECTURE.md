@@ -41,13 +41,26 @@ rumaq/
 │   ├── wrangler.cloudflare.toml # Production config
 │   └── wrangler.toml.example # Template
 ├── scripts/                # Setup and deployment scripts
-├── tests/                  # Integration & E2E tests
-│   ├── api/                # Vitest integration tests (health, me, stock)
-│   ├── e2e/                # Playwright E2E specs
-│   ├── fixtures/           # seed.sql, reset.sql
-│   └── support/            # worker-server.mjs, auth.js, db.js helpers
-├── docker/                 # Dockerfiles and nginx configs for test harness
-├── docker-compose.test.yml # One-command test orchestration
+├── automation/             # All test automation
+│   ├── tests/              # Feature files, step definitions, fixtures
+│   │   ├── local/          # Local stack tests (API + E2E)
+│   │   │   ├── api/        # API BDD feature files + steps
+│   │   │   └── e2e/        # Playwright BDD feature files + steps
+│   │   ├── live/           # Production smoke tests
+│   │   │   └── health/     # Health-check feature + steps
+│   │   ├── fixtures/       # seed.sql, reset.sql
+│   │   └── support/        # worker-server.mjs, auth.js, db.js helpers
+│   ├── docker/             # Dockerfiles and nginx configs for test harness
+│   ├── scripts/            # Test runner and report scripts
+│   ├── test-results/       # Consolidated report output (vitest, playwright, artifacts)
+│   ├── docker-compose.yml  # One-command test orchestration
+│   ├── playwright.config.js
+│   └── vitest.config.integration.mjs
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # Unit tests + lint
+│       ├── test-automation.yml  # Integration + E2E via Docker
+│       └── smoke.yml       # Scheduled production smoke
 └── docs/
     ├── ARCHITECTURE.md     # this file
     ├── API.md              # REST API contract
@@ -219,7 +232,7 @@ The new test automation layer runs the same way locally and in CI via a single D
 
 ```bash
 npm run test:docker
-# or: docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+# or: docker compose -f automation/docker-compose.yml up --build --abort-on-container-exit
 ```
 
 Four services are orchestrated:
@@ -231,15 +244,15 @@ Four services are orchestrated:
 | `proxy` | `nginx:alpine` | Single origin at `localhost:3000`; `/api/*` → api, `/*` → web |
 | `test-runner` | `mcr.microsoft.com/playwright` | Runs API tests then Playwright E2E against the proxy |
 
-The same-origin proxy eliminates CORS/cookie cross-domain issues. The worker-server (`tests/support/worker-server.mjs`) creates the Miniflare instance, applies migrations, seeds the database, and exposes test-only admin endpoints (`/api/__test/reset`, `/api/__test/seed`) — guarded by `TEST_MODE=true` so they never exist in production. Integration test helpers call these endpoints over HTTP for per-suite DB isolation.
+The same-origin proxy eliminates CORS/cookie cross-domain issues. The worker-server (`automation/tests/support/worker-server.mjs`) creates the Miniflare instance, applies migrations, seeds the database, and exposes test-only admin endpoints (`/api/__test/reset`, `/api/__test/seed`) — guarded by `TEST_MODE=true` so they never exist in production. Integration test helpers call these endpoints over HTTP for per-suite DB isolation.
 
-### API integration tests (`tests/api/*.test.js`)
+### API integration tests (`automation/tests/local/api/steps/*.steps.js`)
 
-Vitest + Node native `fetch` against the running stack. Reset + seed before each suite via the admin endpoints. Auth is handled by re-exporting `signJwt` from `worker/src/auth.ts`, so test tokens match the production JWT format exactly. Run in isolation with `npm run test:api`.
+Written in Gherkin (`.feature` files) with `jest-cucumber` step definitions. Run by Vitest against the running stack. Reset + seed before each scenario via the admin endpoints. Auth is handled by re-exporting `signJwt` from `worker/src/auth.ts`, so test tokens match the production JWT format exactly. Run in isolation with `npm run test:api`.
 
-### Web E2E tests (`tests/e2e/*.spec.js`)
+### Web E2E tests (`automation/tests/local/e2e/features/*.feature`)
 
-Playwright against the proxy origin. Initial scope is a smoke test (app shell renders). E2E coverage must expand with features — every new UI flow should add or update a spec. Run with `npm run test:e2e`.
+Written in Gherkin with `playwright-bdd` step definitions. Playwright against the proxy origin. Initial scope is a smoke test (app shell renders). E2E coverage must expand with features — every new UI flow should add or update a spec. Run with `npm run test:e2e`.
 
 ### Production smoke tests
 
@@ -252,6 +265,6 @@ Smoke tests assert status and shape only — never exact values. On failure, a G
 
 ### Acceptance criteria for new features
 
-- Adds or modifies an API endpoint → add/update a Vitest integration test in `tests/api/`.
-- Adds or modifies a UI flow → add/update a Playwright spec in `tests/e2e/`.
+- Adds or modifies an API endpoint → add/update a Vitest integration step in `automation/tests/local/api/`.
+- Adds or modifies a UI flow → add/update a Playwright BDD feature + steps in `automation/tests/local/e2e/`.
 - All tests must pass in Docker (`npm run test:docker`) and in CI before merge.

@@ -12,18 +12,18 @@ set -euo pipefail
 #   - E2E smoke test (Playwright)
 #
 # Usage:
-#   ./scripts/test-local.sh              # run everything
-#   ./scripts/test-local.sh --build      # rebuild images before running
-#   ./scripts/test-local.sh --down       # tear down containers
-#   ./scripts/test-local.sh --api        # run API tests only (needs stack)
-#   ./scripts/test-local.sh --e2e        # run E2E tests only (needs stack)
+#   ./automation/scripts/test-local.sh              # run everything
+#   ./automation/scripts/test-local.sh --build      # rebuild images before running
+#   ./automation/scripts/test-local.sh --down       # tear down containers
+#   ./automation/scripts/test-local.sh --api        # run API tests only (needs stack)
+#   ./automation/scripts/test-local.sh --e2e        # run E2E tests only (needs stack)
 #
 # Prerequisites:
 #   - Docker + Docker Compose
 # ============================================================
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-COMPOSE_FILE="$ROOT_DIR/docker-compose.test.yml"
+ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
+COMPOSE_FILE="$ROOT_DIR/automation/docker-compose.yml"
 MODE="${1:-run}"
 
 require_cmd() {
@@ -71,6 +71,20 @@ if ! command -v docker &>/dev/null; then
   install_docker
 fi
 
+# ------------------------------------------------------------------
+# Check Docker group membership (permission fix)
+# ------------------------------------------------------------------
+if ! docker info &>/dev/null; then
+  docker_err="$(docker info 2>&1)"
+  if echo "$docker_err" | grep -qi "permission denied" 2>/dev/null; then
+    info "Adding $USER to the docker group..."
+    sudo usermod -aG docker "$USER"
+    ok "User added to docker group. Log out and back in, or run 'newgrp docker'."
+    info "After re-login, re-run this script."
+    exit 0
+  fi
+fi
+
 cd "$ROOT_DIR"
 
 # ------------------------------------------------------------------
@@ -111,13 +125,19 @@ case "$MODE" in
     docker compose -f "$COMPOSE_FILE" up --build --abort-on-container-exit
     EXIT_CODE=$?
 
+    # Generate HTML report from vitest JSON (mounted volume)
+    if [ -f "$ROOT_DIR/automation/test-results/vitest/api-results.json" ]; then
+      node "$ROOT_DIR/automation/scripts/generate-test-report.js" 2>/dev/null && \
+        ok "HTML report: automation/test-results/test-report.html" || true
+    fi
+
     if [[ $EXIT_CODE -eq 0 ]]; then
       echo ""
       ok "All tests passed!"
     else
       echo ""
       fail "Tests failed (exit code $EXIT_CODE)."
-      info "Check playwright-report/ and test-results/ for details."
+      info "Check automation/test-results/ for details."
     fi
     exit $EXIT_CODE
     ;;
@@ -125,7 +145,7 @@ case "$MODE" in
   build)
     info "Building Docker images..."
     docker compose -f "$COMPOSE_FILE" build
-    ok "Images built. Run ./scripts/test-local.sh to start tests."
+    ok "Images built. Run ./automation/scripts/test-local.sh to start tests."
     ;;
 
   down)
