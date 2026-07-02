@@ -41,6 +41,13 @@ rumaq/
 │   ├── wrangler.cloudflare.toml # Production config
 │   └── wrangler.toml.example # Template
 ├── scripts/                # Setup and deployment scripts
+├── tests/                  # Integration & E2E tests
+│   ├── api/                # Vitest integration tests (health, me, stock)
+│   ├── e2e/                # Playwright E2E specs
+│   ├── fixtures/           # seed.sql, reset.sql
+│   └── support/            # worker-server.mjs, auth.js, db.js helpers
+├── docker/                 # Dockerfiles and nginx configs for test harness
+├── docker-compose.test.yml # One-command test orchestration
 └── docs/
     ├── ARCHITECTURE.md     # this file
     ├── API.md              # REST API contract
@@ -192,3 +199,59 @@ If usage grows, the first upgrade is Workers Paid ($5/mo) for higher request and
 - [x] D1 queries are parameterized; no string concatenation.
 - [x] CORS allows only the Pages origin in production.
 - [ ] AI prompts never expose another user's data.
+
+## 11. Testing
+
+RumaQ has three test layers, each with a distinct purpose and runner.
+
+### Unit tests (Vitest)
+
+Existing and unchanged. Two separate Vitest projects:
+
+- **Frontend** (`src/**/*.test.{js,jsx}`) — jsdom environment, coverage thresholds 90/75/85/90.
+- **Worker** (`worker/src/**/*.test.ts`) — Node environment, 100% coverage threshold. D1 is mocked entirely.
+
+Run with `npm test` (frontend) or `npm test` in `worker/` (backend). These run in the existing `ci.yml` workflow.
+
+### Integration & E2E tests (Docker)
+
+The new test automation layer runs the same way locally and in CI via a single Docker Compose command:
+
+```bash
+npm run test:docker
+# or: docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+```
+
+Four services are orchestrated:
+
+| Service | Image | Role |
+|---|---|---|
+| `api` | `node:20-slim` | Hono Worker via Miniflare's programmatic API, local D1/R2, seeded DB |
+| `web` | `nginx:alpine` (multi-stage build) | Production Vite build served with SPA fallback |
+| `proxy` | `nginx:alpine` | Single origin at `localhost:3000`; `/api/*` → api, `/*` → web |
+| `test-runner` | `mcr.microsoft.com/playwright` | Runs API tests then Playwright E2E against the proxy |
+
+The same-origin proxy eliminates CORS/cookie cross-domain issues. The worker-server (`tests/support/worker-server.mjs`) creates the Miniflare instance, applies migrations, seeds the database, and exposes test-only admin endpoints (`/api/__test/reset`, `/api/__test/seed`) — guarded by `TEST_MODE=true` so they never exist in production. Integration test helpers call these endpoints over HTTP for per-suite DB isolation.
+
+### API integration tests (`tests/api/*.test.js`)
+
+Vitest + Node native `fetch` against the running stack. Reset + seed before each suite via the admin endpoints. Auth is handled by re-exporting `signJwt` from `worker/src/auth.ts`, so test tokens match the production JWT format exactly. Run in isolation with `npm run test:api`.
+
+### Web E2E tests (`tests/e2e/*.spec.js`)
+
+Playwright against the proxy origin. Initial scope is a smoke test (app shell renders). E2E coverage must expand with features — every new UI flow should add or update a spec. Run with `npm run test:e2e`.
+
+### Production smoke tests
+
+A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) hits the live `rumaq.pages.dev` every 6 hours with read-only `GET` requests:
+
+- Public: frontend loads, `/api/health` returns 200.
+- Authenticated (when `RUMAQ_PROD_SESSION` secret is set): `/api/me` and `/api/stock` return 200 with the expected shape.
+
+Smoke tests assert status and shape only — never exact values. On failure, a GitHub issue is auto-created with the `smoke-failure` label.
+
+### Acceptance criteria for new features
+
+- Adds or modifies an API endpoint → add/update a Vitest integration test in `tests/api/`.
+- Adds or modifies a UI flow → add/update a Playwright spec in `tests/e2e/`.
+- All tests must pass in Docker (`npm run test:docker`) and in CI before merge.

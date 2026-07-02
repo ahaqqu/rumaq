@@ -126,7 +126,8 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Cloudflare Worker deployment config | Partial | P0 | `worker/wrangler.toml.example`; user must copy and fill |
 | D1 database creation guide | Done | P0 | `scripts/setup-db.js` + README |
 | R2 bucket creation guide | Not started | P0 | Add to README or script |
-| GitHub Actions CI | Done | P1 | Build + typecheck on push/PR to main |
+| GitHub Actions CI | Done | P1 | Unit tests + build on push/PR to main |
+| Test automation CI | Done | P1 | Docker-based integration/E2E tests on push/PR to main |
 | Preview deployments for PRs | Not started | P1 | Cloudflare Pages preview branches |
 | Secrets management documentation | Partial | P0 | Listed in `docs/ARCHITECTURE.md`; add step-by-step |
 | Environment-specific configs | Not started | P1 | `.dev.vars` for local, secrets for prod |
@@ -137,9 +138,11 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 |---|---|---|---|
 | Frontend production build | Done | P0 | `npm run build` passes |
 | Worker TypeScript typecheck | Done | P0 | `npx tsc --noEmit` passes |
-| Unit tests | Not started | P1 | Add Vitest for `src/lib/persona.js` |
-| API integration tests | Not started | P1 | Test Worker routes with Miniflare |
-| End-to-end tests | Not started | P2 | Playwright for critical flows |
+| Unit tests | Done | P1 | Vitest: 16+ frontend suites, 3 worker suites with coverage thresholds |
+| API integration tests | Done | P1 | `tests/api/` — Vitest + fetch against Docker Miniflare; `npm run test:api` |
+| End-to-end tests | Partial | P2 | Playwright smoke test in `tests/e2e/`; `npm run test:e2e` |
+| Docker test automation | Done | P1 | `docker compose -f docker-compose.test.yml` runs all tests; CI workflow |
+| Production smoke tests | Done | P1 | Scheduled GitHub Actions check `rumaq.pages.dev` every 6 hours |
 | Accessibility audit | Not started | P1 | Keyboard navigation, contrast, labels |
 | Performance budget | Not started | P2 | Bundle size, First Contentful Paint |
 

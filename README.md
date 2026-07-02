@@ -60,6 +60,8 @@ worker/               # Cloudflare Workers backend
   migrations/         # D1 schema migrations
 scripts/              # Setup and utility scripts
 docs/                 # Architecture & API docs
+tests/                # Integration & E2E tests
+docker/               # Dockerfiles and nginx configs for the test harness
 ```
 
 ### Prerequisites
@@ -86,6 +88,34 @@ Prepares env (config, deps, DB, build) then starts dev servers on `localhost:517
 ```
 
 Creates D1 database + R2 bucket if missing, deploys Worker and Pages. Idempotent. Prompts for `account_id` first time.
+
+### Testing
+
+RumaQ has three test layers.
+
+**Unit tests** (Vitest) — run fast, no Docker required:
+
+```bash
+npm test              # frontend (jsdom)
+cd worker && npm test # backend (Node, mocked D1)
+```
+
+**Integration & E2E tests** (Docker) — exercise the real stack via Miniflare + Playwright:
+
+```bash
+npm run test:docker
+```
+
+This builds four containers (API via Miniflare, web build via nginx, a reverse proxy on `:3000`, and a Playwright test runner) and runs the API integration tests then the E2E smoke test. Requires Docker + Docker Compose only.
+
+Run the integration or E2E tests individually against an already-running stack:
+
+```bash
+npm run test:api      # Vitest + fetch against localhost:3000
+npm run test:e2e      # Playwright against localhost:3000
+```
+
+See [`docs/ARCHITECTURE.md §11`](docs/ARCHITECTURE.md) for the full testing architecture, and [`docs/TEST_AUTOMATION_PLAN.md`](docs/TEST_AUTOMATION_PLAN.md) for the design rationale.
 
 ### Further docs
 
