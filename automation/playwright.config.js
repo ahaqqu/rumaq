@@ -2,8 +2,8 @@ import { defineConfig } from '@playwright/test'
 import { defineBddConfig } from 'playwright-bdd'
 
 const testDir = defineBddConfig({
-  features: 'automation/tests/local/e2e/features/*.feature',
-  steps: 'automation/tests/local/e2e/steps/*.steps.js',
+  features: 'tests/local/e2e/features/*.feature',
+  steps: 'tests/local/e2e/steps/*.steps.js',
 })
 
 export default defineConfig({
