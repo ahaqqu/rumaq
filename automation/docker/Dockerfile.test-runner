@@ -12,8 +12,8 @@ RUN cd worker && npm ci --no-audit --no-fund --omit=scripts
 # Layer 2: stable configs & migrations (rarely change)
 COPY worker/tsconfig.json ./worker/
 COPY worker/migrations/ ./worker/migrations/
-COPY automation/playwright.config.js ./playwright.config.js
-COPY automation/vitest.config.integration.mjs ./vitest.config.integration.mjs
+COPY automation/playwright.config.js ./automation/playwright.config.js
+COPY automation/vitest.config.integration.mjs ./automation/vitest.config.integration.mjs
 
 # Layer 3: app source (changes moderately)
 COPY worker/src/ ./worker/src/
