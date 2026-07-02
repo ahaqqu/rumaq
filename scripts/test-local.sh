@@ -37,7 +37,39 @@ info()  { echo -e "==> $1"; }
 ok()    { echo -e "  ✓  $1"; }
 fail()  { echo -e "  ✗  $1"; }
 
-require_cmd docker "Install Docker: https://docs.docker.com/get-docker/"
+install_docker() {
+  info "Docker not found. Attempting auto-install..."
+  if command -v curl &>/dev/null; then
+    curl -fsSL https://get.docker.com | sh
+  elif command -v wget &>/dev/null; then
+    wget -qO- https://get.docker.com | sh
+  elif command -v apt &>/dev/null; then
+    sudo apt update && sudo apt install -y docker.io docker-compose-v2
+  elif command -v dnf &>/dev/null; then
+    sudo dnf install -y docker docker-compose
+  elif command -v yum &>/dev/null; then
+    sudo yum install -y docker docker-compose-plugin
+  elif command -v pacman &>/dev/null; then
+    sudo pacman -S --noconfirm docker docker-compose
+  elif command -v zypper &>/dev/null; then
+    sudo zypper install -y docker docker-compose
+  elif command -v apk &>/dev/null; then
+    sudo apk add docker docker-compose
+  else
+    fail "Could not auto-install Docker. Install manually: https://docs.docker.com/get-docker/"
+    exit 1
+  fi
+  sudo systemctl enable --now docker 2>/dev/null || sudo rc-update add docker boot 2>/dev/null || true
+  if ! groups "$USER" 2>/dev/null | grep -q docker; then
+    sudo usermod -aG docker "$USER"
+    info "Added $USER to docker group. Log out and back in, or run 'newgrp docker'."
+  fi
+  ok "Docker installed."
+}
+
+if ! command -v docker &>/dev/null; then
+  install_docker
+fi
 
 cd "$ROOT_DIR"
 
@@ -45,8 +77,29 @@ cd "$ROOT_DIR"
 # Check Docker is running
 # ------------------------------------------------------------------
 if ! docker info &>/dev/null; then
-  fail "Docker is not running. Start Docker and try again."
-  exit 1
+  info "Docker is not running. Attempting to start it..."
+  if command -v systemctl &>/dev/null; then
+    sudo systemctl start docker
+  elif command -v service &>/dev/null; then
+    sudo service docker start
+  elif command -v rc-service &>/dev/null; then
+    sudo rc-service docker start
+  else
+    fail "Could not start Docker automatically. Start Docker manually and try again."
+    exit 1
+  fi
+  # Wait for Docker to be ready
+  for i in $(seq 1 10); do
+    if docker info &>/dev/null; then
+      ok "Docker is now running."
+      break
+    fi
+    sleep 1
+  done
+  if ! docker info &>/dev/null; then
+    fail "Docker still not running after 10s. Check 'sudo journalctl -u docker' for errors."
+    exit 1
+  fi
 fi
 
 # ------------------------------------------------------------------
