@@ -2,6 +2,8 @@
 
 This document describes the production architecture for RumaQ on Cloudflare's free tier. It is designed for a single household (MVP) but keeps the data model ready for multi-household expansion.
 
+> **Testing strategy has moved** → [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md)
+
 ## 1. Goals & constraints
 
 - **Low friction.** Users photograph receipts; the system infers stock. Manual logging is a fallback, never the default.
@@ -40,7 +42,33 @@ rumaq/
 │   ├── wrangler.local.toml # Local dev config
 │   ├── wrangler.cloudflare.toml # Production config
 │   └── wrangler.toml.example # Template
-├── scripts/                # Setup and deployment scripts
+├── scripts/                # Setup, deployment, and smoke-trigger scripts
+│   ├── deploy.sh           # Full-stack deployment
+│   ├── deploy-cf.js        # Cloudflare-specific deploy helper
+│   ├── setup-db.js         # D1 database setup
+│   └── trigger-smoke.sh    # Triggers production smoke workflow remotely
+├── automation/             # All test automation
+│   ├── tests/              # Feature files, step definitions, fixtures
+│   │   ├── local/          # Local stack tests (API + E2E)
+│   │   │   ├── api/        # API BDD feature files + steps
+│   │   │   └── e2e/        # Playwright BDD feature files + steps
+│   │   ├── live/           # Production smoke tests
+│   │   │   └── health/     # Health-check feature + steps
+│   │   ├── fixtures/       # seed.sql, reset.sql
+│   │   └── support/        # worker-server.mjs, auth.js, db.js helpers
+│   ├── docker/             # Dockerfiles and nginx configs for test harness
+│   ├── scripts/            # Test runner and report scripts
+│   │   ├── test-local.sh           # Full Docker test suite orchestrator
+│   │   ├── run-smoke-tests.sh      # Production smoke runner (CI)
+│   │   └── generate-test-report.js # HTML report from vitest JSON
+│   ├── docker-compose.yml  # One-command test orchestration
+│   ├── playwright.config.js
+│   └── vitest.config.integration.mjs
+├── .github/
+│   └── workflows/
+│       ├── ci.yml          # Unit tests + lint
+│       ├── test-automation.yml  # Integration + E2E via Docker
+│       └── smoke.yml       # Scheduled production smoke
 └── docs/
     ├── ARCHITECTURE.md     # this file
     ├── API.md              # REST API contract
@@ -192,3 +220,13 @@ If usage grows, the first upgrade is Workers Paid ($5/mo) for higher request and
 - [x] D1 queries are parameterized; no string concatenation.
 - [x] CORS allows only the Pages origin in production.
 - [ ] AI prompts never expose another user's data.
+
+## 11. Testing
+
+See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) for the full testing strategy, including:
+
+- **Unit tests** (Vitest) for frontend and worker
+- **API integration tests** (Vitest BDD via Miniflare in Docker)
+- **Web E2E tests** (Playwright BDD in Docker)
+- **Production smoke tests** (scheduled GitHub Actions workflow hitting `rumaq.pages.dev`)
+- **Acceptance criteria** for new features

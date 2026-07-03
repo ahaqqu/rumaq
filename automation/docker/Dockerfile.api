@@ -1,0 +1,33 @@
+FROM node:22-slim AS api
+
+WORKDIR /app
+
+# Layer 1: dependencies (cached until lockfiles change)
+COPY package.json package-lock.json ./
+COPY worker/package.json worker/package-lock.json ./worker/
+RUN --mount=type=cache,target=/root/.npm \
+  npm ci --no-audit --no-fund && \
+  cd worker && npm ci --no-audit --no-fund
+
+# Layer 2: stable configs & migrations (rarely change)
+COPY worker/tsconfig.json ./worker/
+COPY worker/migrations/ ./worker/migrations/
+
+# Layer 3: test support files (change moderately)
+COPY automation/tests/ ./automation/tests/
+
+# Layer 4: worker source (changes most frequently)
+COPY worker/src/ ./worker/src/
+
+# Layer 5: build (invalidated when src changes)
+RUN cd worker && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --outfile=dist/index.mjs && \
+  # Fix hono/logger dynamic import: Miniflare can't handle import(cfWorkers) with a variable specifier.
+  # Replace the variable with a string literal so Miniflare recognizes the cloudflare: built-in.
+  sed -i 's/await import(cfWorkers)/await import("cloudflare:workers")/' dist/index.mjs
+
+EXPOSE 8787
+
+ENV NODE_ENV=test
+ENV TEST_MODE=true
+
+CMD ["node", "automation/tests/support/worker-server.mjs"]

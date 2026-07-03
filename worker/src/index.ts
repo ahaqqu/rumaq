@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
+import { cors } from 'hono/cors'
 import { z } from 'zod'
 import { zValidator } from '@hono/zod-validator'
 import { authApp } from './auth.js'
@@ -30,6 +30,7 @@ const stockQuery = z.object({
 const app = new Hono<Env>()
 
 app.use(logger())
+
 app.use(
   '*',
   cors({

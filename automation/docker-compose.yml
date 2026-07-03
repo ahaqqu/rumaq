@@ -1,0 +1,44 @@
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: automation/docker/Dockerfile.api
+    environment:
+      - TEST_MODE=true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8787/api/health').then(r => r.ok ? process.exit(0) : process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+      start_period: 15s
+
+  web:
+    build:
+      context: ..
+      dockerfile: automation/docker/Dockerfile.web
+
+  proxy:
+    image: nginx:alpine
+    expose:
+      - "3000"
+    volumes:
+      - ./docker/nginx.proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
+
+  test-runner:
+    build:
+      context: ..
+      dockerfile: automation/docker/Dockerfile.test-runner
+    environment:
+      - TEST_BASE_URL=http://proxy:3000
+    depends_on:
+      proxy:
+        condition: service_started
+    volumes:
+      - ./test-results/vitest:/app/vitest-report
+      - ./test-results/playwright:/app/playwright-report
+      - ./test-results/artifacts:/app/test-results
