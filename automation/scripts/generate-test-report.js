@@ -6,9 +6,9 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '../..')
 
-const vitestJsonPath = resolve(ROOT, 'test-results/vitest/api-results.json')
-const playwrightReportDir = resolve(ROOT, 'test-results/playwright')
-const outputPath = resolve(ROOT, 'test-results/test-report.html')
+const vitestJsonPath = resolve(ROOT, 'automation/test-results/vitest/api-results.json')
+const playwrightReportDir = resolve(ROOT, 'automation/test-results/playwright')
+const outputPath = resolve(ROOT, 'automation/test-results/test-report.html')
 
 const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
 

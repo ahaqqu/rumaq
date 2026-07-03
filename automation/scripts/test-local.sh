@@ -128,9 +128,9 @@ case "$MODE" in
     EXIT_CODE=$?
 
     # Generate HTML report from vitest JSON (mounted volume)
-    if [ -f "$ROOT_DIR/test-results/vitest/api-results.json" ]; then
+    if [ -f "$ROOT_DIR/automation/test-results/vitest/api-results.json" ]; then
       node "$ROOT_DIR/automation/scripts/generate-test-report.js" 2>/dev/null && \
-        ok "HTML report: test-results/test-report.html" || true
+        ok "HTML report: automation/test-results/test-report.html" || true
     fi
 
     if [[ $EXIT_CODE -eq 0 ]]; then

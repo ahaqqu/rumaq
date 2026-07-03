@@ -26,11 +26,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: playwright-report
-          path: test-results/playwright/
+          path: automation/test-results/playwright/
 
       - name: Upload test results
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: test-results/
+          path: automation/test-results/

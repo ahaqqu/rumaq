@@ -121,7 +121,7 @@ npm run test:api      # Vitest + fetch against localhost:3000
 npm run test:e2e      # Playwright against localhost:3000
 ```
 
-See [`docs/ARCHITECTURE.md §11`](docs/ARCHITECTURE.md) for the full testing architecture, and [`docs/TEST_AUTOMATION_PLAN.md`](docs/TEST_AUTOMATION_PLAN.md) for the design rationale.
+See [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) for the full testing architecture.
 
 ### Further docs
 
