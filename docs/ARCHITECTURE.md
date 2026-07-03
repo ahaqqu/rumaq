@@ -71,7 +71,7 @@ rumaq/
 ├── .github/
 │   ├── dependabot.yml      # Daily dependency version bumps
 │   └── workflows/
-│       ├── ci.yml          # Unit tests + lint
+│       ├── ci.yml          # Unit tests + lint + audit
 │       ├── test-automation.yml  # Integration + E2E via Docker
 │       ├── smoke.yml       # Scheduled production smoke
 │       └── audit.yml       # Daily vulnerability scan + auto PR
