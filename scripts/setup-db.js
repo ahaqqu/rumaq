@@ -6,7 +6,7 @@
  *   node scripts/setup-db.js [database-name]
  *
  * Defaults to "rumaq". The script creates the D1 database (if it does not exist)
- * and applies migrations from worker/migrations/.
+ * and applies migrations from backend/migrations/.
  */
 
 import { spawnSync } from 'node:child_process'
@@ -14,7 +14,7 @@ import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 const DB_NAME = process.argv[2] || 'rumaq'
-const MIGRATIONS_DIR = resolve('worker', 'migrations')
+const MIGRATIONS_DIR = resolve('backend', 'migrations')
 
 function run(command, args = [], options = {}) {
   const result = spawnSync(command, args, {
@@ -51,9 +51,9 @@ if (!existsSync(MIGRATIONS_DIR)) {
   process.exit(1)
 }
 
-const WRANGLER_TOML = resolve('worker', 'wrangler.cloudflare.toml')
+const WRANGLER_TOML = resolve('backend', 'wrangler.cloudflare.toml')
 if (!existsSync(WRANGLER_TOML)) {
-  console.error(`worker/wrangler.cloudflare.toml not found. Run \`./scripts/deploy.sh cloudflare\` first.`)
+  console.error(`backend/wrangler.cloudflare.toml not found. Run \`./scripts/deploy.sh cloudflare\` first.`)
   process.exit(1)
 }
 
@@ -75,16 +75,16 @@ if (!hasDb) {
     process.exit(1)
   }
   console.log(create.stdout)
-  console.log('\nIMPORTANT: copy the database_id above into worker/wrangler.cloudflare.toml under [[d1_databases]].\n')
+  console.log('\nIMPORTANT: copy the database_id above into backend/wrangler.cloudflare.toml under [[d1_databases]].\n')
 } else {
   console.log(`Database "${DB_NAME}" already exists.`)
 }
 
 // Apply migrations.
 console.log('Applying migrations...')
-const LOCAL_TOML = resolve('worker', 'wrangler.local.toml')
-run('wrangler', ['d1', 'migrations', 'apply', DB_NAME, '--local', '--config', LOCAL_TOML], { cwd: resolve('worker') })
+const LOCAL_TOML = resolve('backend', 'wrangler.local.toml')
+run('wrangler', ['d1', 'migrations', 'apply', DB_NAME, '--local', '--config', LOCAL_TOML], { cwd: resolve('backend') })
 
-const CLOUDFLARE_TOML = resolve('worker', 'wrangler.cloudflare.toml')
+const CLOUDFLARE_TOML = resolve('backend', 'wrangler.cloudflare.toml')
 console.log('\nDone. Run the following to apply to production:')
-console.log(`  cd worker && wrangler d1 migrations apply ${DB_NAME} --config wrangler.cloudflare.toml`)
+console.log(`  npm run db:migrate -w backend`)

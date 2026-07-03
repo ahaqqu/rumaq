@@ -5,12 +5,12 @@ import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '../../..')
-const WORKER_DIR = resolve(ROOT, 'worker')
-const BUNDLE_PATH = resolve(WORKER_DIR, 'dist/index.mjs')
+const BACKEND_DIR = resolve(ROOT, 'backend')
+const BUNDLE_PATH = resolve(BACKEND_DIR, 'dist/index.mjs')
 
 // --- Read SQL files ---
 const migrationSql = readFileSync(
-  resolve(WORKER_DIR, 'migrations/0001_schema.sql'),
+  resolve(BACKEND_DIR, 'migrations/0001_schema.sql'),
   'utf-8'
 )
 const seedSql = readFileSync(

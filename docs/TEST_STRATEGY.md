@@ -6,10 +6,10 @@ RumaQ has three test layers, each with a distinct purpose and runner.
 
 Two separate Vitest projects:
 
-- **Frontend** (`src/**/*.test.{js,jsx}`) — jsdom environment, coverage thresholds 90/75/85/90.
-- **Worker** (`worker/src/**/*.test.ts`) — Node environment, 100% coverage threshold. D1 is mocked entirely.
+- **Frontend** (`frontend/src/**/*.test.{js,jsx}`) — jsdom environment, coverage thresholds 90/75/85/90.
+- **Backend** (`backend/src/**/*.test.ts`) — Node environment, 100% coverage threshold. D1 is mocked entirely.
 
-Run with `npm test` (frontend) or `npm test` in `worker/` (backend). These run in the existing `ci.yml` workflow.
+Run with `npm test` (all workspaces) or `npm run test -w frontend` / `npm run test -w backend`.
 
 ## Integration & E2E tests (Docker)
 
@@ -34,7 +34,7 @@ The same-origin proxy eliminates CORS/cookie cross-domain issues. The worker-ser
 
 ### API integration tests
 
-Written in Gherkin (`.feature` files) with `jest-cucumber` step definitions at `automation/tests/local/api/steps/*.steps.js`. Run by Vitest against the running stack. Reset + seed before each scenario via the admin endpoints. Auth is handled by re-exporting `signJwt` from `worker/src/auth.ts`, so test tokens match the production JWT format exactly. Run in isolation with:
+Written in Gherkin (`.feature` files) with `jest-cucumber` step definitions at `automation/tests/local/api/steps/*.steps.js`. Run by Vitest against the running stack. Reset + seed before each scenario via the admin endpoints. Auth is handled by re-exporting `signJwt` from `backend/src/auth.ts`, so test tokens match the production JWT format exactly. Run in isolation with:
 
 ```bash
 npm run test:api

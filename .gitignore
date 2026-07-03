@@ -6,9 +6,9 @@ dist-ssr
 .DS_Store
 .vscode/*
 !.vscode/extensions.json
-worker/wrangler.toml
-worker/.dev.vars
-worker/.wrangler
+backend/wrangler.toml
+backend/.dev.vars
+backend/.wrangler
 .env
 coverage
 playwright-report

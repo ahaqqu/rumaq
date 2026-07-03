@@ -54,9 +54,9 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 | Item | Status | Priority | Notes |
 |---|---|---|---|
-| Worker project scaffold | Done | P0 | `worker/` with Hono, Wrangler config example |
-| Google OAuth 2.0 login & callback | Partial | P0 | `worker/src/auth.ts`; needs real credentials and testing |
-| JWT session cookie middleware | Done | P0 | `worker/src/middleware.ts`; verifies cookie + loads active household |
+| Backend project scaffold | Done | P0 | `backend/` with Hono, Wrangler config example |
+| Google OAuth 2.0 login & callback | Partial | P0 | `backend/src/auth.ts`; needs real credentials and testing |
+| JWT session cookie middleware | Done | P0 | `backend/src/middleware.ts`; verifies cookie + loads active household |
 | CORS configuration | Done | P0 | Configured for Pages origin + localhost |
 | Health check endpoint | Done | P0 | `GET /api/health` |
 | `GET /api/me` endpoint | Done | P0 | Returns current user |
@@ -80,7 +80,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 | Item | Status | Priority | Notes |
 |---|---|---|---|
-| Relational schema design | Done | P0 | `worker/migrations/0001_schema.sql` |
+| Relational schema design | Done | P0 | `backend/migrations/0001_schema.sql` |
 | Migration runner / setup script | Done | P0 | `scripts/setup-db.js` |
 | Seed default locations & stores | Not started | P0 | Run after household creation |
 | Run-out estimate computation | Not started | P0 | SQL/view or Worker logic from purchase history |
@@ -93,13 +93,13 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item | Status | Priority | Notes |
 |---|---|---|---|
 | Google OAuth 2.0 integration | Partial | P0 | Code complete; needs secrets and live test |
-| Session JWT signing | Partial | P0 | `worker/src/auth.ts`; verify key rotation story |
+| Session JWT signing | Partial | P0 | `backend/src/auth.ts`; verify key rotation story |
 | Secure AI key encryption | Not started | P0 | AES-GCM with `WORKER_ENCRYPTION_KEY` |
 | R2 signed URLs for receipts | Not started | P0 | Don't expose bucket directly |
 | AI prompt data isolation | Not started | P0 | System prompt + context must never include another household's data |
 | HTTPS-only cookies | Partial | P0 | Set `Secure`; verify on deployed domain |
 | CORS restricted to Pages origin | Partial | P0 | Configured; verify in production |
-| CSRF protection via OAuth state | Done | P0 | `state` + PKCE in `worker/src/auth.ts` |
+| CSRF protection via OAuth state | Done | P0 | `state` + PKCE in `backend/src/auth.ts` |
 | Row-level security review | Not started | P1 | Ensure every query filters by household |
 
 ## 6. AI features
@@ -123,7 +123,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item | Status | Priority | Notes |
 |---|---|---|---|
 | Cloudflare Pages deployment config | Partial | P0 | Vite build ready; need `wrangler pages deploy` |
-| Cloudflare Worker deployment config | Partial | P0 | `worker/wrangler.toml.example`; user must copy and fill |
+| Cloudflare Worker deployment config | Partial | P0 | `backend/wrangler.toml.example`; user must copy and fill |
 | D1 database creation guide | Done | P0 | `scripts/setup-db.js` + README |
 | R2 bucket creation guide | Not started | P0 | Add to README or script |
 | GitHub Actions CI | Done | P1 | Unit tests + build on push/PR to main |

@@ -40,15 +40,15 @@ Household shopping & inventory assistant. Snap a receipt — stock updates. Know
 
 Prepares config, dependencies, database, and build, then starts dev servers on `localhost:5173` / `:8787`. Idempotent from clean checkout.
 
-> Before first run, edit `worker/.dev.vars` with real secrets (Google OAuth, JWT secret, encryption key).
+> Before first run, edit `backend/.dev.vars` with real secrets (Google OAuth, JWT secret, encryption key).
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architecture, auth flow, and free-tier limits.
 
 ### Testing
 
 ```bash
-npm test                # frontend unit tests (Vitest)
-cd worker && npm test   # worker unit tests
+npm test                # all unit tests (Vitest)
+npm run test -w backend  # backend unit tests only
 npm run test:docker     # integration + E2E in Docker (Miniflare + Playwright)
 ```
 
@@ -79,4 +79,4 @@ A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) verifies `ru
 - [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) — testing strategy
 - [`docs/features/persona.md`](docs/features/persona.md) — persona personalisation
 - [`docs/features/internationalisation.md`](docs/features/internationalisation.md) — i18n
-- [`worker/migrations/0001_schema.sql`](worker/migrations/0001_schema.sql) — D1 schema
+- [`backend/migrations/0001_schema.sql`](backend/migrations/0001_schema.sql) — D1 schema
