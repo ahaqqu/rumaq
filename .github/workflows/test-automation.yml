@@ -1,14 +1,9 @@
 name: Test Automation
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  schedule:
+    - cron: '0 9 * * *'
+  workflow_dispatch:
 
 jobs:
   test:

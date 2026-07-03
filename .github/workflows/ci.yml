@@ -38,9 +38,24 @@ jobs:
 
       - run: npm run test -w backend -- --coverage
 
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check for critical vulnerabilities
+        run: npm audit --omit=dev --audit-level=critical
+
   build:
     runs-on: ubuntu-latest
-    needs: [test-frontend, test-backend]
+    needs: [test-frontend, test-backend, audit]
     steps:
       - uses: actions/checkout@v4
 

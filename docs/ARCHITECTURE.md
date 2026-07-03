@@ -69,10 +69,12 @@ rumaq/
 │   ├── playwright.config.js
 │   └── vitest.config.integration.mjs
 ├── .github/
+│   ├── dependabot.yml      # Daily dependency version bumps
 │   └── workflows/
-│       ├── ci.yml          # Unit tests + lint
+│       ├── ci.yml          # Unit tests + lint + audit
 │       ├── test-automation.yml  # Integration + E2E via Docker
-│       └── smoke.yml       # Scheduled production smoke
+│       ├── smoke.yml       # Scheduled production smoke
+│       └── audit.yml       # Daily vulnerability scan + auto PR
 └── docs/
     ├── ARCHITECTURE.md     # this file
     ├── API.md              # REST API contract
@@ -234,3 +236,16 @@ See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) for the full testing strategy, i
 - **Web E2E tests** (Playwright BDD in Docker)
 - **Production smoke tests** (scheduled GitHub Actions workflow hitting `rumaq.pages.dev`)
 - **Acceptance criteria** for new features
+
+## 12. Vulnerability management
+
+Two automated mechanisms keep dependencies secure:
+
+| Mechanism | Trigger | Action |
+|---|---|---|
+| **Dependabot** (`.github/dependabot.yml`) | Daily 06:00 JKT | Opens PRs for available version bumps, grouped by minor/patch |
+| **Audit workflow** (`.github/workflows/audit.yml`) | Daily 07:00 JKT | Runs `npm audit`, attempts `npm audit fix`, creates PR with fixes or opens an issue if manual intervention is needed |
+
+- Production dependencies (`npm audit --omit=dev`) are checked separately and treated as urgent.
+- Vulnerabilities that require breaking changes create a GitHub issue (labelled `security`) instead of an auto-PR.
+- Test tooling (`@cucumber/*`, `jest-cucumber`) is kept in `devDependencies` so transitive vulns in those packages never affect production audits.
