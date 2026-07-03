@@ -8,12 +8,15 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v6
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
 
       - run: npm ci
@@ -28,11 +31,13 @@ jobs:
         uses: actions/github-script@v9
         with:
           script: |
+            const api = { headers: { 'X-GitHub-Api-Version': '2022-11-28' } }
             const { data: issues } = await github.rest.issues.listForRepo({
               owner: context.repo.owner,
               repo: context.repo.repo,
               labels: 'smoke-failure',
               state: 'open',
+              ...api,
             })
 
             const now = new Date().toISOString().slice(0, 10)
@@ -51,4 +56,5 @@ jobs:
               title,
               body: `Production smoke tests failed.\n\n[View failed run](${runUrl})\n\n**Action required:** Investigate the failure and fix or acknowledge.`,
               labels: ['smoke-failure'],
+              ...api,
             })
