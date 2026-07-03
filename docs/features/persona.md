@@ -14,4 +14,4 @@ Enter your roles in **Settings**, tap **Apply**. If an AI key is available, the 
 
 ## Source
 
-The logic lives in `src/lib/persona.js` and is managed through `PersonaContext`. During prototyping settings are stored in `localStorage`; in production they sync with `GET /api/settings` and `PATCH /api/settings`.
+The logic lives in `frontend/src/lib/persona.js` and is managed through `PersonaContext`. During prototyping settings are stored in `localStorage`; in production they sync with `GET /api/settings` and `PATCH /api/settings`.

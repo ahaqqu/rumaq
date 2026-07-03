@@ -5,21 +5,20 @@ WORKDIR /app
 
 # Layer 1: dependencies (cached until lockfiles change)
 COPY package.json package-lock.json ./
-COPY worker/package.json worker/package-lock.json ./worker/
+COPY frontend/package.json ./frontend/
+COPY backend/package.json ./backend/
 RUN --mount=type=cache,target=/root/.npm \
-  npm ci --no-audit --no-fund
-RUN --mount=type=cache,target=/root/.npm \
-  cd worker && npm ci --no-audit --no-fund
+  npm install --no-audit --no-fund
 
 # Layer 2: stable configs & migrations (rarely change)
-COPY worker/tsconfig.json ./worker/
-COPY worker/migrations/ ./worker/migrations/
+COPY backend/tsconfig.json ./backend/
+COPY backend/migrations/ ./backend/migrations/
 COPY automation/playwright.config.js ./automation/playwright.config.js
 COPY automation/vitest.config.integration.mjs ./automation/vitest.config.integration.mjs
 
 # Layer 3: app source (changes moderately)
-COPY worker/src/ ./worker/src/
-COPY src/ ./src/
+COPY backend/src/ ./backend/src/
+COPY frontend/src/ ./frontend/src/
 
 # Layer 4: tests (changes most frequently)
 COPY automation/tests/ ./automation/tests/

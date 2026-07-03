@@ -20,7 +20,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item | Status | Priority | Notes |
 |---|---|---|---|
 | Product definition & design brief | Done | P0 | `.commandcode/design/brief.md` |
-| Visual design system & CSS tokens | Done | P0 | `src/styles/tokens.css`, `base.css`, `components.css` |
+| Visual design system & CSS tokens | Done | P0 | `frontend/src/styles/tokens.css`, `base.css`, `components.css` |
 | README for users and developers | Done | P0 | `README.md` |
 | Full-stack architecture document | Done | P0 | `docs/ARCHITECTURE.md` |
 | REST API contract | Done | P0 | `docs/API.md` |
@@ -31,18 +31,18 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item | Status | Priority | Notes |
 |---|---|---|---|
 | Vite + React project scaffold | Done | P0 | Existing prototype |
-| Responsive app shell (rail + topbar + bottombar) | Done | P0 | `src/components/AppShell.jsx` |
-| Home / overview dashboard | Done | P0 | `src/pages/Home.jsx` |
-| Inventory list with search and filter | Done | P0 | `src/pages/Inventory.jsx` |
-| Add stock from receipt (UI flow) | Done | P0 | `src/pages/AddFromReceipt.jsx`; currently mocked |
-| Shopping plan UI | Done | P0 | `src/pages/Plan.jsx`; currently mocked |
-| Purchase history UI | Done | P0 | `src/pages/History.jsx` |
-| Settings UI (AI key, locations, motion, currency) | Done | P0 | `src/pages/Settings.jsx` |
-| Persona personalization UI | Done | P0 | `src/pages/Settings.jsx` persona section |
-| Persona copy transformation | Done | P0 | `src/lib/persona.js` `speak()` |
-| Persona theme color generator | Done | P0 | `src/lib/persona.js` `applyTheme()` |
-| AI assistant chat panel | Done | P0 | `src/components/Assistant.jsx`; currently mocked |
-| API client module | Partial | P0 | `src/lib/api.js` has `getMe`, `getStock`, `getHealth`; needs full endpoint coverage |
+| Responsive app shell (rail + topbar + bottombar) | Done | P0 | `frontend/src/components/AppShell.jsx` |
+| Home / overview dashboard | Done | P0 | `frontend/src/pages/Home.jsx` |
+| Inventory list with search and filter | Done | P0 | `frontend/src/pages/Inventory.jsx` |
+| Add stock from receipt (UI flow) | Done | P0 | `frontend/src/pages/AddFromReceipt.jsx`; currently mocked |
+| Shopping plan UI | Done | P0 | `frontend/src/pages/Plan.jsx`; currently mocked |
+| Purchase history UI | Done | P0 | `frontend/src/pages/History.jsx` |
+| Settings UI (AI key, locations, motion, currency) | Done | P0 | `frontend/src/pages/Settings.jsx` |
+| Persona personalization UI | Done | P0 | `frontend/src/pages/Settings.jsx` persona section |
+| Persona copy transformation | Done | P0 | `frontend/src/lib/persona.js` `speak()` |
+| Persona theme color generator | Done | P0 | `frontend/src/lib/persona.js` `applyTheme()` |
+| AI assistant chat panel | Done | P0 | `frontend/src/components/Assistant.jsx`; currently mocked |
+| API client module | Partial | P0 | `frontend/src/lib/api.js` has `getMe`, `getStock`, `getHealth`; needs full endpoint coverage |
 | Authentication UI (login / logout) | Not started | P0 | Redirect to `/api/auth/login`; show user avatar |
 | Error boundaries and loading states | Partial | P1 | Skeletons exist; need global error handling |
 | Offline / optimistic updates | Not started | P1 | Local-first feel, sync when online |
@@ -54,9 +54,9 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 | Item | Status | Priority | Notes |
 |---|---|---|---|
-| Worker project scaffold | Done | P0 | `worker/` with Hono, Wrangler config example |
-| Google OAuth 2.0 login & callback | Partial | P0 | `worker/src/auth.ts`; needs real credentials and testing |
-| JWT session cookie middleware | Done | P0 | `worker/src/middleware.ts`; verifies cookie + loads active household |
+| Backend project scaffold | Done | P0 | `backend/` with Hono, Wrangler config example |
+| Google OAuth 2.0 login & callback | Partial | P0 | `backend/src/auth.ts`; needs real credentials and testing |
+| JWT session cookie middleware | Done | P0 | `backend/src/middleware.ts`; verifies cookie + loads active household |
 | CORS configuration | Done | P0 | Configured for Pages origin + localhost |
 | Health check endpoint | Done | P0 | `GET /api/health` |
 | `GET /api/me` endpoint | Done | P0 | Returns current user |
@@ -80,7 +80,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 | Item | Status | Priority | Notes |
 |---|---|---|---|
-| Relational schema design | Done | P0 | `worker/migrations/0001_schema.sql` |
+| Relational schema design | Done | P0 | `backend/migrations/0001_schema.sql` |
 | Migration runner / setup script | Done | P0 | `scripts/setup-db.js` |
 | Seed default locations & stores | Not started | P0 | Run after household creation |
 | Run-out estimate computation | Not started | P0 | SQL/view or Worker logic from purchase history |
@@ -93,13 +93,13 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item | Status | Priority | Notes |
 |---|---|---|---|
 | Google OAuth 2.0 integration | Partial | P0 | Code complete; needs secrets and live test |
-| Session JWT signing | Partial | P0 | `worker/src/auth.ts`; verify key rotation story |
+| Session JWT signing | Partial | P0 | `backend/src/auth.ts`; verify key rotation story |
 | Secure AI key encryption | Not started | P0 | AES-GCM with `WORKER_ENCRYPTION_KEY` |
 | R2 signed URLs for receipts | Not started | P0 | Don't expose bucket directly |
 | AI prompt data isolation | Not started | P0 | System prompt + context must never include another household's data |
 | HTTPS-only cookies | Partial | P0 | Set `Secure`; verify on deployed domain |
 | CORS restricted to Pages origin | Partial | P0 | Configured; verify in production |
-| CSRF protection via OAuth state | Done | P0 | `state` + PKCE in `worker/src/auth.ts` |
+| CSRF protection via OAuth state | Done | P0 | `state` + PKCE in `backend/src/auth.ts` |
 | Row-level security review | Not started | P1 | Ensure every query filters by household |
 
 ## 6. AI features
@@ -123,7 +123,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item | Status | Priority | Notes |
 |---|---|---|---|
 | Cloudflare Pages deployment config | Partial | P0 | Vite build ready; need `wrangler pages deploy` |
-| Cloudflare Worker deployment config | Partial | P0 | `worker/wrangler.toml.example`; user must copy and fill |
+| Cloudflare Worker deployment config | Partial | P0 | `backend/wrangler.toml.example`; user must copy and fill |
 | D1 database creation guide | Done | P0 | `scripts/setup-db.js` + README |
 | R2 bucket creation guide | Not started | P0 | Add to README or script |
 | GitHub Actions CI | Done | P1 | Unit tests + build on push/PR to main |
@@ -138,7 +138,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 |---|---|---|---|
 | Frontend production build | Done | P0 | `npm run build` passes |
 | Worker TypeScript typecheck | Done | P0 | `npx tsc --noEmit` passes |
-| Unit tests | Done | P1 | Vitest: 16+ frontend suites, 3 worker suites with coverage thresholds |
+| Unit tests | Done | P1 | Vitest: 16+ frontend suites, 3 backend suites with coverage thresholds |
 | API integration tests | Done | P1 | `automation/tests/local/api/` — Vitest BDD + fetch against Docker Miniflare; `npm run test:api` |
 | End-to-end tests | Partial | P2 | Playwright BDD smoke test in `automation/tests/local/e2e/`; `npm run test:e2e` |
 | Docker test automation | Done | P1 | `docker compose -f automation/docker-compose.yml` runs all tests; CI workflow |

@@ -27,17 +27,21 @@ This document describes the production architecture for RumaQ on Cloudflare's fr
 
 ```
 rumaq/
-├── src/                    # React SPA (Pages)
-│   ├── pages/              # Home, Inventory, Plan, History, Settings
-│   ├── components/         # AppShell, Assistant, UI primitives
-│   ├── lib/                # API client, persona engine, helpers
-│   └── styles/             # CSS tokens and components
-├── worker/                 # Cloudflare Workers backend
+├── frontend/               # React + Vite SPA
+│   ├── src/
+│   │   ├── pages/          # Home, Inventory, Plan, History, Settings
+│   │   ├── components/     # AppShell, Assistant, UI primitives
+│   │   ├── lib/            # API client, persona engine, helpers
+│   │   └── styles/         # CSS tokens and components
+│   ├── package.json
+│   ├── vite.config.js
+│   └── vitest.config.js
+├── backend/                # Cloudflare Workers backend
 │   ├── src/
 │   │   ├── index.ts        # Hono app entrypoint
 │   │   ├── auth.ts         # Google OAuth 2.0 + JWT sessions
 │   │   ├── middleware.ts   # auth, household context
-│   │   └── __tests__/      # Worker tests
+│   │   └── __tests__/      # Backend tests
 │   ├── migrations/         # D1 schema migrations
 │   ├── wrangler.local.toml # Local dev config
 │   ├── wrangler.cloudflare.toml # Production config
@@ -122,7 +126,7 @@ Google OAuth 2.0 is implemented inside the Worker using the [Authorization Code 
 
 Cloudflare D1 runs SQLite at the edge. The schema is relational and normalized so the same Worker can serve a single household today and multiple households later without rewrites.
 
-See [`worker/migrations/0001_schema.sql`](../worker/migrations/0001_schema.sql) for the full DDL.
+See [`backend/migrations/0001_schema.sql`](../backend/migrations/0001_schema.sql) for the full DDL.
 
 Core entities:
 
@@ -159,24 +163,24 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 
 ### One-time setup
 
-1. Create the D1 database (run from `worker/`):
+1. Create the D1 database:
    ```bash
-   cd worker && npm run db:create
+   npm run db:setup
    ```
-2. Apply migrations (run from `worker/`):
+2. Apply migrations:
    ```bash
-   cd worker && npm run db:migrate
+   npm run db:migrate -w backend
    ```
-3. Set secrets (run from `worker/`):
+3. Set secrets:
    ```bash
-   cd worker && wrangler secret put GOOGLE_CLIENT_ID
-   cd worker && wrangler secret put GOOGLE_CLIENT_SECRET
-   cd worker && wrangler secret put WORKER_JWT_SECRET
-   cd worker && wrangler secret put WORKER_ENCRYPTION_KEY
+   cd backend && wrangler secret put GOOGLE_CLIENT_ID
+   cd backend && wrangler secret put GOOGLE_CLIENT_SECRET
+   cd backend && wrangler secret put WORKER_JWT_SECRET
+   cd backend && wrangler secret put WORKER_ENCRYPTION_KEY
    ```
-4. Deploy the Worker (run from `worker/`):
+4. Deploy the Worker:
    ```bash
-   cd worker && npm run deploy
+   npm run deploy -w backend
    ```
 5. Deploy the frontend to Pages (run from root):
    ```bash
@@ -225,7 +229,7 @@ If usage grows, the first upgrade is Workers Paid ($5/mo) for higher request and
 
 See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) for the full testing strategy, including:
 
-- **Unit tests** (Vitest) for frontend and worker
+- **Unit tests** (Vitest) for frontend and backend
 - **API integration tests** (Vitest BDD via Miniflare in Docker)
 - **Web E2E tests** (Playwright BDD in Docker)
 - **Production smoke tests** (scheduled GitHub Actions workflow hitting `rumaq.pages.dev`)

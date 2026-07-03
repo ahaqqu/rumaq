@@ -10,9 +10,9 @@ docs
 .shots
 playwright-report
 test-results
-worker/.wrangler
-worker/.dev.vars
-worker/wrangler.toml
+backend/.wrangler
+backend/.dev.vars
+backend/wrangler.toml
 scripts
 **/.DS_Store
 *.local
