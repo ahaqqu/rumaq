@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { IconHome, IconBox, IconPlan, IconHistory, IconSettings, IconReceipt, IconClose, BrandMark } from './icons.jsx'
 import { AI_USAGE, usageState } from '../data/mock.js'
@@ -15,6 +16,7 @@ export default function AppShell({
   view, setView, title, aiKey, user, onLogout, assistantOpen, setAssistantOpen, children,
 }) {
   const { t } = useTranslation()
+  const [imgError, setImgError] = useState(false)
   const go = (id) => setView(id)
   const { pct, warn, danger } = usageState()
   const usageTone = danger ? 'is-danger' : warn ? 'is-warn' : ''
@@ -39,8 +41,8 @@ export default function AppShell({
         </nav>
         <div className="rail__foot">
           <div className="rail__user">
-            {user?.picture ? (
-              <img className="rail__avatar" src={user.picture} alt="" />
+            {user?.picture && !imgError ? (
+              <img className="rail__avatar" src={user.picture} alt="" onError={() => setImgError(true)} />
             ) : (
               <div className="rail__avatar rail__avatar--initials">
                 {(user?.name || user?.email || '?')[0].toUpperCase()}
