@@ -230,7 +230,7 @@ authApp.get('/callback', async (c) => {
     maxAge: 60 * 60 * 24 * 30,
   })
 
-  return c.redirect('/')
+  return c.redirect(c.env.PAGES_ORIGIN || '/')
 })
 
 authApp.post('/logout', (c) => {
