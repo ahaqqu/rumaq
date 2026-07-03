@@ -45,7 +45,13 @@ export default function AppShell({
               <img className="rail__avatar" src={user.picture} alt="" onError={() => setImgError(true)} />
             ) : (
               <div className="rail__avatar rail__avatar--initials">
-                {(user?.name || user?.email || '?')[0].toUpperCase()}
+                {(user?.name || '')
+                  .split(' ')
+                  .filter(Boolean)
+                  .map((s) => s[0])
+                  .slice(0, 2)
+                  .join('')
+                  .toUpperCase() || (user?.email || '?')[0].toUpperCase()}
               </div>
             )}
             <div className="rail__user-info">
