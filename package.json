@@ -26,7 +26,7 @@
   "devDependencies": {
     "@cucumber/cucumber": "^13.0.0",
     "@playwright/test": "^1.61.1",
-    "concurrently": "^9.1.2",
+    "concurrently": "^10.0.3",
     "cloudflare": "^6.5.0",
     "esbuild": "^0.28.1",
     "jest-cucumber": "^4.5.0",
