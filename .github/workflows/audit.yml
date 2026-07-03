@@ -83,7 +83,7 @@ jobs:
 
       - name: Create issue (needs manual fix)
         if: steps.all.outputs.vulns_found == 'true' && steps.try_fix.outputs.fixable == 'false'
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const today = new Date().toISOString().slice(0, 10)
