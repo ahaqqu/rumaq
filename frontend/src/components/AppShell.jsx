@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { IconHome, IconBox, IconPlan, IconHistory, IconSettings, IconReceipt, BrandMark } from './icons.jsx'
+import { IconHome, IconBox, IconPlan, IconHistory, IconSettings, IconReceipt, IconClose, BrandMark } from './icons.jsx'
 import { AI_USAGE, usageState } from '../data/mock.js'
 import Assistant from './Assistant.jsx'
 
@@ -12,7 +12,7 @@ const NAV = [
 ]
 
 export default function AppShell({
-  view, setView, title, aiKey, assistantOpen, setAssistantOpen, children,
+  view, setView, title, aiKey, user, onLogout, assistantOpen, setAssistantOpen, children,
 }) {
   const { t } = useTranslation()
   const go = (id) => setView(id)
@@ -38,6 +38,19 @@ export default function AppShell({
           ))}
         </nav>
         <div className="rail__foot">
+          <div className="rail__user">
+            {user?.picture ? (
+              <img className="rail__avatar" src={user.picture} alt="" />
+            ) : (
+              <div className="rail__avatar rail__avatar--initials">
+                {(user?.name || user?.email || '?')[0].toUpperCase()}
+              </div>
+            )}
+            <div className="rail__user-info">
+              <div className="rail__user-name">{user?.name || t('nav.settings')}</div>
+              <button className="rail__logout" onClick={onLogout}>{t('nav.logout', 'Logout')}</button>
+            </div>
+          </div>
           <div className="rail__keystate">
             <span className={`rail__dot ${aiKey ? '' : 'is-off'}`} />
             {aiKey ? t('assistant.connected') : t('assistant.noKey')}

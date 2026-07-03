@@ -14,6 +14,8 @@ describe('AppShell', () => {
     setView: vi.fn(),
     title: 'Home',
     aiKey: 'sk-test',
+    user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null },
+    onLogout: vi.fn(),
     assistantOpen: false,
     setAssistantOpen: vi.fn(),
   }

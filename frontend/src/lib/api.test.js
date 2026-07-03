@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { getMe, getStock, getHealth } from './api.js'
+import { getMe, getStock, getHealth, login, logout, isAuthenticated } from './api.js'
 
 beforeEach(() => {
   globalThis.fetch = vi.fn()
@@ -76,5 +76,53 @@ describe('api', () => {
       json: () => Promise.resolve({}),
     })
     await expect(getMe()).rejects.toThrow('Request failed: 504')
+  })
+
+  it('login constructs correct redirect URL', () => {
+    const origLocation = window.location
+    const setter = vi.fn()
+    const mockLocation = {}
+    Object.defineProperty(mockLocation, 'href', { set: setter, get: () => '' })
+    Object.defineProperty(window, 'location', {
+      value: mockLocation,
+      configurable: true,
+      writable: true,
+    })
+    login()
+    expect(setter).toHaveBeenCalledWith(expect.stringContaining('/api/auth/login'))
+    Object.defineProperty(window, 'location', {
+      value: origLocation,
+      configurable: true,
+      writable: true,
+    })
+  })
+
+  it('logout calls /api/auth/logout with POST', async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ ok: true }),
+    })
+    const result = await logout()
+    expect(result).toEqual({ ok: true })
+    const [url, opts] = globalThis.fetch.mock.calls[0]
+    expect(url).toContain('/api/auth/logout')
+    expect(opts.method).toBe('POST')
+  })
+
+  it('isAuthenticated returns true when getMe succeeds', async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ user: { id: '1' } }),
+    })
+    expect(await isAuthenticated()).toBe(true)
+  })
+
+  it('isAuthenticated returns false when getMe fails', async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ error: 'Unauthorized' }),
+    })
+    expect(await isAuthenticated()).toBe(false)
   })
 })

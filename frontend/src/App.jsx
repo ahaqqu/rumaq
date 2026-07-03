@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { getMe, logout as apiLogout } from './lib/api.js'
 import AppShell from './components/AppShell.jsx'
 import { PersonaProvider } from './context/PersonaContext.jsx'
+import Login from './pages/Login.jsx'
 import Home from './pages/Home.jsx'
 import Inventory from './pages/Inventory.jsx'
 import AddFromReceipt from './pages/AddFromReceipt.jsx'
@@ -17,6 +19,15 @@ export default function App() {
   const [aiKey, setAiKey] = useState(null)
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [motion, setMotion] = useState('standard')
+  const [user, setUser] = useState(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    getMe()
+      .then((data) => setUser(data.user))
+      .catch(() => setUser(null))
+      .finally(() => setAuthLoading(false))
+  }, [])
 
   useEffect(() => {
     document.documentElement.dataset.motion = motion
@@ -24,6 +35,23 @@ export default function App() {
 
   const askAssistant = () => setAssistantOpen(true)
   const go = (v) => { setView(v); window.scrollTo(0, 0) }
+
+  const handleLogout = async () => {
+    await apiLogout()
+    setUser(null)
+  }
+
+  if (authLoading) {
+    return null
+  }
+
+  if (!user) {
+    return (
+      <PersonaProvider>
+        <Login />
+      </PersonaProvider>
+    )
+  }
 
   const navKey = VIEWS.includes(view) ? view : 'home'
   const meta = t(`nav.${navKey}`, { defaultValue: t('nav.home') })
@@ -35,6 +63,8 @@ export default function App() {
         setView={go}
         title={meta}
         aiKey={aiKey}
+        user={user}
+        onLogout={handleLogout}
         assistantOpen={assistantOpen}
         setAssistantOpen={setAssistantOpen}
       >

@@ -544,6 +544,87 @@
 .usage__note.is-warn { color: var(--warn); font-weight: var(--fw-medium); }
 .usage__note.is-danger { color: var(--danger); font-weight: var(--fw-medium); }
 
+/* rail user */
+.rail__user {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  padding: var(--sp-2);
+  border-bottom: 1px solid var(--border);
+  margin-bottom: var(--sp-2);
+}
+.rail__avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-pill);
+  object-fit: cover;
+  flex: none;
+}
+.rail__avatar--initials {
+  display: grid;
+  place-items: center;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
+}
+.rail__user-info {
+  min-width: 0;
+  flex: 1;
+}
+.rail__user-name {
+  font-weight: var(--fw-medium);
+  font-size: var(--fs-sm);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rail__logout {
+  font-size: var(--fs-xs);
+  color: var(--text-faint);
+  padding: 0;
+  font-weight: var(--fw-medium);
+}
+.rail__logout:hover {
+  color: var(--danger);
+}
+
+/* Login page */
+.login {
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6);
+  background: var(--surface);
+}
+.login__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-4);
+  max-width: 320px;
+  width: 100%;
+  text-align: center;
+  padding: var(--sp-10) var(--sp-6);
+  background: var(--surface-raised);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  box-shadow: var(--shadow-md);
+}
+.login__title {
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
+  letter-spacing: -0.02em;
+}
+.login__desc {
+  color: var(--text-muted);
+  font-size: var(--fs-md);
+  line-height: var(--lh-snug);
+}
+.login__btn {
+  margin-top: var(--sp-2);
+}
+
 /* rail compact usage */
 .rail__usage { display: flex; flex-direction: column; gap: var(--sp-2); padding: 0 var(--sp-2); }
 .rail__usage-row { display: flex; align-items: center; justify-content: space-between; font-size: var(--fs-sm); }
