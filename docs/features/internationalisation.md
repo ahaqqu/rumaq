@@ -5,7 +5,7 @@ All user-facing text is managed through **react-i18next**. English is the defaul
 ## Translation files
 
 ```
-src/i18n/
+frontend/src/i18n/
   index.js          # i18next initialisation, language persistence
   locales/
     en.json         # English strings (default, ~200 keys)
@@ -31,8 +31,8 @@ Translation keys are grouped by component:
 
 ## How to add a new locale
 
-1. Create `src/i18n/locales/{code}.json` — translate every key from `en.json`
-2. Add it to `src/i18n/index.js`:
+1. Create `frontend/src/i18n/locales/{code}.json` — translate every key from `en.json`
+2. Add it to `frontend/src/i18n/index.js`:
    ```js
    import xx from './locales/{code}.json'
    // add to resources: { en: { translation: en }, id: { translation: id }, xx: { translation: xx } }

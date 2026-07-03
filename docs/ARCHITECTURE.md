@@ -229,7 +229,7 @@ If usage grows, the first upgrade is Workers Paid ($5/mo) for higher request and
 
 See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) for the full testing strategy, including:
 
-- **Unit tests** (Vitest) for frontend and worker
+- **Unit tests** (Vitest) for frontend and backend
 - **API integration tests** (Vitest BDD via Miniflare in Docker)
 - **Web E2E tests** (Playwright BDD in Docker)
 - **Production smoke tests** (scheduled GitHub Actions workflow hitting `rumaq.pages.dev`)
