@@ -15,6 +15,7 @@ export type Env = {
     WORKER_JWT_SECRET: string
     WORKER_ENCRYPTION_KEY: string
     PAGES_ORIGIN: string
+    ASSETS: Fetcher
   }
   Variables: {
     userId: string
@@ -80,4 +81,13 @@ app.get('/api/stock', zValidator('query', stockQuery), async (c) => {
   return c.json({ stock: results })
 })
 
-export default app
+app.notFound(async (c) => {
+  return c.env.ASSETS.fetch(c.req.raw)
+})
+
+export default {
+  fetch(request: Request, env: Env, ctx: ExecutionContext) {
+    return app.fetch(request, env, ctx)
+  },
+}
+export { app }

@@ -17,8 +17,11 @@ Given(/^the production site is at (\S+)$/, (url) => {
 
 Given(/^I have a valid session cookie$/, function () {
   ctx.cookie = process.env.RUMAQ_PROD_SESSION
-  if (!ctx.cookie) {
-    throw new Error('RUMAQ_PROD_SESSION env var not set')
+})
+
+Before({ tags: '@needs-session' }, function () {
+  if (!process.env.RUMAQ_PROD_SESSION) {
+    return 'skipped'
   }
 })
 

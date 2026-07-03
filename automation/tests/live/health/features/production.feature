@@ -10,6 +10,7 @@ Feature: Production Smoke
     Then the response status should be 200
     And the body should contain ok
 
+  @needs-session
   Scenario: Authenticated endpoints work
     Given the production site is at https://rumaq.pages.dev
     And I have a valid session cookie
