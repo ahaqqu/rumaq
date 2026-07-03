@@ -33,13 +33,9 @@ async function setAuthCookie(env: any, userId = 'user-123', householdId = 'house
   return token
 }
 
-describe('index app', () => {
-  let app: any
+import { app } from '../index.js'
 
-  beforeAll(async () => {
-    const mod = await import('../index.js')
-    app = mod.default
-  })
+describe('index app', () => {
 
   it('/api/health returns ok', async () => {
     const res = await app.request('/api/health', {}, createMockEnv())

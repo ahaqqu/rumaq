@@ -209,16 +209,37 @@ deploy_worker() {
 }
 
 # ------------------------------------------------------------------
-# Build & deploy frontend to Cloudflare Pages
+# Build backend as Pages _worker.js
+# ------------------------------------------------------------------
+build_worker_js() {
+  info "Building backend as Pages Function..."
+  mkdir -p "$ROOT_DIR/frontend/dist"
+
+  npx esbuild "$BACKEND_DIR/src/index.ts" \
+    --bundle --platform=neutral --format=esm \
+    --external:cloudflare:workers \
+    --outfile="$ROOT_DIR/frontend/dist/_worker.js"
+
+  # Miniflare can't handle import(cfWorkers) with a variable specifier.
+  # Replace the variable with a string literal so it resolves correctly.
+  sed -i 's/await import(cfWorkers)/await import("cloudflare:workers")/' "$ROOT_DIR/frontend/dist/_worker.js"
+
+  ok "Backend bundled as _worker.js."
+}
+
+# ------------------------------------------------------------------
+# Build & deploy frontend to Cloudflare Pages (with bundled backend)
 # ------------------------------------------------------------------
 deploy_frontend() {
   info "Building frontend..."
   npm install --no-fund
   npm run build -w frontend
 
+  build_worker_js
+
   info "Deploying to Cloudflare Pages (project: ${PAGES_PROJECT})..."
-  wrangler pages deploy frontend/dist --project-name "$PAGES_PROJECT"
-  ok "Frontend deployed."
+  wrangler pages deploy frontend/dist --project-name "$PAGES_PROJECT" --no-bundle
+  ok "Frontend + backend deployed."
 }
 
 # ------------------------------------------------------------------
@@ -251,10 +272,17 @@ check_login() {
 # Put worker secrets from environment variables
 # ------------------------------------------------------------------
 put_secrets() {
-  info "Setting backend secrets..."
-  cd "$BACKEND_DIR"
-  node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" put-secrets
-  cd "$ROOT_DIR"
+  info "Setting backend secrets (Pages project)..."
+  for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
+    val="${!key:-}"
+    if [ -n "$val" ]; then
+      echo "$val" | npx wrangler pages secret put "$key" --project-name "$PAGES_PROJECT" >/dev/null 2>&1 || true
+      echo "  ✓  $key"
+    else
+      echo "  -  $key (skipped — not set)"
+    fi
+  done
+  ok "Backend secrets set."
 }
 
 # ------------------------------------------------------------------
@@ -313,7 +341,6 @@ do_cloudflare() {
   install_deps
   setup_database_remote
   ensure_r2_bucket
-  deploy_worker
   deploy_frontend
   put_secrets
   summary_cloudflare
@@ -374,8 +401,8 @@ case "$MODE" in
     deploy_frontend
     ;;
   backend)
-    deploy_worker
-    ;;
+    build_worker_js
+    ;;;
   *)
     echo "Unknown mode: $MODE"
     echo "Usage: $0 [local|cloudflare|dry-run|frontend|backend]"
