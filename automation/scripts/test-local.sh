@@ -25,6 +25,8 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/automation/docker-compose.yml"
 MODE="${1:-run}"
+# Strip leading -- for convenience (--build → build)
+MODE="${MODE#--}"
 
 require_cmd() {
   if ! command -v "$1" &>/dev/null; then
@@ -126,9 +128,9 @@ case "$MODE" in
     EXIT_CODE=$?
 
     # Generate HTML report from vitest JSON (mounted volume)
-    if [ -f "$ROOT_DIR/automation/test-results/vitest/api-results.json" ]; then
+    if [ -f "$ROOT_DIR/test-results/vitest/api-results.json" ]; then
       node "$ROOT_DIR/automation/scripts/generate-test-report.js" 2>/dev/null && \
-        ok "HTML report: automation/test-results/test-report.html" || true
+        ok "HTML report: test-results/test-report.html" || true
     fi
 
     if [[ $EXIT_CODE -eq 0 ]]; then
@@ -137,7 +139,7 @@ case "$MODE" in
     else
       echo ""
       fail "Tests failed (exit code $EXIT_CODE)."
-      info "Check automation/test-results/ for details."
+      info "Check test-results/ for details."
     fi
     exit $EXIT_CODE
     ;;

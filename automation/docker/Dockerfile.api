@@ -20,7 +20,10 @@ COPY automation/tests/ ./automation/tests/
 COPY worker/src/ ./worker/src/
 
 # Layer 5: build (invalidated when src changes)
-RUN cd worker && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --outfile=dist/index.mjs
+RUN cd worker && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --outfile=dist/index.mjs && \
+  # Fix hono/logger dynamic import: Miniflare can't handle import(cfWorkers) with a variable specifier.
+  # Replace the variable with a string literal so Miniflare recognizes the cloudflare: built-in.
+  sed -i 's/await import(cfWorkers)/await import("cloudflare:workers")/' dist/index.mjs
 
 EXPOSE 8787
 

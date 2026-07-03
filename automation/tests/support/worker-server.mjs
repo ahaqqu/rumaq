@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '../../..')
 const WORKER_DIR = resolve(ROOT, 'worker')
+const BUNDLE_PATH = resolve(WORKER_DIR, 'dist/index.mjs')
 
 // --- Read SQL files ---
 const migrationSql = readFileSync(
@@ -26,8 +27,7 @@ const { Miniflare } = await import('miniflare')
 
 const mf = new Miniflare({
   modules: true,
-  script: readFileSync(resolve(WORKER_DIR, 'dist/index.mjs'), 'utf-8'),
-  modulesRule: [],
+  scriptPath: BUNDLE_PATH,
   d1Databases: { DB: 'rumaq-test' },
   r2Buckets: { RECEIPTS: 'rumaq-receipts-test' },
   compatibilityDate: '2024-06-30',

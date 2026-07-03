@@ -2,14 +2,15 @@
 set -euo pipefail
 
 # ============================================================
-# RumaQ production smoke test runner
-# ============================================================
-# Triggers the smoke.yml GitHub Actions workflow against the
-# live rumaq.pages.dev deployment and waits for the result.
+# Operator/developer-facing script to trigger production smoke
+# tests via GitHub Actions.
+#
+# The actual tests live in:
+#   automation/scripts/run-smoke-tests.sh
 #
 # Usage:
-#   ./scripts/test-smoke.sh              # run with saved session secret
-#   ./scripts/test-smoke.sh --watch       # stream logs while waiting
+#   ./scripts/trigger-smoke.sh              # run with saved session secret
+#   ./scripts/trigger-smoke.sh --watch       # stream logs while waiting
 #
 # Prerequisites:
 #   - `gh` CLI installed and authenticated

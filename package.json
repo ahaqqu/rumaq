@@ -16,8 +16,8 @@
     "test:watch": "vitest",
     "test:api": "vitest run --config automation/vitest.config.integration.mjs",
     "test:e2e": "bddgen --config automation/playwright.config.js && playwright test --config automation/playwright.config.js",
-    "test:docker": "docker compose -f automation/docker-compose.yml up --build --abort-on-container-exit",
-    "smoke": "./automation/scripts/smoke.sh"
+    "test:docker": "./automation/scripts/test-local.sh",
+    "smoke": "./automation/scripts/run-smoke-tests.sh"
   },
   "dependencies": {
     "@cucumber/pretty-formatter": "^4.0.0",

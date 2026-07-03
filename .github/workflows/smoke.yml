@@ -4,11 +4,6 @@ on:
   schedule:
     - cron: '0 */6 * * *'
   workflow_dispatch:
-    inputs:
-      refresh_token:
-        description: 'New RUMAQ_PROD_SESSION cookie value (optional)'
-        required: false
-        type: string
 
 jobs:
   smoke:
@@ -24,7 +19,7 @@ jobs:
       - run: npm ci
 
       - name: Run production smoke tests
-        run: ./automation/scripts/smoke.sh
+        run: ./automation/scripts/run-smoke-tests.sh
         env:
           RUMAQ_PROD_SESSION: ${{ secrets.RUMAQ_PROD_SESSION }}
 

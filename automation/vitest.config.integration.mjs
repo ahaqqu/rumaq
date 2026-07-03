@@ -9,7 +9,7 @@ export default defineConfig({
     fileParallelism: false,
     reporters: [
       ['default', { verbose: true }],
-      ['json', { outputFile: 'automation/test-results/vitest/api-results.json' }],
+      ['json', { outputFile: 'vitest-report/api-results.json' }],
     ],
   },
 })
