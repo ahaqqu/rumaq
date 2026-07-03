@@ -402,7 +402,7 @@ case "$MODE" in
     ;;
   backend)
     build_worker_js
-    ;;;
+    ;;
   *)
     echo "Unknown mode: $MODE"
     echo "Usage: $0 [local|cloudflare|dry-run|frontend|backend]"
