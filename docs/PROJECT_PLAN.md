@@ -42,8 +42,8 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Persona copy transformation | Done | P0 | `frontend/src/lib/persona.js` `speak()` |
 | Persona theme color generator | Done | P0 | `frontend/src/lib/persona.js` `applyTheme()` |
 | AI assistant chat panel | Done | P0 | `frontend/src/components/Assistant.jsx`; currently mocked |
-| API client module | Partial | P0 | `frontend/src/lib/api.js` has `getMe`, `getStock`, `getHealth`; needs full endpoint coverage |
-| Authentication UI (login / logout) | Not started | P0 | Redirect to `/api/auth/login`; show user avatar |
+| API client module | Partial | P0 | Has `getMe`, `getStock`, `getHealth`, `login`, `logout`, `isAuthenticated`; needs full endpoint coverage |
+| Authentication UI (login / logout) | Done | P0 | Login page, user avatar/name in rail, logout button |
 | Error boundaries and loading states | Partial | P1 | Skeletons exist; need global error handling |
 | Offline / optimistic updates | Not started | P1 | Local-first feel, sync when online |
 | PWA manifest & service worker | Not started | P2 | Installable app, offline caching |
@@ -55,7 +55,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item | Status | Priority | Notes |
 |---|---|---|---|
 | Backend project scaffold | Done | P0 | `backend/` with Hono, Wrangler config example |
-| Google OAuth 2.0 login & callback | Partial | P0 | `backend/src/auth.ts`; needs real credentials and testing |
+| Google OAuth 2.0 login & callback | Done | P0 | OAuth flow with PKCE, JWT sessions, default seed on household creation |
 | JWT session cookie middleware | Done | P0 | `backend/src/middleware.ts`; verifies cookie + loads active household |
 | CORS configuration | Done | P0 | Configured for Pages origin + localhost |
 | Health check endpoint | Done | P0 | `GET /api/health` |
@@ -72,7 +72,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | AI chat endpoint | Not started | P0 | `POST /api/ai/chat` with streaming |
 | AI usage endpoint | Not started | P0 | `GET /api/ai/usage` |
 | Input validation with Zod | Not started | P0 | Add to all routes |
-| Centralized error handling | Not started | P1 | JSON error responses, logging |
+| Centralized error handling | Done | P1 | `app.onError` catches all unhandled errors; middleware returns JSON errors |
 | Rate limiting | Not started | P1 | Per-user AI and API limits |
 | Request logging / observability | Not started | P2 | Structured logs, optional analytics |
 
@@ -82,7 +82,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 |---|---|---|---|
 | Relational schema design | Done | P0 | `backend/migrations/0001_schema.sql` |
 | Migration runner / setup script | Done | P0 | `scripts/setup-db.js` |
-| Seed default locations & stores | Not started | P0 | Run after household creation |
+| Seed default locations & stores | Done | P0 | Kulkas, Freezer, Lemari, Rak + Indomaret, Alfamart, Pasar on household creation |
 | Run-out estimate computation | Not started | P0 | SQL/view or Worker logic from purchase history |
 | Index tuning | Partial | P0 | Basic indexes in schema; validate with query patterns |
 | Multi-household data isolation | Partial | P0 | Schema ready; enforce in all queries |
@@ -226,6 +226,6 @@ PR 1 (Auth) → PR 2 (Settings) → PR 3 (Inventory)
 
 ## Immediate next steps
 
-1. Open **PR 1 — Authentication** on a new branch from `main`.
+1. Open **PR 2 — Settings & Preferences** on a new branch from `main`.
 2. Configure Google OAuth credentials and run the login flow against Miniflare.
 3. Ensure `npm test` and `npx tsc --noEmit` pass before opening the PR.

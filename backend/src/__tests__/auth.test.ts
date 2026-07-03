@@ -202,17 +202,34 @@ describe('authApp Hono routes', () => {
 
   it('/callback succeeds with new user', async () => {
     let callCount = 0
+    const sqlStatements: string[] = []
     globalThis.fetch = async () => {
       callCount++
       if (callCount === 1) return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 }) as any
       return new Response(JSON.stringify({ sub: 'g123', email: 'a@b.com', name: 'Alice' }), { status: 200 }) as any
     }
     const mockDb = {
-      prepare: () => mockDb,
-      bind: () => mockDb,
+      prepare: (sql: string) => {
+        sqlStatements.push(sql)
+        return {
+          bind: (...args: any[]) => ({
+            first: async () => null,
+            all: async () => ({ results: [] }),
+            batch: async () => {},
+            sql,
+          }),
+        }
+      },
       first: async () => null,
       all: async () => ({ results: [] }),
-      batch: async () => [{}, { results: [{ id: 'new-id' }] }],
+      batch: async (stmts: any[]) => {
+        // After household creation, ensure the SQLs were tracked
+        const results = Array.from({ length: stmts.length }, (_, i) => {
+          if (i === 1) return { results: [{ id: 'new-id' }] }
+          return {}
+        })
+        return results
+      },
     }
     const mod = await import('../auth.js')
     const env = {
@@ -227,6 +244,11 @@ describe('authApp Hono routes', () => {
       headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
     }, env as any)
     expect(res.status).toBe(302)
+    // Verify batch includes default locations and stores
+    const insertLocations = sqlStatements.filter((s) => s.includes('INSERT INTO locations'))
+    const insertStores = sqlStatements.filter((s) => s.includes('INSERT INTO stores'))
+    expect(insertLocations).toHaveLength(4)
+    expect(insertStores).toHaveLength(3)
   })
 
   it('/callback skips household creation for existing member', async () => {

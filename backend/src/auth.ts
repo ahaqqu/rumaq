@@ -182,6 +182,18 @@ authApp.get('/callback', async (c) => {
   ).bind(actualUserId).first()
 
   if (!existingMember) {
+    const locationSeeds = [
+      { id: crypto.randomUUID(), label: 'Kulkas', sort_order: 1 },
+      { id: crypto.randomUUID(), label: 'Freezer', sort_order: 2 },
+      { id: crypto.randomUUID(), label: 'Lemari', sort_order: 3 },
+      { id: crypto.randomUUID(), label: 'Rak', sort_order: 4 },
+    ]
+    const storeSeeds = [
+      { id: crypto.randomUUID(), label: 'Indomaret' },
+      { id: crypto.randomUUID(), label: 'Alfamart' },
+      { id: crypto.randomUUID(), label: 'Pasar' },
+    ]
+
     await c.env.DB.batch([
       c.env.DB.prepare('INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)')
         .bind(householdId, 'Rumahku', actualUserId),
@@ -191,6 +203,16 @@ authApp.get('/callback', async (c) => {
       c.env.DB.prepare(
         'INSERT INTO user_settings (id, user_id, active_household_id) VALUES (?, ?, ?)'
       ).bind(settingsId, actualUserId, householdId),
+      ...locationSeeds.map((loc) =>
+        c.env.DB.prepare(
+          'INSERT INTO locations (id, household_id, label, sort_order) VALUES (?, ?, ?, ?)'
+        ).bind(loc.id, householdId, loc.label, loc.sort_order)
+      ),
+      ...storeSeeds.map((store) =>
+        c.env.DB.prepare(
+          'INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)'
+        ).bind(store.id, householdId, store.label)
+      ),
     ])
   }
 
@@ -208,7 +230,7 @@ authApp.get('/callback', async (c) => {
     maxAge: 60 * 60 * 24 * 30,
   })
 
-  return c.redirect('/')
+  return c.redirect(c.env.PAGES_ORIGIN || '/')
 })
 
 authApp.post('/logout', (c) => {

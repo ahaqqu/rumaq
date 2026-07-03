@@ -36,3 +36,20 @@ export function getStock({ location, q } = {}) {
 export function getHealth() {
   return request('/api/health')
 }
+
+export function login() {
+  window.location.href = `${BASE}/api/auth/login`
+}
+
+export async function logout() {
+  return request('/api/auth/logout', { method: 'POST' })
+}
+
+export async function isAuthenticated() {
+  try {
+    await request('/api/me')
+    return true
+  } catch {
+    return false
+  }
+}

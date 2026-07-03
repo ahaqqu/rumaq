@@ -43,6 +43,11 @@ app.use(
   })
 )
 
+app.onError((err, c) => {
+  console.error(err)
+  return c.json({ error: err.message || 'Internal server error' }, 500)
+})
+
 app.route('/api/auth', authApp)
 
 app.get('/api/health', (c) => c.json({ ok: true }))
@@ -82,7 +87,10 @@ app.get('/api/stock', zValidator('query', stockQuery), async (c) => {
 })
 
 app.notFound(async (c) => {
-  return c.env.ASSETS.fetch(c.req.raw)
+  if (c.env.ASSETS) {
+    return c.env.ASSETS.fetch(c.req.raw)
+  }
+  return c.json({ error: 'Not found' }, 404)
 })
 
 export default {

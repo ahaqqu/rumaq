@@ -8,7 +8,7 @@
     "backend"
   ],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w frontend\" \"npm run dev -w backend\"",
+    "dev": "concurrently \"VITE_API_BASE=http://localhost:8787 npm run dev -w frontend\" \"npm run dev -w backend\"",
     "build": "npm run build -w frontend",
     "preview": "npm run preview -w frontend",
     "test": "npm run test -w frontend && npm run test -w backend",

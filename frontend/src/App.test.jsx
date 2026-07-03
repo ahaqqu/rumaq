@@ -1,7 +1,16 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { render, fireEvent, waitFor } from '@testing-library/react'
 import React from 'react'
 import App from './App.jsx'
+
+const mockGetMe = vi.fn().mockResolvedValue({ user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null } })
+
+vi.mock('./lib/api.js', () => ({
+  getMe: (...args) => mockGetMe(...args),
+  logout: vi.fn().mockResolvedValue({ ok: true }),
+  login: vi.fn(),
+  isAuthenticated: vi.fn().mockResolvedValue(true),
+}))
 
 vi.mock('./data/mock.js', async () => {
   const actual = await vi.importActual('./data/mock.js')
@@ -12,19 +21,25 @@ vi.mock('./data/mock.js', async () => {
   }
 })
 
+async function renderApp() {
+  const result = render(React.createElement(App))
+  await waitFor(() => expect(result.container.querySelector('.app')).toBeTruthy())
+  return result
+}
+
 describe('App', () => {
-  it('renders without crashing', () => {
-    const { container } = render(React.createElement(App))
+  it('renders without crashing', async () => {
+    const { container } = await renderApp()
     expect(container.querySelector('.app')).toBeTruthy()
   })
 
-  it('renders home page by default', () => {
-    const { container } = render(React.createElement(App))
+  it('renders home page by default', async () => {
+    const { container } = await renderApp()
     expect(container.querySelector('.stats')).toBeTruthy()
   })
 
-  it('navigates to inventory view', () => {
-    const { container } = render(React.createElement(App))
+  it('navigates to inventory view', async () => {
+    const { container } = await renderApp()
     const navBtns = container.querySelectorAll('.bottombar__item')
     const inventoryBtn = Array.from(navBtns).find((btn) =>
       btn.textContent?.includes('nav.inventory')
@@ -35,8 +50,8 @@ describe('App', () => {
     expect(container.querySelector('.page__lead')).toBeTruthy()
   })
 
-  it('navigates to settings via topbar', () => {
-    const { container } = render(React.createElement(App))
+  it('navigates to settings via topbar', async () => {
+    const { container } = await renderApp()
     const topbarBtns = container.querySelectorAll('.topbar__btn')
     const settingsBtn = Array.from(topbarBtns).find(
       (btn) => btn.getAttribute('aria-label') === 'nav.settings'
@@ -46,8 +61,8 @@ describe('App', () => {
     }
   })
 
-  it('navigates to add via rail button and renders add view', () => {
-    const { container } = render(React.createElement(App))
+  it('navigates to add via rail button and renders add view', async () => {
+    const { container } = await renderApp()
     const addBtn = container.querySelector('.rail__add')
     if (addBtn) {
       fireEvent.click(addBtn)
@@ -56,8 +71,8 @@ describe('App', () => {
     expect(dropzone).toBeTruthy()
   })
 
-  it('navigates to add via topbar', () => {
-    const { container } = render(React.createElement(App))
+  it('navigates to add via topbar', async () => {
+    const { container } = await renderApp()
     const addBtns = container.querySelectorAll('.topbar__btn')
     const addBtn = Array.from(addBtns).find(
       (btn) => btn.getAttribute('aria-label') === 'nav.addFromReceipt'
@@ -67,8 +82,15 @@ describe('App', () => {
     }
   })
 
-  it('sets motion on document', () => {
-    render(React.createElement(App))
+  it('sets motion on document', async () => {
+    await renderApp()
     expect(document.documentElement.dataset.motion).toBe('standard')
+  })
+
+  it('shows login page when not authenticated', async () => {
+    mockGetMe.mockRejectedValue(new Error('Unauthorized'))
+    const { container } = render(React.createElement(App))
+    await waitFor(() => expect(container.querySelector('.login')).toBeTruthy())
+    mockGetMe.mockResolvedValue({ user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null } })
   })
 })
