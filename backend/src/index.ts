@@ -87,7 +87,10 @@ app.get('/api/stock', zValidator('query', stockQuery), async (c) => {
 })
 
 app.notFound(async (c) => {
-  return c.env.ASSETS.fetch(c.req.raw)
+  if (c.env.ASSETS) {
+    return c.env.ASSETS.fetch(c.req.raw)
+  }
+  return c.json({ error: 'Not found' }, 404)
 })
 
 export default {
