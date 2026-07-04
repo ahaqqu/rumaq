@@ -46,6 +46,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Authentication UI (login / logout) | Done | P0 | Login page, user avatar/name in rail, logout button |
 | Error boundaries and loading states | Partial | P1 | Skeletons exist; need global error handling |
 | Offline / optimistic updates | Not started | P1 | Local-first feel, sync when online |
+| Frontend refactor (Kumo + TanStack + Tailwind v4 + PWA) | Not started | P1 | See `docs/plans/frontend-refactor-plan.md` |
 | PWA manifest & service worker | Not started | P2 | Installable app, offline caching |
 | Push notifications | Not started | P2 | Expiry/run-out reminders |
 | Mobile native wrappers (iOS/Android) | Not started | P2 | Future phase |
