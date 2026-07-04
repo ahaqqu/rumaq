@@ -25,7 +25,7 @@ Household shopping & inventory assistant. Snap a receipt — stock updates. Know
 
 | Layer | Technology |
 |---|---|
-| Frontend | React + Vite → Cloudflare Pages |
+| Frontend | React + Vite + TanStack Router + TanStack Query + Cloudflare Kumo UI → Cloudflare Pages |
 | Backend | Cloudflare Workers + Hono |
 | Database | Cloudflare D1 (SQLite) |
 | Files | Cloudflare R2 |
