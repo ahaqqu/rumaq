@@ -17,7 +17,7 @@
 - **Icons**: Use `@phosphor-icons/react` (imported via `src/components/icons.jsx` re-exports).
 - **Routing**: File-based routes in `src/routes/`. Use `<Link>`, `useNavigate()`, `useMatches()` from `@tanstack/react-router`.
 - **Server state**: Use TanStack Query hooks from `src/lib/queries/`. Mutations use `useMutation` with `onSuccess` invalidation.
-- **Route tree**: Auto-generated at build time by `@tanstack/router-plugin/vite` as `src/routeTree.gen.ts` (gitignored).
+- **Route tree**: Auto-generated at build time by `@tanstack/router-plugin/vite` as `src/routeTree.gen.ts` (committed so test imports resolve). Regenerate with `npx @tanstack/router-generator --generator src/routes` after adding routes.
 - **Shared state**: `AppContext` (`src/context/AppContext.jsx`) for `aiKey`, `motion`, `assistantOpen`.
 - **Auth**: Handled in `src/routes/__root.jsx` via `useMe()` query. Unauthenticated users see `<Login>`.
 - **PWA**: Service worker managed by `vite-plugin-pwa`. Update prompt in `<PwaUpdatePrompt>`.
