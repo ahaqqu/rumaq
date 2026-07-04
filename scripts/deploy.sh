@@ -122,6 +122,7 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 WORKER_JWT_SECRET=
 WORKER_ENCRYPTION_KEY=
+EMAIL_AUTH_ENABLED=true
 EOF
 
   warn "backend/.dev.vars created with placeholder values."
@@ -172,7 +173,7 @@ setup_database_remote() {
     fi
   fi
 
-  wrangler_cmd "$config_file" "$DB_NAME"
+  wrangler_cmd "$config_file" "$DB_NAME" --remote
   cd "$ROOT_DIR"
 }
 
@@ -272,42 +273,12 @@ check_login() {
 # Attach D1 and R2 bindings to the Pages project
 # ------------------------------------------------------------------
 attach_pages_bindings() {
-  local config_file="$BACKEND_DIR/wrangler.cloudflare.toml"
-
-  if [[ ! -f $config_file ]]; then
-    warn "wrangler.cloudflare.toml not found – skipping Pages binding configuration."
-    return
-  fi
-
-  local db_id
-  db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2>/dev/null || true)
-
-  local db_name
-  db_name=$(grep -oP 'database_name\s*=\s*"\K[^"]+' "$config_file" 2>/dev/null || true)
-
-  local r2_bucket
-  r2_bucket=$(grep -oP 'bucket_name\s*=\s*"\K[^"]+' "$config_file" 2>/dev/null || true)
-
-  if [[ -n $db_id && -n $db_name ]]; then
-    info "Attaching D1 binding (DB → ${db_name}) to Pages project..."
-    if npx wrangler pages project edit "$PAGES_PROJECT" --d1 "DB=${db_id}" 2>/dev/null; then
-      ok "D1 binding attached."
-    else
-      warn "Failed to attach D1 binding (may already be set)."
-    fi
+  info "Attaching D1 + R2 bindings to Pages project..."
+  result=$(node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" pages-bindings)
+  if [[ $result == "OK" ]]; then
+    ok "D1 + R2 bindings attached."
   else
-    warn "D1 database_id or database_name not found in wrangler.cloudflare.toml – skipping."
-  fi
-
-  if [[ -n $r2_bucket ]]; then
-    info "Attaching R2 binding (RECEIPTS → ${r2_bucket}) to Pages project..."
-    if npx wrangler pages project edit "$PAGES_PROJECT" --r2 "RECEIPTS=${r2_bucket}" 2>/dev/null; then
-      ok "R2 binding attached."
-    else
-      warn "Failed to attach R2 binding (may already be set)."
-    fi
-  else
-    warn "R2 bucket_name not found in wrangler.cloudflare.toml – skipping."
+    warn "Failed to attach bindings: $result"
   fi
 }
 
@@ -319,16 +290,16 @@ put_secrets() {
   for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
     val="${!key:-}"
     if [ -n "$val" ]; then
-      echo "$val" | npx wrangler pages secret put "$key" --project-name "$PAGES_PROJECT" >/dev/null 2>&1 || true
+      printf '%s' "$val" | npx wrangler pages secret put "$key" --project-name "$PAGES_PROJECT" >/dev/null 2>&1 || true
       echo "  ✓  $key"
     else
       echo "  -  $key (skipped — not set)"
     fi
   done
 
-  # Set EMAIL_AUTH_ENABLED as a non-secret variable (default: false)
+  # Set EMAIL_AUTH_ENABLED (default: false)
   local email_auth="${EMAIL_AUTH_ENABLED:-false}"
-  echo "$email_auth" | npx wrangler pages secret put "EMAIL_AUTH_ENABLED" --project-name "$PAGES_PROJECT" >/dev/null 2>&1 || true
+  printf '%s' "$email_auth" | npx wrangler pages secret put "EMAIL_AUTH_ENABLED" --project-name "$PAGES_PROJECT" >/dev/null 2>&1 || true
   echo "  ✓  EMAIL_AUTH_ENABLED=${email_auth}"
 
   ok "Backend secrets set."
@@ -391,8 +362,8 @@ do_cloudflare() {
   setup_database_remote
   ensure_r2_bucket
   attach_pages_bindings
-  deploy_frontend
   put_secrets
+  deploy_frontend
   summary_cloudflare
 }
 

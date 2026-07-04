@@ -9,7 +9,6 @@ account_id = "85cd0e23088e12759d05b347f0f68536"
 # CORS: allow the Pages frontend origin
 [vars]
 PAGES_ORIGIN = "https://rumaq.pages.dev"
-EMAIL_AUTH_ENABLED = "false"
 
 # D1 database binding
 [[d1_databases]]
@@ -27,3 +26,4 @@ bucket_name = "rumaq-receipts"
 # GOOGLE_CLIENT_SECRET
 # WORKER_JWT_SECRET
 # WORKER_ENCRYPTION_KEY
+# EMAIL_AUTH_ENABLED

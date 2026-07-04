@@ -62,6 +62,38 @@ async function putSecrets() {
   console.log(JSON.stringify(results))
 }
 
+async function pagesBindings() {
+  const projectName = process.env.PAGES_PROJECT_NAME || 'rumaq'
+  const dbName = process.env.D1_DATABASE_NAME || 'rumaq'
+  const bucketName = process.env.R2_BUCKET_NAME || 'rumaq-receipts'
+
+  // Get database ID
+  const dbs = await cf.d1.database.list({ account_id: accountId })
+  const db = dbs.result?.find(d => d.name === dbName)
+  if (!db) {
+    console.error(`D1 database "${dbName}" not found`)
+    process.exit(1)
+  }
+
+  // Get current project to preserve existing config
+  const project = await cf.pages.projects.get(projectName, { account_id: accountId })
+  const prod = project.deployment_configs?.production || {}
+  const preview = project.deployment_configs?.preview || {}
+
+  // Pages API uses dictionary format: binding name is the key
+  const d1Databases = { ...(prod.d1_databases || {}), DB: { id: db.uuid } }
+  const r2Buckets = { ...(prod.r2_buckets || {}), RECEIPTS: { name: bucketName } }
+
+  await cf.pages.projects.edit(projectName, {
+    account_id: accountId,
+    deployment_configs: {
+      production: { ...prod, d1_databases: d1Databases, r2_buckets: r2Buckets },
+      preview: { ...preview, d1_databases: d1Databases, r2_buckets: r2Buckets },
+    },
+  })
+  console.log('OK')
+}
+
 async function main() {
   try {
     switch (command) {
@@ -74,8 +106,11 @@ async function main() {
       case 'put-secrets':
         await putSecrets()
         break
+      case 'pages-bindings':
+        await pagesBindings()
+        break
       default:
-        console.error(`Usage: deploy-cf.js <d1-setup|r2-ensure|put-secrets>`)
+        console.error(`Usage: deploy-cf.js <d1-setup|r2-ensure|put-secrets|pages-bindings>`)
         process.exit(1)
     }
   } catch (e) {

@@ -48,7 +48,7 @@ rumaq/
 │   └── wrangler.toml.example # Template
 ├── scripts/                # Setup, deployment, and smoke-trigger scripts
 │   ├── deploy.sh           # Full-stack deployment
-│   ├── deploy-cf.js        # Cloudflare-specific deploy helper
+│   ├── deploy-cf.js        # Cloudflare deploy helper: d1-setup, r2-ensure, put-secrets, pages-bindings
 │   ├── setup-db.js         # D1 database setup
 │   └── trigger-smoke.sh    # Triggers production smoke workflow remotely
 ├── automation/             # All test automation
@@ -190,34 +190,43 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 
 1. Create the D1 database:
    ```bash
-   npm run db:setup
+   node scripts/deploy-cf.js d1-setup
    ```
+   Copy the returned UUID into `backend/wrangler.cloudflare.toml` as `database_id`.
+
 2. Apply migrations:
    ```bash
-   npm run db:migrate -w backend
-   ```
-3. Set secrets:
-   ```bash
-   cd backend && wrangler secret put GOOGLE_CLIENT_ID
-   cd backend && wrangler secret put GOOGLE_CLIENT_SECRET
-   cd backend && wrangler secret put WORKER_JWT_SECRET
-   cd backend && wrangler secret put WORKER_ENCRYPTION_KEY
-   ```
-4. Deploy the Worker:
-   ```bash
-   npm run deploy -w backend
-   ```
-5. Deploy the frontend to Pages (run from root):
-   ```bash
-   npm run deploy:frontend
+   cd backend && wrangler d1 migrations apply rumaq --remote
    ```
 
-Or run the full-stack deploy script from root:
+3. Create the R2 bucket:
+   ```bash
+   node scripts/deploy-cf.js r2-ensure
+   ```
+
+4. Attach D1 and R2 bindings to the Pages project:
+   ```bash
+   node scripts/deploy-cf.js pages-bindings
+   ```
+
+5. Set secrets (Pages secrets, since the Worker is bundled as a Pages Function):
+   ```bash
+   printf '%s' '<value>' | npx wrangler pages secret put GOOGLE_CLIENT_ID --project-name rumaq
+   printf '%s' '<value>' | npx wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name rumaq
+   printf '%s' '<value>' | npx wrangler pages secret put WORKER_JWT_SECRET --project-name rumaq
+   printf '%s' '<value>' | npx wrangler pages secret put WORKER_ENCRYPTION_KEY --project-name rumaq
+   printf '%s' '<value>' | npx wrangler pages secret put EMAIL_AUTH_ENABLED --project-name rumaq
+   ```
+
+6. Deploy (builds frontend, bundles Worker as `_worker.js`, deploys to Pages):
+   ```bash
+   ./scripts/deploy.sh cloudflare
+   ```
+
+Or run the full-stack deploy script from root (handles all of the above):
 ```bash
-npm run deploy
+./scripts/deploy.sh cloudflare
 ```
-
-To serve the Worker under `api.rumaq.pages.dev`, configure a Cloudflare Workers route or custom domain for the `rumaq-api` service. Otherwise the default URL is `rumaq-api.YOUR_SUBDOMAIN.workers.dev`.
 
 ### Environment variables
 
