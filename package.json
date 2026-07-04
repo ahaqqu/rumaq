@@ -23,6 +23,9 @@
     "deploy:backend": "./scripts/deploy.sh backend",
     "deploy:dry-run": "./scripts/deploy.sh dry-run"
   },
+  "overrides": {
+    "uuid": "^11.1.1"
+  },
   "devDependencies": {
     "@cucumber/cucumber": "^13.0.0",
     "@playwright/test": "^1.61.1",
