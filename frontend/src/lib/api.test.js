@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { getMe, getStock, getHealth, login, logout, isAuthenticated } from './api.js'
+import {
+  getMe, getStock, getHealth, login, logout, isAuthenticated,
+  emailAuthStatus, emailLogin,
+} from './api.js'
 
 beforeEach(() => {
   globalThis.fetch = vi.fn()
@@ -124,5 +127,41 @@ describe('api', () => {
       json: () => Promise.resolve({ error: 'Unauthorized' }),
     })
     expect(await isAuthenticated()).toBe(false)
+  })
+
+  it('emailAuthStatus calls /api/auth/email-status', async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ enabled: true }),
+    })
+    const result = await emailAuthStatus()
+    expect(result).toEqual({ enabled: true })
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/auth/email-status'),
+      expect.anything()
+    )
+  })
+
+  it('emailAuthStatus returns disabled on error', async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: () => Promise.resolve({ error: 'fail' }),
+    })
+    const result = await emailAuthStatus()
+    expect(result).toEqual({ enabled: false })
+  })
+
+  it('emailLogin posts credentials to /api/auth/email-login', async () => {
+    globalThis.fetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ ok: true }),
+    })
+    const result = await emailLogin('test@rumaq.dev', 'password123')
+    expect(result).toEqual({ ok: true })
+    const [url, opts] = globalThis.fetch.mock.calls[0]
+    expect(url).toContain('/api/auth/email-login')
+    expect(opts.method).toBe('POST')
+    expect(opts.body).toBe(JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }))
   })
 })

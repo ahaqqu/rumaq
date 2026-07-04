@@ -9,6 +9,7 @@ account_id = "YOUR_ACCOUNT_ID"
 # CORS: allow the Pages frontend origin
 [vars]
 PAGES_ORIGIN = "https://rumaq.pages.dev"
+EMAIL_AUTH_ENABLED = "false"
 
 # D1 database binding
 [[d1_databases]]

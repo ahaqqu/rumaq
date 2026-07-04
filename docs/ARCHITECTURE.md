@@ -124,6 +124,29 @@ Google OAuth 2.0 is implemented inside the Worker using the [Authorization Code 
 
 **Why not Cloudflare Access?** Access is simpler, but in-app OAuth keeps the API self-contained, lets us store the user record in D1 for personalization, and makes local development straightforward with wrangler.
 
+### Email/password auth (testing mode)
+
+A second auth method is available for testing, gated behind the `EMAIL_AUTH_ENABLED` env variable. It is **off by default** and intended only for local/QA — Google OAuth remains the production path.
+
+1. `GET /api/auth/email-status`
+   - Public endpoint returning `{ enabled: boolean }` so the frontend can decide whether to render the email form.
+
+2. `POST /api/auth/email-login`
+   - Enabled only when `EMAIL_AUTH_ENABLED === 'true'` (otherwise returns 403).
+   - Validates `email` + `password` against the `password_hash` column on the `users` table (PBKDF2-SHA256, 100k iterations).
+   - Onboards a new user with the same household/seed logic as the Google callback.
+   - Issues the same `rumaq_session` JWT cookie.
+
+Seed test users are inserted by migration `0002_email_auth.sql`. All five share the password `password123`:
+
+| Email | Name |
+|---|---|
+| `test@rumaq.dev` | Test User One |
+| `alice@rumaq.dev` | Alice |
+| `bob@rumaq.dev` | Bob |
+| `charlie@rumaq.dev` | Charlie |
+| `diana@rumaq.dev` | Diana |
+
 ## 6. Database
 
 Cloudflare D1 runs SQLite at the edge. The schema is relational and normalized so the same Worker can serve a single household today and multiple households later without rewrites.
@@ -204,6 +227,7 @@ To serve the Worker under `api.rumaq.pages.dev`, configure a Cloudflare Workers 
 | `GOOGLE_CLIENT_SECRET` | Worker secret | Google OAuth client secret |
 | `WORKER_JWT_SECRET` | Worker secret | HMAC key for session JWT |
 | `WORKER_ENCRYPTION_KEY` | Worker secret | AES-GCM key for AI keys |
+| `EMAIL_AUTH_ENABLED` | Worker var/secret | Set to `"true"` to enable email/password testing auth; `"false"` (default) keeps it disabled |
 | `VITE_API_BASE` | Pages env | `https://api.rumaq.pages.dev` (must match the deployed Worker URL) |
 
 ## 9. Free-tier headroom

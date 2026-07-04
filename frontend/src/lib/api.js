@@ -45,6 +45,21 @@ export async function logout() {
   return request('/api/auth/logout', { method: 'POST' })
 }
 
+export async function emailAuthStatus() {
+  try {
+    return await request('/api/auth/email-status')
+  } catch {
+    return { enabled: false }
+  }
+}
+
+export async function emailLogin(email, password) {
+  return request('/api/auth/email-login', {
+    method: 'POST',
+    body: JSON.stringify({ email, password }),
+  })
+}
+
 export async function isAuthenticated() {
   try {
     await request('/api/me')

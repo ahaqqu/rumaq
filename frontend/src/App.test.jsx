@@ -10,6 +10,8 @@ vi.mock('./lib/api.js', () => ({
   logout: vi.fn().mockResolvedValue({ ok: true }),
   login: vi.fn(),
   isAuthenticated: vi.fn().mockResolvedValue(true),
+  emailAuthStatus: vi.fn().mockResolvedValue({ enabled: false }),
+  emailLogin: vi.fn().mockResolvedValue({ ok: true }),
 }))
 
 vi.mock('./data/mock.js', async () => {

@@ -4,7 +4,7 @@ Base URL: `https://api.rumaq.pages.dev/api`
 
 All paths below are relative to this base. The Worker mounts routes under `/api/*`; for example, `GET /me` resolves to `https://api.rumaq.pages.dev/api/me`.
 
-Protected endpoints require the `rumaq_session` cookie issued by Google OAuth. Responses are JSON. Errors use `{ "error": "..." }`.
+Protected endpoints require the `rumaq_session` cookie issued by Google OAuth (or by email/password auth when enabled). Responses are JSON. Errors use `{ "error": "..." }`.
 
 ## Auth
 
@@ -31,6 +31,30 @@ Google OAuth callback. Sets the session cookie and redirects to `/`.
 
 ### `POST /auth/logout`
 Clears the session cookie.
+
+**Response:**
+```json
+{ "ok": true }
+```
+
+### `GET /auth/email-status`
+Public endpoint reporting whether email/password auth is enabled.
+
+**Response:**
+```json
+{ "enabled": false }
+```
+
+### `POST /auth/email-login`
+Validates email/password credentials and sets the session cookie. Returns `403` when email auth is disabled (`EMAIL_AUTH_ENABLED !== "true"`).
+
+**Request:**
+```json
+{
+  "email": "test@rumaq.dev",
+  "password": "password123"
+}
+```
 
 **Response:**
 ```json

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
   verifyJwt, signJwt, base64UrlEncode, base64UrlDecode, randomState,
+  hashPassword, verifyPassword,
 } from '../auth.js'
 
 const SECRET = 'test-secret-12345'
@@ -104,6 +105,43 @@ describe('randomState', () => {
     const s1 = randomState()
     const s2 = randomState()
     expect(s1).not.toBe(s2)
+  })
+})
+
+describe('hashPassword / verifyPassword', () => {
+  it('hashPassword returns a pbkdf2_sha256 formatted string', async () => {
+    const hash = await hashPassword('password123')
+    expect(hash).toMatch(/^pbkdf2_sha256\$100000\$/)
+    const parts = hash.split('$')
+    expect(parts).toHaveLength(4)
+  })
+
+  it('verifyPassword accepts the correct password', async () => {
+    const hash = await hashPassword('password123')
+    expect(await verifyPassword('password123', hash)).toBe(true)
+  })
+
+  it('verifyPassword rejects a wrong password', async () => {
+    const hash = await hashPassword('password123')
+    expect(await verifyPassword('wrong', hash)).toBe(false)
+  })
+
+  it('verifyPassword rejects a malformed hash', async () => {
+    expect(await verifyPassword('password123', 'not-a-valid-hash')).toBe(false)
+    expect(await verifyPassword('password123', 'sha256$100000$abc$def')).toBe(false)
+  })
+
+  it('produces different hashes for the same password (random salt)', async () => {
+    const h1 = await hashPassword('password123')
+    const h2 = await hashPassword('password123')
+    expect(h1).not.toBe(h2)
+  })
+
+  it('verifies a pre-seeded test user hash', async () => {
+    // Hash for password123 from migration 0002_email_auth.sql
+    const seedHash = 'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s'
+    expect(await verifyPassword('password123', seedHash)).toBe(true)
+    expect(await verifyPassword('wrong', seedHash)).toBe(false)
   })
 })
 
@@ -278,5 +316,170 @@ describe('authApp Hono routes', () => {
       headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
     }, env as any)
     expect(res.status).toBe(302)
+  })
+
+  it('/email-status reports disabled by default', async () => {
+    const mod = await import('../auth.js')
+    const env = {
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-secret',
+      WORKER_JWT_SECRET: SECRET,
+      WORKER_ENCRYPTION_KEY: 'test-enc-key',
+      DB: {},
+      PAGES_ORIGIN: 'http://localhost:5173',
+      EMAIL_AUTH_ENABLED: 'false',
+    }
+    const res = await mod.authApp.request('/email-status', {}, env as any)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({ enabled: false })
+  })
+
+  it('/email-status reports enabled when flag is true', async () => {
+    const mod = await import('../auth.js')
+    const env = {
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-secret',
+      WORKER_JWT_SECRET: SECRET,
+      WORKER_ENCRYPTION_KEY: 'test-enc-key',
+      DB: {},
+      PAGES_ORIGIN: 'http://localhost:5173',
+      EMAIL_AUTH_ENABLED: 'true',
+    }
+    const res = await mod.authApp.request('/email-status', {}, env as any)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({ enabled: true })
+  })
+
+  it('/email-login returns 403 when disabled', async () => {
+    const mod = await import('../auth.js')
+    const env = {
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-secret',
+      WORKER_JWT_SECRET: SECRET,
+      WORKER_ENCRYPTION_KEY: 'test-enc-key',
+      DB: {},
+      PAGES_ORIGIN: 'http://localhost:5173',
+      EMAIL_AUTH_ENABLED: 'false',
+    }
+    const res = await mod.authApp.request('/email-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }),
+    }, env as any)
+    expect(res.status).toBe(403)
+  })
+
+  it('/email-login returns 400 for missing fields', async () => {
+    const mod = await import('../auth.js')
+    const env = {
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-secret',
+      WORKER_JWT_SECRET: SECRET,
+      WORKER_ENCRYPTION_KEY: 'test-enc-key',
+      DB: {},
+      PAGES_ORIGIN: 'http://localhost:5173',
+      EMAIL_AUTH_ENABLED: 'true',
+    }
+    const res = await mod.authApp.request('/email-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@rumaq.dev' }),
+    }, env as any)
+    expect(res.status).toBe(400)
+  })
+
+  it('/email-login returns 401 for unknown user', async () => {
+    const mockDb = {
+      prepare: () => mockDb,
+      bind: () => mockDb,
+      first: async () => null,
+      all: async () => ({ results: [] }),
+      batch: async () => [],
+    }
+    const mod = await import('../auth.js')
+    const env = {
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-secret',
+      WORKER_JWT_SECRET: SECRET,
+      WORKER_ENCRYPTION_KEY: 'test-enc-key',
+      DB: mockDb,
+      PAGES_ORIGIN: 'http://localhost:5173',
+      EMAIL_AUTH_ENABLED: 'true',
+    }
+    const res = await mod.authApp.request('/email-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'nobody@rumaq.dev', password: 'password123' }),
+    }, env as any)
+    expect(res.status).toBe(401)
+  })
+
+  it('/email-login returns 401 for wrong password', async () => {
+    const mockDb = {
+      prepare: () => mockDb,
+      bind: () => mockDb,
+      first: async () => ({
+        id: 'u1',
+        email: 'test@rumaq.dev',
+        name: 'Test User One',
+        password_hash: 'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s',
+      }),
+      all: async () => ({ results: [] }),
+      batch: async () => [],
+    }
+    const mod = await import('../auth.js')
+    const env = {
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-secret',
+      WORKER_JWT_SECRET: SECRET,
+      WORKER_ENCRYPTION_KEY: 'test-enc-key',
+      DB: mockDb,
+      PAGES_ORIGIN: 'http://localhost:5173',
+      EMAIL_AUTH_ENABLED: 'true',
+    }
+    const res = await mod.authApp.request('/email-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@rumaq.dev', password: 'wrong-password' }),
+    }, env as any)
+    expect(res.status).toBe(401)
+  })
+
+  it('/email-login succeeds with valid credentials and sets session cookie', async () => {
+    const mockDb = {
+      prepare: () => mockDb,
+      bind: () => mockDb,
+      first: async () => ({
+        id: 'u1',
+        email: 'test@rumaq.dev',
+        name: 'Test User One',
+        password_hash: 'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s',
+      }),
+      all: async () => ({ results: [] }),
+      batch: async () => [],
+    }
+    const mod = await import('../auth.js')
+    const env = {
+      GOOGLE_CLIENT_ID: 'test-client-id',
+      GOOGLE_CLIENT_SECRET: 'test-secret',
+      WORKER_JWT_SECRET: SECRET,
+      WORKER_ENCRYPTION_KEY: 'test-enc-key',
+      DB: mockDb,
+      PAGES_ORIGIN: 'http://localhost:5173',
+      EMAIL_AUTH_ENABLED: 'true',
+    }
+    const res = await mod.authApp.request('/email-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }),
+    }, env as any)
+    expect(res.status).toBe(200)
+    const body = await res.json()
+    expect(body).toEqual({ ok: true })
+    // Session cookie should be set
+    const setCookie = res.headers.get('set-cookie') || ''
+    expect(setCookie).toContain('rumaq_session=')
   })
 })

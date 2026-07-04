@@ -83,6 +83,53 @@ export function randomState() {
   return base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)).buffer)
 }
 
+// ---------------------------------------------------------------------------
+// Password hashing (PBKDF2-SHA256)
+// ---------------------------------------------------------------------------
+const PBKDF2_ITERATIONS = 100000
+const HASH_PREFIX = 'pbkdf2_sha256'
+
+export async function hashPassword(password: string): Promise<string> {
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  )
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+    key,
+    256
+  )
+  const saltB64 = base64UrlEncode(salt.buffer)
+  const hashB64 = base64UrlEncode(bits)
+  return `${HASH_PREFIX}$${PBKDF2_ITERATIONS}$${saltB64}$${hashB64}`
+}
+
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+  const parts = stored.split('$')
+  if (parts.length !== 4 || parts[0] !== HASH_PREFIX) return false
+  const iterations = parseInt(parts[1], 10)
+  const salt = new Uint8Array(base64UrlDecode(parts[2]))
+  const expectedHash = parts[3]
+  const key = await crypto.subtle.importKey(
+    'raw',
+    new TextEncoder().encode(password),
+    { name: 'PBKDF2' },
+    false,
+    ['deriveBits']
+  )
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
+    key,
+    256
+  )
+  const hashB64 = base64UrlEncode(bits)
+  return hashB64 === expectedHash
+}
+
 authApp.get('/login', async (c) => {
   const state = randomState()
   const verifier = randomState()
@@ -235,6 +282,103 @@ authApp.get('/callback', async (c) => {
 
 authApp.post('/logout', (c) => {
   deleteCookie(c, COOKIE_NAME)
+  return c.json({ ok: true })
+})
+
+// ---------------------------------------------------------------------------
+// Email/password auth (testing mode)
+// ---------------------------------------------------------------------------
+
+authApp.get('/email-status', (c) => {
+  return c.json({ enabled: c.env.EMAIL_AUTH_ENABLED === 'true' })
+})
+
+authApp.post('/email-login', async (c) => {
+  if (c.env.EMAIL_AUTH_ENABLED !== 'true') {
+    return c.json({ error: 'Email auth is disabled' }, 403)
+  }
+
+  let body: { email?: string; password?: string }
+  try {
+    body = await c.req.json()
+  } catch {
+    return c.json({ error: 'Invalid request body' }, 400)
+  }
+
+  const { email, password } = body
+  if (!email || !password) {
+    return c.json({ error: 'Email and password are required' }, 400)
+  }
+
+  const user = await c.env.DB.prepare(
+    'SELECT id, email, name, password_hash FROM users WHERE email = ?'
+  ).bind(email).first<{ id: string; email: string; name: string; password_hash: string }>()
+
+  if (!user || !user.password_hash) {
+    return c.json({ error: 'Invalid email or password' }, 401)
+  }
+
+  const valid = await verifyPassword(password, user.password_hash)
+  if (!valid) {
+    return c.json({ error: 'Invalid email or password' }, 401)
+  }
+
+  // Onboard new user (same logic as Google callback)
+  const existingMember = await c.env.DB.prepare(
+    'SELECT 1 FROM household_members WHERE user_id = ?'
+  ).bind(user.id).first()
+
+  if (!existingMember) {
+    const householdId = crypto.randomUUID()
+    const settingsId = crypto.randomUUID()
+    const locationSeeds = [
+      { id: crypto.randomUUID(), label: 'Kulkas', sort_order: 1 },
+      { id: crypto.randomUUID(), label: 'Freezer', sort_order: 2 },
+      { id: crypto.randomUUID(), label: 'Lemari', sort_order: 3 },
+      { id: crypto.randomUUID(), label: 'Rak', sort_order: 4 },
+    ]
+    const storeSeeds = [
+      { id: crypto.randomUUID(), label: 'Indomaret' },
+      { id: crypto.randomUUID(), label: 'Alfamart' },
+      { id: crypto.randomUUID(), label: 'Pasar' },
+    ]
+
+    await c.env.DB.batch([
+      c.env.DB.prepare('INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)')
+        .bind(householdId, 'Rumahku', user.id),
+      c.env.DB.prepare(
+        'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
+      ).bind(householdId, user.id, 'owner'),
+      c.env.DB.prepare(
+        'INSERT INTO user_settings (id, user_id, active_household_id) VALUES (?, ?, ?)'
+      ).bind(settingsId, user.id, householdId),
+      ...locationSeeds.map((loc) =>
+        c.env.DB.prepare(
+          'INSERT INTO locations (id, household_id, label, sort_order) VALUES (?, ?, ?, ?)'
+        ).bind(loc.id, householdId, loc.label, loc.sort_order)
+      ),
+      ...storeSeeds.map((store) =>
+        c.env.DB.prepare(
+          'INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)'
+        ).bind(store.id, householdId, store.label)
+      ),
+    ])
+  }
+
+  const iat = Date.now()
+  const jwt = await signJwt(
+    { sub: user.id, email: user.email, iat, exp: iat + SESSION_DURATION_MS },
+    c.env.WORKER_JWT_SECRET
+  )
+
+  setCookie(c, COOKIE_NAME, jwt, {
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'Lax',
+    maxAge: 60 * 60 * 24 * 30,
+  })
+
   return c.json({ ok: true })
 })
 

@@ -48,7 +48,14 @@ export default function App() {
   if (!user) {
     return (
       <PersonaProvider>
-        <Login />
+        <Login onLogin={async () => {
+          try {
+            const data = await getMe()
+            setUser(data.user)
+          } catch {
+            setUser(null)
+          }
+        }} />
       </PersonaProvider>
     )
   }

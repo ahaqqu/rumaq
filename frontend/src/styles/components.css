@@ -625,6 +625,54 @@
   margin-top: var(--sp-2);
 }
 
+.login__divider {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+  color: var(--text-muted);
+  font-size: var(--fs-sm);
+}
+.login__divider::before,
+.login__divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.login__form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+  text-align: left;
+}
+.login__label {
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
+  color: var(--text-muted);
+}
+.login__input {
+  width: 100%;
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--fs-md);
+  font-family: inherit;
+}
+.login__input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+.login__error {
+  color: var(--color-danger);
+  font-size: var(--fs-sm);
+  text-align: center;
+}
+
 /* rail compact usage */
 .rail__usage { display: flex; flex-direction: column; gap: var(--sp-2); padding: 0 var(--sp-2); }
 .rail__usage-row { display: flex; align-items: center; justify-content: space-between; font-size: var(--fs-sm); }
