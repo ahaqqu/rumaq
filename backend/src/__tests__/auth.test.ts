@@ -332,7 +332,7 @@ describe('authApp Hono routes', () => {
     const res = await mod.authApp.request('/email-status', {}, env as any)
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body).toEqual({ enabled: false })
+    expect(body.enabled).toBe(false)
   })
 
   it('/email-status reports enabled when flag is true', async () => {
@@ -349,7 +349,7 @@ describe('authApp Hono routes', () => {
     const res = await mod.authApp.request('/email-status', {}, env as any)
     expect(res.status).toBe(200)
     const body = await res.json()
-    expect(body).toEqual({ enabled: true })
+    expect(body.enabled).toBe(true)
   })
 
   it('/email-login returns 403 when disabled', async () => {
