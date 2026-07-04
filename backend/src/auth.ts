@@ -248,8 +248,8 @@ authApp.get('/callback', async (c) => {
         'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
       ).bind(householdId, actualUserId, 'owner'),
       c.env.DB.prepare(
-        'INSERT INTO user_settings (id, user_id, active_household_id) VALUES (?, ?, ?)'
-      ).bind(settingsId, actualUserId, householdId),
+        'INSERT INTO user_settings (id, user_id, active_household_id, language) VALUES (?, ?, ?, ?)'
+      ).bind(settingsId, actualUserId, householdId, 'en'),
       ...locationSeeds.map((loc) =>
         c.env.DB.prepare(
           'INSERT INTO locations (id, household_id, label, sort_order) VALUES (?, ?, ?, ?)'
@@ -350,8 +350,8 @@ authApp.post('/email-login', async (c) => {
         'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
       ).bind(householdId, user.id, 'owner'),
       c.env.DB.prepare(
-        'INSERT INTO user_settings (id, user_id, active_household_id) VALUES (?, ?, ?)'
-      ).bind(settingsId, user.id, householdId),
+        'INSERT INTO user_settings (id, user_id, active_household_id, language) VALUES (?, ?, ?, ?)'
+      ).bind(settingsId, user.id, householdId, 'en'),
       ...locationSeeds.map((loc) =>
         c.env.DB.prepare(
           'INSERT INTO locations (id, household_id, label, sort_order) VALUES (?, ?, ?, ?)'

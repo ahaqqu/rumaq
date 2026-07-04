@@ -3,6 +3,29 @@ import { render, fireEvent, act } from '@testing-library/react'
 import React from 'react'
 import Plan from './Plan.jsx'
 
+vi.mock("react-i18next", () => {
+  const t = (key, opts) => {
+    if (opts && opts.returnObjects) return {}
+    if (opts && opts.defaultValue) return opts.defaultValue
+    return key
+  }
+  return {
+    useTranslation: () => ({ t, i18n: { language: "en", changeLanguage: vi.fn(), on: vi.fn(), off: vi.fn() } }),
+    I18nextProvider: ({ children }) => children,
+    initReactI18next: { type: "3rdParty", init: vi.fn() },
+  }
+})
+
+vi.mock("../context/PersonaContext.jsx", () => ({
+  PersonaProvider: ({ children }) => children,
+  usePersona: () => ({
+    persona: { enabled: false, userRole: "", aiRole: "", hue: 230, generatedCopy: null },
+    setPersona: vi.fn(),
+    regenerateCopy: vi.fn(),
+  }),
+}))
+
+
 describe('Plan', () => {
   it('renders no-key state when aiKey is missing', () => {
     const { container } = render(

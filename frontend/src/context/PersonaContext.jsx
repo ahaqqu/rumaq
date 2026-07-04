@@ -3,8 +3,20 @@ import { loadPersona, savePersona, deriveHue, applyTheme, generatePersonaCopy } 
 
 const PersonaContext = createContext(null)
 
-export function PersonaProvider({ children }) {
-  const [persona, setPersonaState] = useState(() => loadPersona())
+export function PersonaProvider({ children, initialPersona }) {
+  const [persona, setPersonaState] = useState(() => {
+    const loaded = loadPersona()
+    if (initialPersona) {
+      return { ...loaded, ...initialPersona }
+    }
+    return loaded
+  })
+
+  useEffect(() => {
+    if (initialPersona) {
+      setPersonaState((prev) => ({ ...prev, ...initialPersona }))
+    }
+  }, [initialPersona])
 
   const setPersona = (next) => {
     setPersonaState((prev) => {

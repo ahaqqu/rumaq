@@ -13,14 +13,20 @@ vi.mock('react-i18next', () => {
   }
 })
 
-vi.mock('./context/PersonaContext.jsx', () => {
-  const mp = {
+vi.mock('../context/PersonaContext.jsx', () => ({
+  PersonaProvider: ({ children }) => children,
+  usePersona: () => ({
     persona: { enabled: false, userRole: '', aiRole: '', hue: 230, generatedCopy: null },
     setPersona: vi.fn(),
     regenerateCopy: vi.fn(),
-  }
-  return {
-    PersonaProvider: ({ children }) => children,
-    usePersona: () => mp,
-  }
-})
+  }),
+}))
+
+vi.mock('../../context/PersonaContext.jsx', () => ({
+  PersonaProvider: ({ children }) => children,
+  usePersona: () => ({
+    persona: { enabled: false, userRole: '', aiRole: '', hue: 230, generatedCopy: null },
+    setPersona: vi.fn(),
+    regenerateCopy: vi.fn(),
+  }),
+}))

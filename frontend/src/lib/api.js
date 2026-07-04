@@ -68,3 +68,52 @@ export async function isAuthenticated() {
     return false
   }
 }
+
+export function getSettings() {
+  return request('/api/settings')
+}
+
+export function updateSettings(body) {
+  return request('/api/settings', {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  })
+}
+
+export function getLocations() {
+  return request('/api/locations')
+}
+
+export function createLocation(label) {
+  return request('/api/locations', {
+    method: 'POST',
+    body: JSON.stringify({ label }),
+  })
+}
+
+export function deleteLocation(id) {
+  return request(`/api/locations/${id}`, { method: 'DELETE' })
+}
+
+export function getStores() {
+  return request('/api/stores')
+}
+
+export function createStore(label) {
+  return request('/api/stores', {
+    method: 'POST',
+    body: JSON.stringify({ label }),
+  })
+}
+
+export function deleteStore(id) {
+  return request(`/api/stores/${id}`, { method: 'DELETE' })
+}
+
+export function getAiUsage() {
+  return request('/api/ai/usage')
+}
+
+export function testAiKey() {
+  return request('/api/ai/test', { method: 'POST' })
+}

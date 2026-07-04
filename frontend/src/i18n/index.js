@@ -4,6 +4,8 @@ import { initReactI18next } from 'react-i18next'
 import en from './locales/en.json'
 import id from './locales/id.json'
 
+import { updateSettings } from '../lib/api.js'
+
 const LANG_KEY = 'rumaq:lang'
 
 export function loadLang() {
@@ -31,6 +33,7 @@ i18n.use(initReactI18next).init({
 i18n.on('languageChanged', (lng) => {
   saveLang(lng)
   document.documentElement.lang = lng
+  updateSettings({ language: lng }).catch(() => {})
 })
 
 document.documentElement.lang = i18n.language

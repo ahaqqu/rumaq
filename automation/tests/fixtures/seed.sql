@@ -24,11 +24,12 @@ VALUES (
 );
 
 -- User settings (with active household)
-INSERT INTO user_settings (id, user_id, active_household_id)
+INSERT INTO user_settings (id, user_id, active_household_id, language)
 VALUES (
   'ssssssss-0000-0000-0000-000000000001',
   'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
-  '11111111-2222-3333-4444-555555555555'
+  '11111111-2222-3333-4444-555555555555',
+  'id'
 );
 
 -- Locations
