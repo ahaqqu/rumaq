@@ -15,4 +15,3 @@ playwright-report
 test-results
 vitest-report
 .features-gen
-frontend/src/routeTree.gen.ts
