@@ -1,8 +1,8 @@
 # RumaQ — REST API Contract
 
-Base URL: `https://rumaq-api.angga-bariesta.workers.dev/api`
+Base URL: `https://api.rumaq.workers.dev/api`
 
-All paths below are relative to this base. The Worker mounts routes under `/api/*`; for example, `GET /me` resolves to `https://rumaq-api.angga-bariesta.workers.dev/api/me`.
+All paths below are relative to this base. The Worker mounts routes under `/api/*`; for example, `GET /me` resolves to `https://api.rumaq.workers.dev/api/me`.
 
 Protected endpoints require the `rumaq_session` cookie issued by Google OAuth (or by email/password auth when enabled). Responses are JSON. Errors use `{ "error": "..." }`.
 

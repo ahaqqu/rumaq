@@ -38,7 +38,7 @@ async function r2Ensure() {
 }
 
 async function putSecrets() {
-  const scriptName = 'rumaq-api'
+  const scriptName = 'api'
   const secrets = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'WORKER_JWT_SECRET', 'WORKER_ENCRYPTION_KEY']
   const results = []
   for (const name of secrets) {

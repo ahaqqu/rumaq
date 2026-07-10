@@ -103,7 +103,7 @@ User browser
     ▼
 Cloudflare Pages (rumaq.pages.dev) — static SPA assets only
     │
-    └── API calls ──► Cloudflare Worker (rumaq-api.<account>.workers.dev)
+    └── API calls ──► Cloudflare Worker (api.rumaq.workers.dev)
                             │
                             ▼
                     [default entrypoint — gateway]  cache OFF
@@ -262,7 +262,7 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 | `WORKER_JWT_SECRET` | Worker secret | HMAC key for session JWT |
 | `WORKER_ENCRYPTION_KEY` | Worker secret | AES-GCM key for AI keys |
 | `EMAIL_AUTH_ENABLED` | Worker var/secret | Set to `"true"` to enable email/password testing auth; `"false"` (default) keeps it disabled |
-| `WORKER_URL` | Build env | URL of the deployed Worker (e.g. `https://rumaq-api.angga-bariesta.workers.dev`); used at build time as `VITE_API_BASE` |
+| `WORKER_URL` | Build env | URL of the deployed Worker (e.g. `https://api.rumaq.workers.dev`); used at build time as `VITE_API_BASE` |
 
 ## 9. Free-tier headroom
 
