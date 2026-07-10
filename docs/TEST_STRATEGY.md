@@ -34,7 +34,7 @@ The same-origin proxy eliminates CORS/cookie cross-domain issues. The worker-ser
 
 ### API integration tests
 
-Written in Gherkin (`.feature` files) with `jest-cucumber` step definitions at `automation/tests/local/api/steps/*.steps.js`. Run by Vitest against the running stack. Reset + seed before each scenario via the admin endpoints. Auth is handled by re-exporting `signJwt` from `backend/src/auth.ts`, so test tokens match the production JWT format exactly. Run in isolation with:
+Written in Gherkin (`.feature` files) with `jest-cucumber` step definitions at `automation/tests/local/api/steps/*.steps.js`. Run by Vitest against the running stack. Reset + seed before each scenario via the admin endpoints. Auth is handled by re-exporting `signJwt` from `backend/src/auth.ts`, so test tokens match the production JWT format exactly. Email/password login is tested against `/api/auth/email-login` using the seed user `test@rumaq.dev` with password `password123` (password_hash column added via migration `0002_email_auth.sql`). Run in isolation with:
 
 ```bash
 npm run test:api
@@ -50,12 +50,29 @@ npm run test:e2e
 
 ## Production smoke tests
 
-A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) hits the live `rumaq.pages.dev` every 6 hours with read-only `GET` requests:
+A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) hits the live site every 6 hours. The API and frontend live on separate domains (`api.rumaq.workers.dev` + `rumaq.pages.dev`), so the test context stores two base URLs (`ctx.base` for frontend, `ctx.apiBase` for API).
 
-- Public: frontend loads, `/api/health` returns 200.
-- Authenticated (when `RUMAQ_PROD_SESSION` secret is set): `/api/me` and `/api/stock` return 200 with the expected shape.
+### Cucumber API tests (`automation/tests/live/health/`)
+
+Read-only `GET` requests against the live API:
+
+- Public: frontend loads at `/`, `/api/health` returns 200 with `{ ok: true }`.
+- Authenticated (when `RUMAQ_PROD_SESSION` secret is set): passes the JWT cookie as a raw header, verifies `/api/me` returns a user object and `/api/stock` returns a stock array.
 
 Smoke tests assert status and shape only — never exact values. On failure, a GitHub issue is auto-created with the `smoke-failure` label.
+
+### Playwright E2E test (`automation/tests/live/e2e/login.spec.js`)
+
+A standalone Playwright spec that tests the email login form end-to-end against the live site:
+
+1. Navigates to `rumaq.pages.dev`, waits for the email form to render.
+2. Fills `#email` with `alice@rumaq.dev` and `#password` with `password123`.
+3. Clicks `button[type="submit"]` — the app POSTs to `/api/auth/email-login` and sets the session cookie.
+4. Verifies redirect to `/` and the page shows "Alice".
+5. Navigates to `/api/auth/logout`, verifies redirect back to the app.
+6. Verifies the login form appears again (session cleared).
+
+Run with: `npx playwright test --config automation/playwright.live.config.js`
 
 The smoke runner lives at `automation/scripts/run-smoke-tests.sh`. To trigger the workflow from a dev machine, use `scripts/trigger-smoke.sh`.
 
