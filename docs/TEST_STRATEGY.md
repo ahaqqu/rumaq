@@ -1,72 +1,63 @@
 # RumaQ — Testing Strategy
 
-## Unit tests (Vitest)
+## Unit test
 
-| Location | Environment | Coverage |
-|----------|-------------|----------|
-| `frontend/src/**/*.test.{js,jsx}` | jsdom | 90/75/85/90 |
-| `backend/src/**/*.test.ts` | Node | 90/80/85/90 (D1 mocked) |
+| Location | Runner | Environment | Coverage |
+|----------|--------|-------------|----------|
+| `frontend/src/**/*.test.{js,jsx}` | Vitest | jsdom | 90/75/85/90 |
+| `backend/src/**/*.test.ts` | Vitest | Node | 90/80/85/90 (D1 mocked) |
 
 ```bash
-npm test                      # all workspaces
+npm test
 npm run test -w frontend
 npm run test -w backend
 ```
 
-## Integration & E2E (Docker)
+## Local automation test
+
+All services behind `nginx` proxy at `localhost:3000`. Worker server exposes `TEST_MODE`-guarded admin endpoints (`/api/__test/reset`, `/api/__test/seed`).
 
 ```bash
 npm run test:docker    # runs ./automation/scripts/test-local.sh
 ```
 
-Four services behind `nginx` proxy at `localhost:3000`:
+### API (`automation/tests/local/api/`)
 
-| Service | Role |
-|---------|------|
-| `api` | Miniflare (Hono Worker), local D1/R2, seeded DB |
-| `web` | Production Vite build, nginx |
-| `proxy` | `/api/*` → api, `/*` → web |
-| `test-runner` | Runs API tests then Playwright E2E |
-
-Worker server exposes `TEST_MODE`-guarded admin endpoints (`/api/__test/reset`, `/api/__test/seed`) for per-suite DB isolation.
-
-### API tests (`automation/tests/local/api/`)
-
-Gherkin features + `jest-cucumber` steps, run by Vitest. Auth tokens signed via `signJwt` from `backend/src/auth.ts` (matches production format). Email/password login tested against `/api/auth/email-login` with seed user `test@rumaq.dev` / `password123`.
+Gherkin features + `jest-cucumber`, run by Vitest. Auth tokens signed via `signJwt` from `backend/src/auth.ts`. Email/password login tested with seed user `test@rumaq.dev` / `password123`.
 
 ```bash
 npm run test:api
 ```
 
-### E2E tests (`automation/tests/local/e2e/`)
+### E2E (`automation/tests/local/e2e/`)
 
-Gherkin features + `playwright-bdd` steps, run by Playwright against `localhost:3000`.
+Gherkin features + `playwright-bdd`, run by Playwright.
 
 ```bash
 npm run test:e2e
 ```
 
-## Production smoke tests
+## Live production automation test
 
-GitHub Actions workflow `.github/workflows/smoke.yml` — runs every 6 hours. Uses two base URLs: `ctx.base` (frontend at `rumaq.pages.dev`) and `ctx.apiBase` (API at `api.rumaq.workers.dev`).
+GitHub Actions workflow `.github/workflows/smoke.yml` — runs every 6 hours. Two base URLs: `rumaq.pages.dev` (frontend), `api.rumaq.workers.dev` (API).
 
 ### API health (`automation/tests/live/health/`)
 
-Read-only `GET` requests:
+Read-only `GET`:
 - Public: frontend loads, `/api/health` returns `{ ok: true }`.
-- Authenticated: passes `RUMAQ_PROD_SESSION` (GitHub secret, pre-obtained JWT) as `Cookie` header, asserts `/api/me` returns a user object and `/api/stock` returns an array.
+- Authenticated: passes `RUMAQ_PROD_SESSION` (GitHub secret, pre-obtained JWT) as `Cookie` header, asserts `/api/me` returns user, `/api/stock` returns array.
 
-On failure → auto-creates GitHub issue with `smoke-failure` label.
+On failure → auto-creates issue with `smoke-failure` label.
 
 ### Login/logout (`automation/tests/live/e2e/login.spec.js`)
 
-Playwright spec: navigates to app, fills email form (`alice@rumaq.dev` / `password123`), clicks submit, verifies redirect + "Alice" visible, navigates to `/api/auth/logout`, verifies redirect back to login page.
+Playwright: fills email form (`alice@rumaq.dev` / `password123`), clicks submit, verifies redirect + "Alice" visible, navigates to `/api/auth/logout`, verifies redirect back to login.
 
 ```bash
 npx playwright test --config automation/playwright.live.config.js
 ```
 
-Trigger smoke workflow: `scripts/trigger-smoke.sh`
+Manual trigger: `scripts/trigger-smoke.sh`
 
 ## Acceptance criteria
 
