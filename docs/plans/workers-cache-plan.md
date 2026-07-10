@@ -11,8 +11,8 @@ locally without errors.
 ## Decision log
 
 - **Pattern:** Gateway entrypoint (cache OFF) + single cached named entrypoint
-  (`CachedApi`). Auth routes handled directly in the gateway; they
-  auto-bypass Workers Cache via `Set-Cookie` or `POST` method.
+  (`CachedApi`). Auth routes handled directly in the gateway; they never reach
+  the cached entrypoint because the gateway routes by path first.
 - **Production runtime:** Migrate the API from a Cloudflare Pages Function to a
   standalone Cloudflare Worker so per-entrypoint caching is supported.
 - **Production URL:** `https://rumaq-api.<account>.workers.dev` (configure via
@@ -33,8 +33,10 @@ locally without errors.
   partition from requests with props.
 - `POST`/`PATCH`/`DELETE` are never cached by Workers Cache, so mutations are
   safe even when they pass through a cached entrypoint.
-- Responses with `Set-Cookie` auto-bypass Workers Cache, so auth routes
-  (login, callback) are safe without explicit cache-busting.
+- Auth routes (login, callback, logout, email-login) are handled directly in
+  the gateway via `authApp.fetch()` — they never enter the cached entrypoint.
+  Safety comes from path-based routing, not implicit cache bypass. Workers
+  Cache does not have documented `Set-Cookie` auto-bypass behavior.
 - A single cached entrypoint is simpler than splitting into public + auth
   sub-apps, while achieving the same cache isolation via `ctx.props`.
 - A standalone Worker is the better long-term architecture: it separates the API
@@ -59,9 +61,8 @@ Cloudflare Pages (rumaq.pages.dev) — static SPA assets only
         /api/auth/*   public GET      authenticated /api/*
         (handled      /api/health     (JWT valid)
          in gateway)  /api/auth/        │
-        auto-bypass   email-status      │
-        via Set-         │              │
-        Cookie/POST      │              │
+        never enters   email-status      │
+        CachedApi        │              │
               │          │              │
               ▼          ▼              ▼
                   [CachedApi entrypoint]  cache ON
@@ -70,10 +71,8 @@ Cloudflare Pages (rumaq.pages.dev) — static SPA assets only
 
 Auth routes (`/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`,
 `/api/auth/email-login`) are handled directly in the gateway via
-`authApp.fetch()`. They never enter the cached entrypoint. Workers Cache
-auto-bypasses them:
-- `Set-Cookie` in login/callback responses → automatic cache bypass
-- `POST` in logout/email-login → POST never cached
+`authApp.fetch()`. They never enter the cached entrypoint. No reliance on
+implicit cache bypass.
 
 ## Cache header policy
 
@@ -84,7 +83,7 @@ boilerplate.
 |---|---|---|
 | `/api/health`, `/api/auth/email-status` | GET | `Cache-Control: public, max-age=60, stale-while-revalidate=300` |
 | `/api/me`, `/api/stock`, all future protected GET reads | GET | Edge: `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300`<br>Browser: `Cache-Control: private, max-age=0` |
-| Auth routes (handled in gateway) | GET/POST | None; bypassed automatically by `Set-Cookie` / `POST` |
+| Auth routes (handled in gateway) | GET/POST | None; never reach the cached entrypoint |
 
 Note: `Cloudflare-CDN-Cache-Control` has higher precedence than `Cache-Control`
 and is consumed by Cloudflare. If production testing shows that `private` in
@@ -109,7 +108,7 @@ partitioning still keeps the data isolated.
   - Move the existing Google OAuth and email auth routes here (extracted from
     `auth.ts`).
   - CORS middleware (reused via `cors.ts`).
-  - No cache headers; auto-bypassed by `Set-Cookie` / `POST`.
+  - No cache headers; never reaches the cached entrypoint.
 
 - `backend/src/apps/api.ts`
   - **Single** Hono app for all cached routes (public + authenticated).
@@ -130,7 +129,7 @@ partitioning still keeps the data isolated.
     1. `OPTIONS` requests → return CORS preflight response (via `cors.ts`).
     2. Auth paths (`/api/auth/login`, `/api/auth/callback`,
        `/api/auth/logout`, `/api/auth/email-login`) → run `authApp.fetch()`
-       directly (uncached; auto-bypass via `Set-Cookie`/`POST`).
+       directly (uncached; handled by gateway routing, never cached).
     3. All other `/api/*` → verify JWT cookie, look up active household, then
        `ctx.exports.CachedApi.fetch(request, { ...env, props: { userId, householdId } })`.
     4. Public `/api/health` and `/api/auth/email-status` → also go through
@@ -139,9 +138,14 @@ partitioning still keeps the data isolated.
     5. Non-API paths → `env.ASSETS.fetch(request)` fallback.
 
 - `backend/src/entrypoints.ts`
+  - `import { WorkerEntrypoint } from "cloudflare:workers"`
   - `export class CachedApi extends WorkerEntrypoint<Env>`
     - Runs `apiApp.fetch(request, env, ctx)`.
     - `env.props` is set by the gateway when calling via `ctx.exports`.
+  - Note: The `cloudflare:workers` import is a Workers runtime module. The
+    esbuild Docker build handles it (existing `sed` fix in Dockerfile.api still
+    applies). Unit tests that import `entrypoints.ts` need the module mocked
+    (but tests can avoid this by testing `apiApp` directly via `app.request()`).
 
 - `backend/src/index.ts`
   - Re-export the default gateway and the `CachedApi` entrypoint class.
@@ -161,25 +165,34 @@ partitioning still keeps the data isolated.
 - `backend/src/middleware.ts` cookie verification moves into the gateway; the
   `propsAuthMiddleware` replaces it inside `api.ts`.
 
-### Simplified routing in the gateway
-
-The gateway avoids explicit `/api/auth/*` routing. The logic is driven by
-whether a JWT is present:
+### Gateway routing logic
 
 ```
 if (method === 'OPTIONS') → cors preflight
+
 if (path starts with '/api/') {
+  // Auth routes: always handled in gateway, never reach cached entrypoint
+  if (path is auth route) → return authApp.fetch(request, env, ctx)
+
+  // All other API routes: verify JWT, dispatch to CachedApi with/without props
   token = getCookie(request, 'rumaq_session')
   if (token) {
     userId, householdId = await verifySession(token, env)
-    if (userId) return ctx.exports.CachedApi.fetch(request, { ...env, props: { userId, householdId } })
+    if (userId) {
+      return ctx.exports.CachedApi.fetch(request, { ...env, props: { userId, householdId } })
+    }
   }
-  // No valid JWT — might be an auth route (login/callback/etc.)
-  return authApp.fetch(request, env, ctx)
+  // No valid JWT — still dispatch through CachedApi without props
+  // (handles public routes like /api/health and /api/auth/email-status)
+  return ctx.exports.CachedApi.fetch(request, { ...env })
 }
+
 // Non-API
 return env.ASSETS.fetch(request)
 ```
+
+This avoids accidentally routing authenticated users' auth requests
+(e.g. POST /api/auth/logout with a valid cookie) through CachedApi.
 
 ## Wrangler configuration changes
 
@@ -297,54 +310,14 @@ support this.
 config. Calls `mf.dispatchFetch()` which only invokes the default export.
 
 **Required change:** Miniflare must know about the `CachedApi` named entrypoint
-so `ctx.exports.CachedApi.fetch()` works inside the gateway. Two options
-(try A first, fall back to B if Miniflare programmatic API doesn't support
-named entrypoints):
+so `ctx.exports.CachedApi.fetch()` works inside the gateway. Two options:
 
-**Option A (preferred):** Pass the wrangler test config to Miniflare so it
-discovers entrypoints from `[exports.*]` blocks:
-
-```js
-import { resolve, dirname } from 'node:path'
-// ...
-const mf = new Miniflare({
-  modules: true,
-  scriptPath: BUNDLE_PATH,
-  wranglerConfig: resolve(BACKEND_DIR, 'wrangler.test.toml'),
-  // remove compatibilityDate/compatibilityFlags — they come from wrangler config
-  d1Databases: { DB: 'rumaq-test' },
-  r2Buckets: { RECEIPTS: 'rumaq-receipts-test' },
-  bindings: {
-    PAGES_ORIGIN: 'http://localhost:3000',
-    GOOGLE_CLIENT_ID: 'test-client-id',
-    GOOGLE_CLIENT_SECRET: 'test-client-secret',
-    WORKER_JWT_SECRET: 'test-jwt-secret',
-    WORKER_ENCRYPTION_KEY: 'a'.repeat(32),
-    TEST_MODE: 'true',
-  },
-})
-```
-
-- `wrangler.test.toml` must have `[exports.CachedApi]` block (cache disabled,
-  see Wrangler section above).
-- Miniflare reads `compatibility_date`, `compatibility_flags`, and entrypoints
-  from the config file, so remove those from the programmatic options.
-
-**Option B (fallback):** If Miniflare doesn't support `wranglerConfig` for
-named entrypoints, add a test-mode short-circuit in the gateway that bypasses
-`ctx.exports` and calls `apiApp` directly:
-
-```typescript
-// In gateway.ts
-if (env.TEST_MODE) {
-  return apiApp.fetch(request, { ...env, props }, ctx)
-}
-return ctx.exports.CachedApi.fetch(request, { ...env, props })
-```
-
-This is less production-like but keeps tests running. The `ctx.props`
-isolation is still tested functionally since props are passed through the env
-object.
+**Decision: Option A (TEST_MODE short-circuit).** The test-mode short-circuit
+is the primary approach. If Miniflare later gains solid named-entrypoint
+support, we can switch to Option B and drop the `TEST_MODE` branch. Production
+is verified separately via the `curl -I` smoke tests (see "Production
+verification" below) — the `Cf-Cache-Status` header confirms real Workers Cache
+behavior, which Miniflare can't reproduce anyway.
 
 #### `automation/docker/Dockerfile.api`
 
@@ -471,7 +444,7 @@ Check the `Cf-Cache-Status` response header for `HIT`, `MISS`, or `UPDATING`.
 - `docs/ARCHITECTURE.md`
   - Update the request-flow diagram to show Pages → standalone Worker.
   - Add a "Caching" subsection explaining the gateway pattern, `ctx.props`
-    isolation, and automatic cache bypass for auth routes.
+    isolation, and path-based auth route separation.
 - `docs/API.md`
   - Note that public endpoints are cached and authenticated endpoints are cached
     per user/household.
@@ -479,6 +452,38 @@ Check the `Cf-Cache-Status` response header for `HIT`, `MISS`, or `UPDATING`.
   - Add the production `[cache]` and `[exports.*]` blocks with comments.
 - `README.md`
   - Update deploy steps if the `WORKER_URL` env var or deploy command changes.
+
+## Error responses
+
+The `onError` handler in `api.ts` must set `Cache-Control: private, no-cache` on
+error responses. Without explicit cache headers, Workers Cache may cache a 500
+response and serve it to subsequent requests until the TTL expires.
+
+## Design decisions
+
+### Cache invalidation on writes: tag-based purge
+
+When a user performs a write, the cached GET for that user is stale up to 30s.
+The chosen approach is **tag-based purge on writes**:
+
+- Add `Cache-Tag: user:<userId>, household:<householdId>` to cached GET responses.
+- On write, call `ctx.cache.purge({ tags: [...] })` from inside the `CachedApi`
+  entrypoint (purge is scoped to the owning entrypoint).
+- Write handlers that touch cached data call back through the `CachedApi`
+  entrypoint to trigger the purge.
+
+### Deploy-time cache invalidation: skip
+
+The blog states "Cross-version cache: default (per-version cache isolation)."
+Assuming Workers Cache truly keys on version, old cached responses invalidate
+automatically on deploy. No explicit purge on deploy — if it turns out version
+isolation doesn't hold, we add a `wrangler deploy --purge` then.
+
+### Tracking-parameter cache fragmentation: normalize in gateway
+
+Strip known tracking params (`utm_*`, `fbclid`, `gclid`, etc.) from the URL
+before forwarding to `CachedApi`. Implemented as a lightweight URL middleware
+in the gateway. Collapses tracking URLs into a single cache entry.
 
 ## Implementation order
 
