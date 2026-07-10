@@ -9,6 +9,7 @@ account_id = "LOCAL"
 # CORS: allow the Docker proxy origin
 [vars]
 PAGES_ORIGIN = "http://localhost:3000"
+EMAIL_AUTH_ENABLED = "false"
 
 # D1 database binding (local Miniflare)
 [[d1_databases]]

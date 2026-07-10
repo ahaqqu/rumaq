@@ -6,6 +6,7 @@ account_id = "85cd0e23088e12759d05b347f0f68536"
 
 [vars]
 PAGES_ORIGIN = "https://rumaq.pages.dev"
+EMAIL_AUTH_ENABLED = "true"
 
 [[d1_databases]]
 binding = "DB"

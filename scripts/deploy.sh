@@ -226,10 +226,6 @@ put_worker_secrets() {
     fi
   done
 
-  local email_auth="${EMAIL_AUTH_ENABLED:-false}"
-  printf '%s' "$email_auth" | npx wrangler secret put "EMAIL_AUTH_ENABLED" --config "$config" >/dev/null 2>&1 || true
-  echo "  ✓  EMAIL_AUTH_ENABLED=${email_auth}"
-
   ok "Worker secrets set."
 }
 

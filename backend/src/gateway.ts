@@ -1,6 +1,5 @@
 import type { Env } from './types.js'
 import { verifyJwt } from './auth.js'
-import { createCors } from './cors.js'
 import { authApp } from './apps/auth.js'
 import { apiApp } from './apps/api.js'
 
@@ -23,10 +22,6 @@ export default {
   async fetch(request: Request, env: Env['Bindings'], ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
     const path = url.pathname
-
-    if (request.method === 'OPTIONS') {
-      return handleOptions(request, env)
-    }
 
     if (path.startsWith('/api/')) {
       if (AUTH_ROUTES.has(path)) {
@@ -79,12 +74,4 @@ export default {
   },
 }
 
-async function handleOptions(request: Request, env: Env['Bindings']): Promise<Response> {
-  const corsMiddleware = createCors()
-  const stub = new Request(request.url, { method: 'GET', headers: request.headers })
-  const response = await corsMiddleware(
-    { req: { raw: stub }, env, res: new Response(null, { status: 204 }) } as any,
-    async () => {}
-  )
-  return new Response(null, { status: 204, headers: response.headers })
-}
+

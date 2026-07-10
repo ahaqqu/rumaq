@@ -277,7 +277,8 @@ The Worker needs the same bindings and secrets as the old Pages Function:
 
 - Bindings: `DB`, `RECEIPTS`, `PAGES_ORIGIN`.
 - Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WORKER_JWT_SECRET`,
-  `WORKER_ENCRYPTION_KEY`, `EMAIL_AUTH_ENABLED`.
+  `WORKER_ENCRYPTION_KEY`.
+- Vars: `EMAIL_AUTH_ENABLED`.
 
 `PAGES_ORIGIN` stays as the Pages production origin so CORS remains restricted.
 
