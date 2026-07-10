@@ -95,7 +95,15 @@ rumaq/
 └── docs/
     ├── ARCHITECTURE.md     # this file
     ├── API.md              # REST API contract
-    └── PROJECT_PLAN.md     # work items and PR plan
+    ├── PROJECT_PLAN.md     # work items and PR plan
+    ├── TEST_STRATEGY.md    # testing approach and acceptance criteria
+    ├── features/           # Feature deep-dives
+    │   ├── internationalisation.md
+    │   └── persona.md
+    └── plans/              # ADRs and implementation plans
+        ├── frontend-refactor-plan.md
+        ├── pr-2-settings-plan.md
+        └── workers-cache-plan.md
 ```
 
 ## 4. Request flow

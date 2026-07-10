@@ -2,349 +2,69 @@
 
 Base URL: `https://api.rumaq.workers.dev/api`
 
-All paths below are relative to this base. The Worker mounts routes under `/api/*`; for example, `GET /me` resolves to `https://api.rumaq.workers.dev/api/me`.
+All paths are relative to this base. The Worker mounts routes under `/api/*`.
+Protected endpoints require the `rumaq_session` cookie. Responses are JSON.
+Errors use `{ "error": "..." }`.
 
-Protected endpoints require the `rumaq_session` cookie issued by Google OAuth (or by email/password auth when enabled). Responses are JSON. Errors use `{ "error": "..." }`.
+## Caching
 
-> **Work in progress.** Only the Auth, Health, and Stock endpoints are currently implemented. The remaining endpoints (Households, Purchases, Plans, Locations, Stores, Settings, AI) are planned — their documented contracts are forward-looking and will be implemented as the project evolves.
+- **Public GET endpoints** (`/health`, `/auth/email-status`): `Cache-Control: public, max-age=60`.
+- **Authenticated GET endpoints** (`/me`, `/stock`): `Cache-Control: private, no-cache` — never cached at the edge.
+- **Error responses**: `Cache-Control: private, no-cache`.
 
-### Caching
+## Implemented endpoints
 
-- **Public GET endpoints** (`/health`, `/auth/email-status`): cached by Workers Cache with `Cache-Control: public, max-age=60`.
-- **Authenticated GET endpoints** (`/me`, `/stock`, etc.): cached per-user/household via `Cloudflare-CDN-Cache-Control: public, max-age=30` + `Cache-Control: private, max-age=0`. Each user gets an isolated cache key.
-- **Error responses**: `Cache-Control: private, no-cache` — never cached.
+| Method | Path | Auth | Query | Body | Description |
+|--------|------|------|-------|------|-------------|
+| GET | `/api/health` | — | — | — | Public health check. Returns `{ ok: true }`. |
+| GET | `/api/auth/email-status` | — | — | — | Reports whether email/password auth is enabled. Returns `{ enabled: boolean }`. |
+| GET | `/api/auth/login` | — | — | — | Redirects to Google OAuth 2.0 login. |
+| GET | `/api/auth/callback` | — | — | — | Google OAuth callback. Sets `rumaq_session` and redirects to `/`. |
+| ALL | `/api/auth/logout` | — | — | — | Clears the session cookie. `POST` returns `{ ok: true }`; `GET` redirects to `/`. |
+| POST | `/api/auth/email-login` | — | — | `{ email, password }` | Validates credentials and sets `rumaq_session`. Returns `403` when email auth is disabled. |
+| GET | `/api/me` | Yes | — | — | Returns the current user: `{ user: { id, email, name, picture } }`. |
+| GET | `/api/stock` | Yes | `{ location?, q? }` | — | Current inventory for the active household. Returns `{ stock: [...] }`. |
 
-## Auth
+## Planned endpoints
 
-### `GET /me`
-Returns the currently logged-in user.
+The following contracts are planned but not yet implemented:
 
-**Response:**
-```json
-{
-  "user": {
-    "id": "u_...",
-    "email": "user@example.com",
-    "name": "User Name",
-    "picture": "https://..."
-  }
-}
-```
+### Households
 
-### `GET /auth/login`
-Redirects to Google OAuth 2.0 login.
+- `GET /households` — list households for the current user.
+- `POST /households` — create a household.
+- `PATCH /households/:id` — update household name or active status.
 
-### `GET /auth/callback`
-Google OAuth callback. Sets the session cookie and redirects to `/`.
+### Purchases
 
-### `POST /auth/logout`
-Clears the session cookie.
-
-**Response:**
-```json
-{ "ok": true }
-```
-
-### `GET /auth/email-status`
-Public endpoint reporting whether email/password auth is enabled.
-
-**Response:**
-```json
-{ "enabled": false }
-```
-
-### `POST /auth/email-login`
-Validates email/password credentials and sets the session cookie. Returns `403` when email auth is disabled (`EMAIL_AUTH_ENABLED !== "true"`).
-
-**Request:**
-```json
-{
-  "email": "test@rumaq.dev",
-  "password": "password123"
-}
-```
+- `GET /purchases?store=&from=&to=` — purchase history grouped by month.
+- `POST /purchases` — record a confirmed purchase and update stock.
+- `POST /purchases/scan` — upload a receipt image, run AI OCR, return parsed line items.
 
-**Response:**
-```json
-{ "ok": true }
-```
-
----
-
-## Health
-
-### `GET /health`
-Public health check.
-
-**Response:**
-```json
-{ "ok": true }
-```
-
----
-
-## Households
-
-### `GET /households`
-List households the current user belongs to.
-
-**Response:**
-```json
-{
-  "households": [
-    { "id": "h_...", "name": "Rumahku", "role": "owner" }
-  ]
-}
-```
-
-### `POST /households`
-Create a household.
-
-**Body:**
-```json
-{ "name": "Rumahku" }
-```
-
-**Response:**
-```json
-{ "id": "h_...", "name": "Rumahku" }
-```
-
-### `PATCH /households/:id`
-Update household name or set it as active.
-
-**Body:**
-```json
-{ "name": "Rumah Baru", "active": true }
-```
-
----
-
-## Stock
-
-### `GET /stock`
-Current inventory for the active household.
-
-**Query:** `?location=&q=`
-
-**Response:**
-```json
-{
-  "stock": [
-    {
-      "id": "s_...",
-      "name": "Susu cair",
-      "qty": 0.8,
-      "unit": "L",
-      "location": "Kulkas",
-      "expiry_date": "2026-07-02",
-      "run_out_days": 2,
-      "basis": "4 minggu terakhir"
-    }
-  ]
-}
-```
-
-### `PATCH /stock/:id`
-Update quantity, location, or expiry of a stock item.
-
-**Body:**
-```json
-{ "qty": 1.2, "location_id": "l_...", "expiry_date": "2026-07-05" }
-```
-
----
-
-## Purchases
-
-### `GET /purchases`
-Purchase history, grouped by month.
-
-**Query:** `?store=&from=&to=`
-
-**Response:**
-```json
-{
-  "purchases": [
-    {
-      "id": "p_...",
-      "date": "2026-06-28",
-      "store": "Indomaret",
-      "total": 90500,
-      "items": [
-        { "name": "Susu cair 1L", "qty": 1, "unit": "L", "price": 18500 }
-      ]
-    }
-  ]
-}
-```
-
-### `POST /purchases`
-Record a confirmed purchase and update stock.
-
-**Body:**
-```json
-{
-  "store_id": "st_...",
-  "date": "2026-06-28",
-  "total": 90500,
-  "items": [
-    { "item_id": "i_...", "name": "Susu cair 1L", "qty": 1, "unit": "L", "price": 18500 }
-  ]
-}
-```
-
-### `POST /purchases/scan`
-Upload a receipt image, run AI OCR, and return parsed line items.
-
-**Body:** `multipart/form-data` with `receipt` (image) and optional `store_id`.
-
-**Response:**
-```json
-{
-  "store_id": "st_...",
-  "date": "2026-06-28",
-  "total": 90500,
-  "items": [
-    { "name": "Susu cair 1L", "qty": 1, "unit": "L", "price": 18500 }
-  ]
-}
-```
-
----
-
-## Plans
-
-### `GET /plans`
-List shopping plans.
-
-**Query:** `?status=active`
-
-**Response:**
-```json
-{
-  "plans": [
-    {
-      "id": "pl_...",
-      "status": "active",
-      "total_estimate": 80500,
-      "trips": [
-        {
-          "store": "Indomaret",
-          "items": [
-            { "name": "Susu cair 1L", "qty": 1, "unit": "L", "price_estimate": 18500, "why": "Hampir habis" }
-          ]
-        }
-      ]
-    }
-  ]
-}
-```
-
-### `POST /plans/generate`
-Ask AI to generate a new shopping plan from current stock and history.
-
-**Body:**
-```json
-{ "stores": ["st_..."] }
-```
-
-**Response:** a draft plan object.
-
-### `POST /plans`
-Save a generated plan as active.
-
-**Body:** plan object.
-
-**Response:** `{ "id": "pl_..." }`
-
-### `PATCH /plans/:id/items/:itemId`
-Mark a plan item as bought or skipped.
-
-**Body:**
-```json
-{ "status": "bought" }
-```
-
----
-
-## Locations & Stores
-
-### `GET /locations`
-### `POST /locations`
-### `DELETE /locations/:id`
-
-### `GET /stores`
-### `POST /stores`
-### `DELETE /stores/:id`
-
-Payloads are small lookup objects: `{ "id": "...", "label": "..." }`.
-
----
-
-## Settings
-
-### `GET /settings`
-Get current user settings.
-
-**Response:**
-```json
-{
-  "motion_preference": "standard",
-  "currency": "idr",
-  "ai_provider": "gemini",
-  "ai_key_set": true,
-  "persona": {
-    "enabled": true,
-    "user_role": "raja",
-    "ai_role": "prajurit",
-    "theme_hue": 270
-  }
-}
-```
-
-### `PATCH /settings`
-Update settings.
-
-**Body:**
-```json
-{
-  "motion_preference": "reduced",
-  "currency": "idr",
-  "ai_provider": "gemini",
-  "ai_key": "...",
-  "persona": {
-    "enabled": true,
-    "user_role": "raja",
-    "ai_role": "prajurit"
-  }
-}
-```
-
-`ai_key` is encrypted by the Worker before storage. The `persona.theme_hue` is derived by the backend from the role pair when not supplied.
-
----
-
-## AI Assistant
-
-### `POST /ai/chat`
-Send a message to the AI assistant.
-
-**Body:**
-```json
-{
-  "message": "Buatkan rencana belanja minggu ini"
-}
-```
-
-**Response:** streamed SSE or JSON object with `reply` and `proposal`.
-
-The system prompt includes the user's persona setting (e.g. "Kamu adalah prajurit yang sedang melaporkan kepada raja").
-
-### `GET /ai/usage`
-Returns today's AI usage meter.
-
-**Response:**
-```json
-{ "provider": "gemini", "used": 17, "limit": 20 }
-```
+### Plans
+
+- `GET /plans?status=active` — list shopping plans.
+- `POST /plans/generate` — ask AI to generate a shopping plan.
+- `POST /plans` — save a generated plan as active.
+- `PATCH /plans/:id/items/:itemId` — mark a plan item as bought or skipped.
+
+### Locations & Stores
+
+- `GET /locations`, `POST /locations`, `DELETE /locations/:id`
+- `GET /stores`, `POST /stores`, `DELETE /stores/:id`
+
+### Settings
+
+- `GET /settings` — get current user settings.
+- `PATCH /settings` — update settings.
+
+### AI Assistant
+
+- `POST /ai/chat` — send a message to the AI assistant.
+- `GET /ai/usage` — today's AI usage meter.
+
+## Auto-generating this document
+
+The backend is built with [Hono](https://hono.dev/) and [Zod](https://zod.dev/). The cleanest way to auto-generate an OpenAPI spec from the current routes is to add [`hono-openapi`](https://github.com/rhinobase/hono-openapi) and swap `@hono/zod-validator` for `@hono/standard-validator` (Zod v4 is Standard Schema compliant). `hono-openapi` can then emit an OpenAPI document that can be rendered to Markdown with tools such as [`widdershins`](https://github.com/Mermade/widdershins) or served interactively with Swagger UI / Scalar.
+
+For a fully custom Markdown table like the one above, an alternative is to introspect `Hono.prototype` / the route registry at build time, but Hono v4 stores route handlers as composed instance properties, so a small adapter or custom route registrar is required to keep the generated output reliable.
