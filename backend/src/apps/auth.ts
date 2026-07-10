@@ -157,15 +157,24 @@ authApp.get('/callback', async (c) => {
     path: '/',
     httpOnly: true,
     secure: true,
-    sameSite: 'Lax',
+    sameSite: 'None',
     maxAge: 60 * 60 * 24 * 30,
   })
 
   return c.redirect(c.env.PAGES_ORIGIN || '/')
 })
 
-authApp.post('/logout', (c) => {
-  deleteCookie(c, COOKIE_NAME)
+authApp.all('/logout', (c) => {
+  setCookie(c, COOKIE_NAME, '', {
+    path: '/',
+    httpOnly: true,
+    secure: true,
+    sameSite: 'None',
+    maxAge: 0,
+  })
+  if (c.req.method === 'GET') {
+    return c.redirect(c.env.PAGES_ORIGIN || '/')
+  }
   return c.json({ ok: true })
 })
 
@@ -250,7 +259,7 @@ authApp.post('/email-login', async (c) => {
     path: '/',
     httpOnly: true,
     secure: true,
-    sameSite: 'Lax',
+    sameSite: 'None',
     maxAge: 60 * 60 * 24 * 30,
   })
 

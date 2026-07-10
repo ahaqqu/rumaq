@@ -1,11 +1,10 @@
 import { Given, When, Then, Before } from '@cucumber/cucumber'
 import { strict as assert } from 'node:assert'
-
-/** @type {{ base: string|null, cookie: string|null, response: Response|null, body: any }} */
-const ctx = {}
+import { ctx } from './context.js'
 
 Before(function () {
   ctx.base = null
+  ctx.apiBase = null
   ctx.cookie = null
   ctx.response = null
   ctx.body = null
@@ -13,6 +12,10 @@ Before(function () {
 
 Given(/^the production site is at (\S+)$/, (url) => {
   ctx.base = url
+})
+
+Given(/^the API is at (\S+)$/, (url) => {
+  ctx.apiBase = url
 })
 
 Given(/^I have a valid session cookie$/, function () {
@@ -30,7 +33,8 @@ When(/^I GET (\S+)$/, async (path) => {
   if (ctx.cookie) {
     opts.headers = { cookie: `rumaq_session=${ctx.cookie}` }
   }
-  ctx.response = await fetch(`${ctx.base}${path}`, opts)
+  const origin = path.startsWith('/api/') && ctx.apiBase ? ctx.apiBase : ctx.base
+  ctx.response = await fetch(`${origin}${path}`, opts)
   try {
     ctx.body = await ctx.response.json()
   } catch {

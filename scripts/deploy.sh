@@ -25,7 +25,7 @@ fi
 
 DB_NAME="${D1_DATABASE_NAME:-rumaq}"
 PAGES_PROJECT="${PAGES_PROJECT_NAME:-rumaq}"
-WORKER_URL="${WORKER_URL:-https://rumaq-api.angga-bariesta.workers.dev}"
+WORKER_URL="${WORKER_URL:-https://api.rumaq.workers.dev}"
 
 cd "$ROOT_DIR"
 
@@ -225,10 +225,6 @@ put_worker_secrets() {
       echo "  -  $key (skipped — not set)"
     fi
   done
-
-  local email_auth="${EMAIL_AUTH_ENABLED:-false}"
-  printf '%s' "$email_auth" | npx wrangler secret put "EMAIL_AUTH_ENABLED" --config "$config" >/dev/null 2>&1 || true
-  echo "  ✓  EMAIL_AUTH_ENABLED=${email_auth}"
 
   ok "Worker secrets set."
 }

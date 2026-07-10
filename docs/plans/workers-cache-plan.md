@@ -15,7 +15,7 @@ locally without errors.
   the cached entrypoint because the gateway routes by path first.
 - **Production runtime:** Migrate the API from a Cloudflare Pages Function to a
   standalone Cloudflare Worker so per-entrypoint caching is supported.
-- **Production URL:** `https://rumaq-api.<account>.workers.dev` (configure via
+- **Production URL:** `https://api.rumaq.workers.dev` (configure via
   `WORKER_URL` env var; custom domain can be added later).
 - **Cross-version cache:** default (per-version cache isolation).
 - **Cache headers per path:** branch on path within a single Hono app:
@@ -51,7 +51,7 @@ Browser
   ▼
 Cloudflare Pages (rumaq.pages.dev) — static SPA assets only
   │
-  └── API calls ──► Cloudflare Worker (rumaq-api.<account>.workers.dev)
+  └── API calls ──► Cloudflare Worker (api.rumaq.workers.dev)
                           │
                           ▼
                   [default entrypoint]  cache OFF
@@ -203,7 +203,7 @@ production file enables caching.
 ### `backend/wrangler.cloudflare.toml`
 
 ```toml
-name = "rumaq-api"
+name = "api"
 main = "src/index.ts"
 compatibility_date = "2026-07-10"
 compatibility_flags = ["nodejs_compat"]
@@ -257,7 +257,7 @@ so passing `VITE_API_BASE` at build time is enough.
 1. In `do_cloudflare`, call `deploy_worker()` **before** building the frontend.
 2. Require or prompt for `WORKER_URL`, e.g.:
    ```bash
-   WORKER_URL="${WORKER_URL:-https://rumaq-api.<account>.workers.dev}"
+   WORKER_URL="${WORKER_URL:-https://api.rumaq.workers.dev}"
    ```
 3. Build the frontend with the Worker URL:
    ```bash
@@ -277,7 +277,8 @@ The Worker needs the same bindings and secrets as the old Pages Function:
 
 - Bindings: `DB`, `RECEIPTS`, `PAGES_ORIGIN`.
 - Secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `WORKER_JWT_SECRET`,
-  `WORKER_ENCRYPTION_KEY`, `EMAIL_AUTH_ENABLED`.
+  `WORKER_ENCRYPTION_KEY`.
+- Vars: `EMAIL_AUTH_ENABLED`.
 
 `PAGES_ORIGIN` stays as the Pages production origin so CORS remains restricted.
 

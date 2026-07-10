@@ -22,7 +22,7 @@ jobs:
       - run: npm ci
 
       - name: Run production smoke tests
-        run: ./automation/scripts/run-smoke-tests.sh
+        run: ./scripts/test-automation-live.sh
         env:
           RUMAQ_PROD_SESSION: ${{ secrets.RUMAQ_PROD_SESSION }}
 

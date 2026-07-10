@@ -1,4 +1,4 @@
-name = "rumaq-api"
+name = "api"
 main = "src/index.ts"
 compatibility_date = "2026-07-10"
 compatibility_flags = ["nodejs_compat"]
@@ -9,6 +9,7 @@ account_id = "LOCAL"
 # CORS: allow the Docker proxy origin
 [vars]
 PAGES_ORIGIN = "http://localhost:3000"
+EMAIL_AUTH_ENABLED = "false"
 
 # D1 database binding (local Miniflare)
 [[d1_databases]]

@@ -47,9 +47,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architecture, au
 ### Testing
 
 ```bash
-npm test                # all unit tests (Vitest)
-npm run test -w backend  # backend unit tests only
-npm run test:docker     # integration + E2E in Docker (Miniflare + Playwright)
+./scripts/test-unit.sh                  # unit tests (Vitest)
+./scripts/test-automation-local.sh      # integration + E2E in Docker (Miniflare + Playwright)
 ```
 
 See [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md).
@@ -68,7 +67,11 @@ Creates D1 database and R2 bucket if missing, deploys Worker and Pages. Idempote
 
 ### Production smoke tests
 
-A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) verifies `rumaq.pages.dev` every 6 hours. On failure, a `smoke-failure` issue is auto-created.
+A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) verifies `rumaq.pages.dev` and `api.rumaq.workers.dev` every 6 hours — includes API health checks and a Playwright login/logout test via email form. On failure, a `smoke-failure` issue is auto-created.
+
+```bash
+./scripts/test-automation-live.sh
+```
 
 ---
 

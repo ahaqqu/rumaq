@@ -116,10 +116,43 @@ export async function verifyPassword(password: string, stored: string): Promise<
 
 export const propsAuthMiddleware = createMiddleware<Env>(async (c, next) => {
   const props = c.env.props
-  if (!props || !props.userId || !props.householdId) {
+  if (props?.userId && props?.householdId) {
+    c.set('userId', props.userId)
+    c.set('householdId', props.householdId)
+    await next()
+    return
+  }
+
+  let token: string | undefined
+  try {
+    token = getCookie(c, 'rumaq_session')
+  } catch {
+    // c.req.raw not available (test mock)
+  }
+  if (!token) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
-  c.set('userId', props.userId)
-  c.set('householdId', props.householdId)
+
+  const payload = await verifyJwt(token, c.env.WORKER_JWT_SECRET)
+  if (!payload || typeof payload.sub !== 'string') {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const user = await c.env.DB.prepare(
+    'SELECT active_household_id FROM user_settings WHERE user_id = ?'
+  ).bind(payload.sub).first<{ active_household_id: string | null }>()
+
+  const householdId =
+    user?.active_household_id ||
+    (await c.env.DB.prepare(
+      'SELECT household_id FROM household_members WHERE user_id = ? LIMIT 1'
+    ).bind(payload.sub).first<{ household_id: string }>())?.household_id
+
+  if (!householdId) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  c.set('userId', payload.sub)
+  c.set('householdId', householdId)
   await next()
 })

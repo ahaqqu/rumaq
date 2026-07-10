@@ -40,8 +40,7 @@ apiApp.get('/api/me', async (c) => {
     .bind(c.get('userId'))
     .first()
   const res = c.json({ user })
-  res.headers.set('Cloudflare-CDN-Cache-Control', 'public, max-age=30, stale-while-revalidate=300')
-  res.headers.set('Cache-Control', 'private, max-age=0')
+  res.headers.set('Cache-Control', 'private, no-cache')
   return res
 })
 
@@ -68,8 +67,7 @@ apiApp.get('/api/stock', zValidator('query', stockQuery), async (c) => {
 
   const { results } = await c.env.DB.prepare(sql).bind(...params).all()
   const res = c.json({ stock: results })
-  res.headers.set('Cloudflare-CDN-Cache-Control', 'public, max-age=30, stale-while-revalidate=300')
-  res.headers.set('Cache-Control', 'private, max-age=0')
+  res.headers.set('Cache-Control', 'private, no-cache')
   return res
 })
 

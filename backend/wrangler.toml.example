@@ -1,4 +1,4 @@
-name = "rumaq-api"
+name = "api"
 main = "src/index.ts"
 compatibility_date = "2026-07-10"
 compatibility_flags = ["nodejs_compat"]
@@ -9,6 +9,7 @@ account_id = "YOUR_ACCOUNT_ID"
 # CORS: allow the Pages frontend origin
 [vars]
 PAGES_ORIGIN = "https://rumaq.pages.dev"
+EMAIL_AUTH_ENABLED = "true"
 
 # D1 database binding
 [[d1_databases]]

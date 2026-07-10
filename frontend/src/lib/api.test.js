@@ -100,16 +100,23 @@ describe('api', () => {
     })
   })
 
-  it('logout calls /api/auth/logout with POST', async () => {
-    globalThis.fetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ ok: true }),
+  it('logout navigates to /api/auth/logout', () => {
+    const origLocation = window.location
+    const setter = vi.fn()
+    const mockLocation = {}
+    Object.defineProperty(mockLocation, 'href', { set: setter, get: () => '' })
+    Object.defineProperty(window, 'location', {
+      value: mockLocation,
+      configurable: true,
+      writable: true,
     })
-    const result = await logout()
-    expect(result).toEqual({ ok: true })
-    const [url, opts] = globalThis.fetch.mock.calls[0]
-    expect(url).toContain('/api/auth/logout')
-    expect(opts.method).toBe('POST')
+    logout()
+    expect(setter).toHaveBeenCalledWith(expect.stringContaining('/api/auth/logout'))
+    Object.defineProperty(window, 'location', {
+      value: origLocation,
+      configurable: true,
+      writable: true,
+    })
   })
 
   it('isAuthenticated returns true when getMe succeeds', async () => {

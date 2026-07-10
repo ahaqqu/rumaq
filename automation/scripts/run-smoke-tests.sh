@@ -19,10 +19,15 @@ fail()  { echo -e "  ✗  $1"; }
 info "Running production smoke tests..."
 
 npx cucumber-js \
-  "automation/tests/live/health/features/**/*.feature" \
-  --import "automation/tests/live/health/step_definitions/**/*.js" \
+  "automation/tests/live/**/*.feature" \
+  --import "automation/tests/live/**/*.steps.js" \
   --format summary \
   "$@"
+
+ok "Cucumber tests passed."
+
+info "Running Playwright E2E login/logout test..."
+npx playwright test --config automation/playwright.live.config.js
 
 echo ""
 ok "Production smoke tests passed!"
