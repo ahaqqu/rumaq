@@ -19,8 +19,8 @@ fail()  { echo -e "  ✗  $1"; }
 info "Running production smoke tests..."
 
 npx cucumber-js \
-  "automation/tests/live/health/features/**/*.feature" \
-  --import "automation/tests/live/health/step_definitions/**/*.js" \
+  "automation/tests/live/**/*.feature" \
+  --import "automation/tests/live/**/*.steps.js" \
   --format summary \
   "$@"
 
