@@ -21,6 +21,9 @@ jobs:
 
       - run: npm ci
 
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
       - name: Run production smoke tests
         run: ./automation/scripts/run-smoke-tests.sh
         env:

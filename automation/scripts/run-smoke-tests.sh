@@ -24,5 +24,10 @@ npx cucumber-js \
   --format summary \
   "$@"
 
+ok "Cucumber tests passed."
+
+info "Running Playwright E2E login/logout test..."
+npx playwright test --config automation/playwright.live.config.js
+
 echo ""
 ok "Production smoke tests passed!"
