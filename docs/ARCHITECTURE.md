@@ -64,6 +64,9 @@ rumaq/
 │   ├── deploy.sh           # Full-stack deployment
 │   ├── deploy-cf.js        # Cloudflare deploy helper: d1-setup, r2-ensure, put-secrets, pages-bindings
 │   ├── setup-db.js         # D1 database setup
+│   ├── test-unit.sh        # Unit test entrypoint
+│   ├── test-automation-local.sh  # Local integration + E2E test entrypoint
+│   ├── test-automation-live.sh   # Live production smoke test entrypoint
 │   └── trigger-smoke.sh    # Triggers production smoke workflow remotely
 ├── automation/             # All test automation
 │   ├── tests/              # Feature files, step definitions, fixtures
@@ -106,40 +109,37 @@ Cloudflare Pages (rumaq.pages.dev) — static SPA assets only
     └── API calls ──► Cloudflare Worker (api.rumaq.workers.dev)
                             │
                             ▼
-                    [default entrypoint — gateway]  cache OFF
+                    [default entrypoint — gateway]
                             │
                     ┌───────┴──────────┐
                     ▼                  ▼
-              /api/auth/login    /api/* (all others)
-              /api/auth/callback  │
-              /api/auth/logout    │
-              /api/auth/email-login│
+              /api/auth/*        /api/* (all others)
               (handled directly   │
                in gateway,        │
-               never cached)      │
+               never enters       │
+               CachedApi)         │
                     │             │
                     ▼             ▼
-                    [CachedApi entrypoint]  cache ON
+                    [CachedApi entrypoint]
                     ┌─────────────┼──────────────┐
                     ▼             ▼              ▼
               public GET    public GET      authenticated
               /api/health   /api/auth/      /api/me
                             email-status    /api/stock
-              (no props)    (no props)      (userId, householdId)
-                                            (per-user cache key)
+              (Cache-Control:  (Cache-Control:  (Cache-Control:
+               public,          public,          private,
+               max-age=60)      max-age=60)      no-cache)
 ```
 
 ### Auth routes
 
-Auth paths (`/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`, `/api/auth/email-login`) are handled directly in the gateway via `authApp.fetch()`. They never enter the cached entrypoint — no reliance on implicit cache bypass.
+Auth paths (`/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`, `/api/auth/email-login`) are handled directly in the gateway via `authApp.fetch()`. They never enter the cached entrypoint.
 
 ### Caching
 
-- **Public routes** (`/api/health`, `/api/auth/email-status`): `Cache-Control: public, max-age=60, stale-while-revalidate=300`
-- **Authenticated routes** (`/api/me`, `/api/stock`, etc.): `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300` + `Cache-Control: private, max-age=0`
+- **Public routes** (`/api/health`, `/api/auth/email-status`): `Cache-Control: public, max-age=60`
+- **Authenticated routes** (`/api/me`, `/api/stock`, etc.): `Cache-Control: private, no-cache` — never cached at the edge, every request runs through the Worker to verify auth.
 - **Error responses**: `Cache-Control: private, no-cache`
-
-Cache isolation by user/household is achieved via `ctx.props`. The gateway verifies the JWT session, looks up the active household, and passes `{ userId, householdId }` as `props` on the env object when calling the `CachedApi` entrypoint. Since `ctx.props` is part of the Workers Cache key, each household gets an isolated cache partition. Public routes (no props) get a separate cache partition from authenticated routes.
 
 Receipt images flow through the Worker into R2. The Worker returns signed URLs so the frontend never talks to R2 directly.
 
@@ -157,14 +157,14 @@ Google OAuth 2.0 is implemented inside the Worker using the [Authorization Code 
    - Exchanges the authorization code for an access token.
    - Fetches user info (`email`, `name`, `picture`, `sub`) from Google's userinfo endpoint.
    - Upserts the user in D1.
-   - Issues a long-lived signed JWT in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie named `rumaq_session`.
+   - Issues a long-lived signed JWT in an `HttpOnly`, `Secure`, `SameSite=None` cookie named `rumaq_session`.
 
-3. `POST /api/auth/logout`
-   - Clears the session cookie.
+3. `GET /api/auth/logout`
+   - Clears the session cookie and redirects to the app origin.
 
 4. Protected-route middleware
-   - The **gateway** (`backend/src/gateway.ts`) reads the `rumaq_session` cookie from the request, verifies the HMAC signature and expiration, looks up the active household from `user_settings.active_household_id` (or the first household the user belongs to), then passes `{ userId, householdId }` as `props` when dispatching to the `CachedApi` entrypoint.
-   - Inside the cached `apiApp` (`backend/src/apps/api.ts`), the `propsAuthMiddleware` reads `c.env.props` and sets Hono `Variables` (`userId`, `householdId`) for downstream route handlers. Routes that require authentication register this middleware; public routes skip it entirely.
+   - The **gateway** (`backend/src/gateway.ts`) routes `/api/*` non-auth requests to the `CachedApi` entrypoint (which wraps `apiApp`).
+   - Inside `apiApp` (`backend/src/apps/api.ts`), the `propsAuthMiddleware` first checks `c.env.props` (fast path when props are provided), then falls back to reading the `rumaq_session` cookie, verifying the JWT, and looking up the active household from `user_settings.active_household_id`. It sets Hono `Variables` (`userId`, `householdId`) for downstream route handlers. Routes that require authentication register this middleware; public routes skip it entirely.
 
 **Why not Cloudflare Access?** Access is simpler, but in-app OAuth keeps the API self-contained, lets us store the user record in D1 for personalization, and makes local development straightforward with wrangler.
 
