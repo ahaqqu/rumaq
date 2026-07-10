@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { BrandMark } from '../components/icons.jsx'
 import { login, emailAuthStatus, emailLogin } from '../lib/api.js'
 
-export default function Login({ onLogin }) {
+export default function Login() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const [emailAuth, setEmailAuth] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -21,7 +25,8 @@ export default function Login({ onLogin }) {
     setLoading(true)
     try {
       await emailLogin(email, password)
-      onLogin?.()
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      navigate({ to: '/' })
     } catch (err) {
       setError(err.message)
     } finally {

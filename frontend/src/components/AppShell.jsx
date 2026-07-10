@@ -1,25 +1,38 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { IconHome, IconBox, IconPlan, IconHistory, IconSettings, IconReceipt, IconClose, BrandMark } from './icons.jsx'
+import { Link, useMatches, useNavigate } from '@tanstack/react-router'
+import { IconHome, IconBox, IconPlan, IconHistory, IconSettings, IconReceipt, BrandMark } from './icons.jsx'
 import { AI_USAGE, usageState } from '../data/mock.js'
+import { useApp } from '../context/AppContext.jsx'
+import { useMe, useLogout } from '../lib/queries/me.js'
 import Assistant from './Assistant.jsx'
 
 const NAV = [
-  { id: 'home', key: 'nav.home', Icon: IconHome },
-  { id: 'inventory', key: 'nav.inventory', Icon: IconBox },
-  { id: 'plan', key: 'nav.plan', Icon: IconPlan },
-  { id: 'history', key: 'nav.history', Icon: IconHistory },
-  { id: 'settings', key: 'nav.settings', Icon: IconSettings },
+  { id: 'home', key: 'nav.home', Icon: IconHome, to: '/' },
+  { id: 'inventory', key: 'nav.inventory', Icon: IconBox, to: '/inventory' },
+  { id: 'plan', key: 'nav.plan', Icon: IconPlan, to: '/plan' },
+  { id: 'history', key: 'nav.history', Icon: IconHistory, to: '/history' },
+  { id: 'settings', key: 'nav.settings', Icon: IconSettings, to: '/settings' },
 ]
 
-export default function AppShell({
-  view, setView, title, aiKey, user, onLogout, assistantOpen, setAssistantOpen, children,
-}) {
+export default function AppShell({ children }) {
   const { t } = useTranslation()
+  const navigate = useNavigate()
+  const matches = useMatches()
+  const { aiKey, assistantOpen, setAssistantOpen } = useApp()
+  const { data: me } = useMe()
+  const logout = useLogout()
   const [imgError, setImgError] = useState(false)
-  const go = (id) => setView(id)
+
   const { pct, warn, danger } = usageState()
   const usageTone = danger ? 'is-danger' : warn ? 'is-warn' : ''
+
+  const currentRouteId = matches[matches.length - 1]?.routeId || '/'
+  const currentNav = NAV.find((n) => n.to === currentRouteId)
+  const title = currentNav ? t(currentNav.key) : t('nav.home')
+  const isActive = (to) => matches.some((m) => m.routeId === to)
+
+  const user = me?.user
 
   return (
     <div className="app">
@@ -28,37 +41,38 @@ export default function AppShell({
           <BrandMark size={32} />
           <div className="brand__name">RumaQ</div>
         </div>
-        <button className="btn btn--primary btn--block rail__add" onClick={() => go('add')}>
+        <Link to="/add" className="btn btn--primary btn--block rail__add">
           <IconReceipt size={18} /> {t('nav.addFromReceipt')}
-        </button>
+        </Link>
         <nav className="nav">
-          {NAV.map(({ id, key, Icon }) => (
-            <button key={id} className="nav__item" aria-current={view === id ? 'page' : undefined}
-              onClick={() => go(id)}>
+          {NAV.map(({ id, key, Icon, to }) => (
+            <Link key={id} to={to} className="nav__item" aria-current={isActive(to) ? 'page' : undefined}>
               <Icon size={18} /> {t(key)}
-            </button>
+            </Link>
           ))}
         </nav>
         <div className="rail__foot">
-          <div className="rail__user">
-            {user?.picture && !imgError ? (
-              <img className="rail__avatar" src={user.picture} alt="" onError={() => setImgError(true)} />
-            ) : (
-              <div className="rail__avatar rail__avatar--initials">
-                {(user?.name || '')
-                  .split(' ')
-                  .filter(Boolean)
-                  .map((s) => s[0])
-                  .slice(0, 2)
-                  .join('')
-                  .toUpperCase() || (user?.email || '?')[0].toUpperCase()}
+          {user && (
+            <div className="rail__user">
+              {user.picture && !imgError ? (
+                <img className="rail__avatar" src={user.picture} alt="" onError={() => setImgError(true)} />
+              ) : (
+                <div className="rail__avatar rail__avatar--initials">
+                  {(user.name || '')
+                    .split(' ')
+                    .filter(Boolean)
+                    .map((s) => s[0])
+                    .slice(0, 2)
+                    .join('')
+                    .toUpperCase() || (user.email || '?')[0].toUpperCase()}
+                </div>
+              )}
+              <div className="rail__user-info">
+                <div className="rail__user-name">{user.name || t('nav.settings')}</div>
+                <button className="rail__logout" onClick={() => logout.mutate()}>{t('nav.logout', 'Logout')}</button>
               </div>
-            )}
-            <div className="rail__user-info">
-              <div className="rail__user-name">{user?.name || t('nav.settings')}</div>
-              <button className="rail__logout" onClick={onLogout}>{t('nav.logout', 'Logout')}</button>
             </div>
-          </div>
+          )}
           <div className="rail__keystate">
             <span className={`rail__dot ${aiKey ? '' : 'is-off'}`} />
             {aiKey ? t('assistant.connected') : t('assistant.noKey')}
@@ -86,12 +100,12 @@ export default function AppShell({
         <header className="topbar">
           <h1 className="topbar__title">{title}</h1>
           <div className="topbar__spacer" />
-          <button className="topbar__btn" onClick={() => go('add')} aria-label={t('nav.addFromReceipt')}>
+          <Link to="/add" className="topbar__btn" aria-label={t('nav.addFromReceipt')}>
             <IconReceipt size={18} />
-          </button>
-          <button className="topbar__btn" onClick={() => setView('settings')} aria-label={t('nav.settings')}>
+          </Link>
+          <Link to="/settings" className="topbar__btn" aria-label={t('nav.settings')}>
             <IconSettings size={18} />
-          </button>
+          </Link>
         </header>
 
         <main className="page">
@@ -100,16 +114,14 @@ export default function AppShell({
       </div>
 
       <nav className="bottombar" aria-label={t('nav.home')}>
-        {NAV.filter((n) => n.id !== 'settings').map(({ id, key, Icon }) => (
-          <button key={id} className="bottombar__item" aria-current={view === id ? 'page' : undefined}
-            onClick={() => go(id)}>
+        {NAV.filter((n) => n.id !== 'settings').map(({ id, key, Icon, to }) => (
+          <Link key={id} to={to} className="bottombar__item" aria-current={isActive(to) ? 'page' : undefined}>
             <Icon size={20} /> {t(key)}
-          </button>
+          </Link>
         ))}
-        <button className="bottombar__item" aria-current={view === 'settings' ? 'page' : undefined}
-          onClick={() => go('settings')}>
+        <Link to="/settings" className="bottombar__item" aria-current={isActive('/settings') ? 'page' : undefined}>
           <IconSettings size={20} /> {t('nav.settings')}
-        </button>
+        </Link>
       </nav>
 
       <Assistant
@@ -117,7 +129,7 @@ export default function AppShell({
         onOpen={() => setAssistantOpen(true)}
         onClose={() => setAssistantOpen(false)}
         aiKey={aiKey}
-        onNavigate={setView}
+        onNavigate={(view) => navigate({ to: `/${view === 'home' ? '' : view}` })}
       />
     </div>
   )

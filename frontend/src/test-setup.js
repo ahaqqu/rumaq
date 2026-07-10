@@ -1,4 +1,5 @@
 import { vi } from 'vitest'
+import React from 'react'
 
 vi.mock('react-i18next', () => {
   const t = (key, opts) => {
@@ -23,3 +24,15 @@ vi.mock('./context/PersonaContext.jsx', () => ({
   PersonaProvider: ({ children }) => children,
   usePersona: () => mockPersona,
 }))
+
+vi.mock('@tanstack/react-router', async () => {
+  const actual = await vi.importActual('@tanstack/react-router')
+  return {
+    ...actual,
+    useMatches: () => [{ routeId: '/', pathname: '/' }],
+    useNavigate: () => vi.fn(),
+    Link: ({ children, to, className, ...props }) =>
+      React.createElement('a', { ...props, className, href: to, 'data-testid': 'link' }, children),
+    Outlet: () => null,
+  }
+})

@@ -1,0 +1,47 @@
+@import "tailwindcss";
+@import "@cloudflare/kumo/styles";
+/* TODO: Phase 4 — remove these legacy imports once all pages are migrated to Tailwind */
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/components.css";
+
+:root,
+[data-theme="rumaq"] {
+  --surface: oklch(0.945 0.028 230);
+  --surface-raised: oklch(0.975 0.018 230);
+  --surface-sunken: oklch(0.915 0.032 230);
+  --border: oklch(0.88 0.025 230);
+  --border-strong: oklch(0.8 0.032 230);
+  --text: oklch(0.28 0.03 235);
+  --text-muted: oklch(0.5 0.025 235);
+  --text-faint: oklch(0.62 0.022 235);
+  --accent: oklch(0.48 0.13 230);
+  --accent-hover: oklch(0.42 0.14 230);
+  --accent-soft: oklch(0.9 0.05 230);
+  --danger: oklch(0.58 0.16 25);
+  --danger-soft: oklch(0.93 0.04 25);
+  --warn: oklch(0.72 0.14 65);
+  --warn-soft: oklch(0.93 0.05 65);
+  --ok: oklch(0.62 0.11 155);
+  --ok-soft: oklch(0.93 0.035 155);
+
+  --color-kumo-canvas: var(--surface);
+  --color-kumo-elevated: var(--surface-raised);
+  --color-kumo-recessed: var(--surface-sunken);
+  --color-kumo-base: var(--surface-raised);
+  --color-kumo-line: var(--border);
+  --color-kumo-hairline: var(--border-strong);
+  --text-color-kumo-default: var(--text);
+  --text-color-kumo-subtle: var(--text-muted);
+  --text-color-kumo-inactive: var(--text-faint);
+  --color-kumo-brand: var(--accent);
+  --color-kumo-brand-hover: var(--accent-hover);
+  --color-kumo-danger: var(--danger);
+  --color-kumo-danger-tint: var(--danger-soft);
+  --color-kumo-warning: var(--warn);
+  --color-kumo-warning-tint: var(--warn-soft);
+  --color-kumo-success: var(--ok);
+  --color-kumo-success-tint: var(--ok-soft);
+  --color-kumo-info: var(--accent);
+  --color-kumo-info-tint: var(--accent-soft);
+}
