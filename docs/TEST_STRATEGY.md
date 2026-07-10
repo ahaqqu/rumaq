@@ -39,15 +39,14 @@ npm run test:e2e
 
 ## Live production automation test
 
-GitHub Actions workflow `.github/workflows/smoke.yml` — runs every 6 hours. Two base URLs: `rumaq.pages.dev` (frontend), `api.rumaq.workers.dev` (API).
+Runs via `.github/workflows/smoke.yml` (every 6 hours) or `scripts/trigger-smoke.sh`. Two base URLs: `rumaq.pages.dev` (frontend), `api.rumaq.workers.dev` (API).
 
 ### Health (`automation/tests/live/health/`)
 
-Read-only `GET`:
+Cucumber-js features + step definitions. Read-only `GET`:
 - Public: frontend loads, `/api/health` returns `{ ok: true }`.
 - Authenticated: passes `RUMAQ_PROD_SESSION` (GitHub secret, pre-obtained JWT) as `Cookie` header, asserts `/api/me` returns user, `/api/stock` returns array.
-
-On failure → auto-creates issue with `smoke-failure` label.
+- On failure → auto-creates issue with `smoke-failure` label.
 
 ### E2E (`automation/tests/live/e2e/login.spec.js`)
 
@@ -56,8 +55,6 @@ Playwright: fills email form (`alice@rumaq.dev` / `password123`), clicks submit,
 ```bash
 npx playwright test --config automation/playwright.live.config.js
 ```
-
-Manual trigger: `scripts/trigger-smoke.sh`
 
 ## Acceptance criteria
 
