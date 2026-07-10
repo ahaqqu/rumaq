@@ -3,4 +3,4 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
-exec "$ROOT_DIR/automation/scripts/test-local.sh"
+cd "$ROOT_DIR/frontend" && npx vite build

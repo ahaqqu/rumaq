@@ -62,7 +62,7 @@ jobs:
 
       - name: Run tests
         if: steps.try_fix.outputs.fixable == 'true'
-        run: npm test 2>&1
+        run: ./scripts/test-unit.sh 2>&1
 
       - name: Create PR
         if: steps.try_fix.outputs.fixable == 'true'

@@ -23,7 +23,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run test -w frontend -- --coverage
+      - run: ./scripts/test-unit.sh frontend --coverage
 
   test-backend:
     runs-on: ubuntu-latest
@@ -36,7 +36,7 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run test -w backend -- --coverage
+      - run: ./scripts/test-unit.sh backend --coverage
 
   audit:
     runs-on: ubuntu-latest
@@ -66,4 +66,4 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run build
+      - run: ./scripts/build.sh
