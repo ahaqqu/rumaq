@@ -14,6 +14,10 @@ Given(/^the production site is at (\S+)$/, (url) => {
   ctx.base = url
 })
 
+Given(/^the API is at (\S+)$/, (url) => {
+  ctx.apiBase = url
+})
+
 Given(/^I have a valid session cookie$/, function () {
   ctx.cookie = process.env.RUMAQ_PROD_SESSION
 })

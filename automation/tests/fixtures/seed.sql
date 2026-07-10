@@ -1,10 +1,11 @@
-INSERT INTO users (id, email, name, picture, google_id)
+INSERT INTO users (id, email, name, picture, google_id, password_hash)
 VALUES (
   'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
   'test@rumaq.dev',
   'Test User',
   NULL,
-  'google-test-123'
+  'google-test-123',
+  'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s'
 );
 
 -- Household

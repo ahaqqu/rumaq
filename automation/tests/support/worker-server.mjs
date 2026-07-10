@@ -13,6 +13,7 @@ const migrationSql = readFileSync(
   resolve(BACKEND_DIR, 'migrations/0001_schema.sql'),
   'utf-8'
 )
+const emailAuthColumnSql = 'ALTER TABLE users ADD COLUMN password_hash TEXT;'
 const seedSql = readFileSync(
   resolve(ROOT, 'automation/tests/fixtures/seed.sql'),
   'utf-8'
@@ -58,6 +59,7 @@ function flattenSql(sql) {
 }
 
 await db.exec(flattenSql(migrationSql))
+await db.exec(flattenSql(emailAuthColumnSql))
 await db.exec(flattenSql(seedSql))
 
 console.log('✓ D1 migrations applied and database seeded')

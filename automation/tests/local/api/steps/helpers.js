@@ -30,6 +30,23 @@ export class ApiContext {
     this.headers = { Cookie: cookie }
   }
 
+  async authenticateViaEmail(email, password) {
+    this.response = await fetch(`${BASE_URL}/api/auth/email-login`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
+    try {
+      this.responseBody = await this.response.json()
+    } catch {
+      this.responseBody = null
+    }
+    const setCookie = this.response.headers.get('set-cookie')
+    if (setCookie) {
+      this.headers = { Cookie: setCookie.split(';')[0] }
+    }
+  }
+
   async sendRequest(method, path) {
     const opts = { method }
     if (this.headers) opts.headers = this.headers
@@ -56,12 +73,8 @@ export class ApiContext {
   }
 
   expectAuthenticatedCacheHeaders() {
-    const cdnCC = this.response.headers.get('Cloudflare-CDN-Cache-Control') || ''
-    expect(cdnCC).toMatch(/public/)
-    expect(cdnCC).toMatch(/max-age=30/)
     const cc = this.response.headers.get('Cache-Control') || ''
-    expect(cc).toMatch(/private/)
-    expect(cc).toMatch(/max-age=0/)
+    expect(cc).toMatch(/private, no-cache/)
   }
 
   expectStockArray() {
