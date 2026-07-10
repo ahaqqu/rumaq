@@ -169,10 +169,6 @@ authApp.post('/logout', (c) => {
   return c.json({ ok: true })
 })
 
-authApp.get('/email-status', (c) => {
-  return c.json({ enabled: c.env.EMAIL_AUTH_ENABLED === 'true' })
-})
-
 authApp.post('/email-login', async (c) => {
   if (c.env.EMAIL_AUTH_ENABLED !== 'true') {
     return c.json({ error: 'Email auth is disabled' }, 403)

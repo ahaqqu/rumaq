@@ -25,7 +25,7 @@ fi
 
 DB_NAME="${D1_DATABASE_NAME:-rumaq}"
 PAGES_PROJECT="${PAGES_PROJECT_NAME:-rumaq}"
-WORKER_URL="${WORKER_URL:-https://rumaq-api.haqq.workers.dev}"
+WORKER_URL="${WORKER_URL:-https://rumaq-api.angga-bariesta.workers.dev}"
 
 cd "$ROOT_DIR"
 

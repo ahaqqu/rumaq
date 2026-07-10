@@ -30,7 +30,7 @@ const mf = new Miniflare({
   scriptPath: BUNDLE_PATH,
   d1Databases: { DB: 'rumaq-test' },
   r2Buckets: { RECEIPTS: 'rumaq-receipts-test' },
-  compatibilityDate: '2024-06-30',
+  compatibilityDate: '2026-07-10',
   compatibilityFlags: ['nodejs_compat'],
   bindings: {
     PAGES_ORIGIN: 'http://localhost:3000',

@@ -307,38 +307,6 @@ describe('authApp Hono routes', () => {
     expect(res.status).toBe(302)
   })
 
-  it('/email-status reports disabled by default', async () => {
-    const env = {
-      GOOGLE_CLIENT_ID: 'test-client-id',
-      GOOGLE_CLIENT_SECRET: 'test-secret',
-      WORKER_JWT_SECRET: SECRET,
-      WORKER_ENCRYPTION_KEY: 'test-enc-key',
-      DB: {},
-      PAGES_ORIGIN: 'http://localhost:5173',
-      EMAIL_AUTH_ENABLED: 'false',
-    }
-    const res = await authApp.request('/email-status', {}, env as any)
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.enabled).toBe(false)
-  })
-
-  it('/email-status reports enabled when flag is true', async () => {
-    const env = {
-      GOOGLE_CLIENT_ID: 'test-client-id',
-      GOOGLE_CLIENT_SECRET: 'test-secret',
-      WORKER_JWT_SECRET: SECRET,
-      WORKER_ENCRYPTION_KEY: 'test-enc-key',
-      DB: {},
-      PAGES_ORIGIN: 'http://localhost:5173',
-      EMAIL_AUTH_ENABLED: 'true',
-    }
-    const res = await authApp.request('/email-status', {}, env as any)
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.enabled).toBe(true)
-  })
-
   it('/email-login returns 403 when disabled', async () => {
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
