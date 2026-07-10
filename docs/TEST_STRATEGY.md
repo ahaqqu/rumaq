@@ -13,48 +13,22 @@
 
 ## Local automation test
 
-All services behind `nginx` proxy at `localhost:3000`. Worker server exposes `TEST_MODE`-guarded admin endpoints (`/api/__test/reset`, `/api/__test/seed`).
+All services behind `nginx` proxy at `localhost:3000`. Worker exposes `TEST_MODE`-guarded admin endpoints. Gherkin features + `jest-cucumber` for API, `playwright-bdd` for E2E. Run by Vitest + Playwright inside Docker.
 
 ```
-./automation/scripts/test-local.sh
-```
-
-### API (`automation/tests/local/api/`)
-
-Gherkin features + `jest-cucumber`, run by Vitest. Auth tokens signed via `signJwt` from `backend/src/auth.ts`. Email/password login tested with seed user `test@rumaq.dev` / `password123`.
-
-```
-./scripts/test-api.sh
-```
-
-### E2E (`automation/tests/local/e2e/`)
-
-Gherkin features + `playwright-bdd`, run by Playwright.
-
-```
-./scripts/test-e2e.sh
+./scripts/test-automation-local.sh
 ```
 
 ## Live production automation test
 
-Runs via `.github/workflows/smoke.yml` (every 6 hours) or `scripts/trigger-smoke.sh`. Two base URLs: `rumaq.pages.dev` (frontend), `api.rumaq.workers.dev` (API). On any failure → auto-creates issue with `smoke-failure` label.
-
-### Health (`automation/tests/live/health/`)
-
-Cucumber-js features + step definitions. Read-only `GET`:
-- Public: frontend loads, `/api/health` returns `{ ok: true }`.
-- Authenticated: passes `RUMAQ_PROD_SESSION` (GitHub secret, pre-obtained JWT) as `Cookie` header, asserts `/api/me` returns user, `/api/stock` returns array.
-
-### E2E (`automation/tests/live/e2e/login.spec.js`)
-
-Playwright: fills email form (`alice@rumaq.dev` / `password123`), clicks submit, verifies redirect + "Alice" visible, navigates to `/api/auth/logout`, verifies redirect back to login.
+Runs every 6 hours via `.github/workflows/smoke.yml`. Two base URLs: `rumaq.pages.dev` (frontend), `api.rumaq.workers.dev` (API). Run by Cucumber-js (API health) and Playwright (E2E login/logout). On failure → auto-creates issue with `smoke-failure` label.
 
 ```
-./scripts/test-live-e2e.sh
+./scripts/test-automation-live.sh
 ```
 
 ## Acceptance criteria
 
 - New API endpoint → add scenario in `automation/tests/local/api/`
 - New UI flow → add scenario in `automation/tests/local/e2e/`
-- Must pass `./automation/scripts/test-local.sh` and CI before merge
+- Must pass `./scripts/test-automation-local.sh` and CI before merge
