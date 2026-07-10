@@ -41,7 +41,7 @@ npm run test:e2e
 
 GitHub Actions workflow `.github/workflows/smoke.yml` — runs every 6 hours. Two base URLs: `rumaq.pages.dev` (frontend), `api.rumaq.workers.dev` (API).
 
-### API health (`automation/tests/live/health/`)
+### Health (`automation/tests/live/health/`)
 
 Read-only `GET`:
 - Public: frontend loads, `/api/health` returns `{ ok: true }`.
@@ -49,7 +49,7 @@ Read-only `GET`:
 
 On failure → auto-creates issue with `smoke-failure` label.
 
-### Login/logout (`automation/tests/live/e2e/login.spec.js`)
+### E2E (`automation/tests/live/e2e/login.spec.js`)
 
 Playwright: fills email form (`alice@rumaq.dev` / `password123`), clicks submit, verifies redirect + "Alice" visible, navigates to `/api/auth/logout`, verifies redirect back to login.
 
