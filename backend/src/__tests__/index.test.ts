@@ -63,9 +63,7 @@ describe('apiApp (cached routes)', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.user.email).toBe('a@b.com')
-    expect(res.headers.get('Cloudflare-CDN-Cache-Control')).toMatch(/public/)
-    expect(res.headers.get('Cloudflare-CDN-Cache-Control')).toMatch(/max-age=30/)
-    expect(res.headers.get('Cache-Control')).toMatch(/private/)
+    expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
   })
 
   it('/api/stock returns stock list with valid props', async () => {
@@ -79,9 +77,7 @@ describe('apiApp (cached routes)', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body.stock).toHaveLength(1)
-    expect(res.headers.get('Cloudflare-CDN-Cache-Control')).toMatch(/public/)
-    expect(res.headers.get('Cloudflare-CDN-Cache-Control')).toMatch(/max-age=30/)
-    expect(res.headers.get('Cache-Control')).toMatch(/private/)
+    expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
   })
 
   it('/api/stock filters by location and query', async () => {

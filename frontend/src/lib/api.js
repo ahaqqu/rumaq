@@ -41,8 +41,8 @@ export function login() {
   window.location.href = `${BASE}/api/auth/login`
 }
 
-export async function logout() {
-  return request('/api/auth/logout', { method: 'POST' })
+export function logout() {
+  window.location.href = `${BASE}/api/auth/logout`
 }
 
 export async function emailAuthStatus() {

@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { getMe, logout as apiLogout } from '../api.js'
 
 export function useMe() {
@@ -20,12 +20,9 @@ export function useMeQueryOptions() {
 }
 
 export function useLogout() {
-  const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: apiLogout,
-    onSuccess: () => {
-      queryClient.setQueryData(['me'], null)
-      queryClient.invalidateQueries({ queryKey: ['me'] })
+    mutationFn: async () => {
+      apiLogout()
     },
   })
 }
