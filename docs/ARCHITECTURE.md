@@ -154,8 +154,8 @@ Google OAuth 2.0 is implemented inside the Worker using the [Authorization Code 
    - Clears the session cookie.
 
 4. Protected-route middleware
-   - Reads `rumaq_session`, verifies the HMAC signature and expiration, and attaches `userId` and `householdId` to the Hono context.
-   - Loads the active household from `user_settings.active_household_id` (or the first household the user belongs to).
+   - The **gateway** (`backend/src/gateway.ts`) reads the `rumaq_session` cookie from the request, verifies the HMAC signature and expiration, looks up the active household from `user_settings.active_household_id` (or the first household the user belongs to), then passes `{ userId, householdId }` as `props` when dispatching to the `CachedApi` entrypoint.
+   - Inside the cached `apiApp` (`backend/src/apps/api.ts`), the `propsAuthMiddleware` reads `c.env.props` and sets Hono `Variables` (`userId`, `householdId`) for downstream route handlers. Routes that require authentication register this middleware; public routes skip it entirely.
 
 **Why not Cloudflare Access?** Access is simpler, but in-app OAuth keeps the API self-contained, lets us store the user record in D1 for personalization, and makes local development straightforward with wrangler.
 
