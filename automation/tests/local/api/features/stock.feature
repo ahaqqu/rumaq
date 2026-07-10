@@ -41,3 +41,10 @@ Feature: Stock Management
     And I am authenticated as a test user
     When I send a GET request to /api/stock
     Then the items should be ordered by run_out_days ascending
+
+  Scenario: Authenticated stock response has per-user cache headers
+    Given the database has seed data
+    And I am authenticated as a test user
+    When I send a GET request to /api/stock
+    Then the response status should be 200
+    And the response should have authenticated cache headers

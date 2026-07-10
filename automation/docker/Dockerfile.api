@@ -22,7 +22,7 @@ COPY automation/tests/ ./automation/tests/
 COPY backend/src/ ./backend/src/
 
 # Layer 5: build (invalidated when src changes)
-RUN cd backend && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --outfile=dist/index.mjs && \
+RUN cd backend && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --external:cloudflare:workers --outfile=dist/index.mjs && \
   # Fix hono/logger dynamic import: Miniflare can't handle import(cfWorkers) with a variable specifier.
   # Replace the variable with a string literal so Miniflare recognizes the cloudflare: built-in.
   sed -i 's/await import(cfWorkers)/await import("cloudflare:workers")/' dist/index.mjs

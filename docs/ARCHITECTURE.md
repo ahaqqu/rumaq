@@ -4,6 +4,8 @@ This document describes the production architecture for RumaQ on Cloudflare's fr
 
 > **Testing strategy has moved** → [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md)
 
+> **API caching plan (recently implemented)** → [`docs/plans/workers-cache-plan.md`](plans/workers-cache-plan.md)
+
 ## 1. Goals & constraints
 
 - **Low friction.** Users photograph receipts; the system infers stock. Manual logging is a fallback, never the default.
@@ -43,13 +45,19 @@ rumaq/
 │   └── vitest.config.js
 ├── backend/                # Cloudflare Workers backend
 │   ├── src/
-│   │   ├── index.ts        # Hono app entrypoint
-│   │   ├── auth.ts         # Google OAuth 2.0 + JWT sessions
-│   │   ├── middleware.ts   # auth, household context
+│   │   ├── index.ts        # Re-exports gateway + CachedApi entrypoint
+│   │   ├── gateway.ts      # Default fetch: routes auth→authApp, API→CachedApi
+│   │   ├── entrypoints.ts  # Named CachedApi WorkerEntrypoint class
+│   │   ├── types.ts        # Env bindings, AuthProps types
+│   │   ├── auth.ts         # JWT sign/verify, password hashing, propsAuthMiddleware
+│   │   ├── cors.ts         # Shared CORS helper
+│   │   ├── apps/
+│   │   │   ├── auth.ts     # Auth route handlers (login, callback, logout, email-login)
+│   │   │   └── api.ts      # Single Hono app for cached routes (/api/*)
 │   │   └── __tests__/      # Backend tests
 │   ├── migrations/         # D1 schema migrations
 │   ├── wrangler.local.toml # Local dev config
-│   ├── wrangler.cloudflare.toml # Production config
+│   ├── wrangler.cloudflare.toml # Production config (cache + exports)
 │   └── wrangler.toml.example # Template
 ├── scripts/                # Setup, deployment, and smoke-trigger scripts
 │   ├── deploy.sh           # Full-stack deployment
@@ -92,15 +100,37 @@ rumaq/
 User browser
     │
     ▼
-Cloudflare Pages (rumaq.pages.dev)
+Cloudflare Pages (rumaq.pages.dev) — static SPA assets only
     │
-    ├── static assets (CSS, JS, icons)
-    └── API calls ───────────────► Cloudflare Worker (api.rumaq.pages.dev)
-                                      │
-                                      ├── Verify signed JWT cookie
-                                      ├── Attach current user + household
-                                      └── Query / mutate Cloudflare D1
+    └── API calls ──► Cloudflare Worker (rumaq-api.<account>.workers.dev)
+                            │
+                            ▼
+                    [default entrypoint — gateway]  cache OFF
+                            │
+                ┌───────────┼────────────────┐
+                ▼           ▼                ▼
+          /api/auth/*   public GET      authenticated /api/*
+          (handled      /api/health     (JWT valid)
+           in gateway)  /api/auth/        │
+          never enters   email-status      │
+           CachedApi        │              │
+                │           │              │
+                ▼           ▼              ▼
+                    [CachedApi entrypoint]  cache ON
+                    keyed by ctx.props (absent = public, present = per-user)
 ```
+
+### Auth routes
+
+Auth paths (`/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`, `/api/auth/email-login`) are handled directly in the gateway via `authApp.fetch()`. They never enter the cached entrypoint — no reliance on implicit cache bypass.
+
+### Caching
+
+- **Public routes** (`/api/health`, `/api/auth/email-status`): `Cache-Control: public, max-age=60, stale-while-revalidate=300`
+- **Authenticated routes** (`/api/me`, `/api/stock`, etc.): `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300` + `Cache-Control: private, max-age=0`
+- **Error responses**: `Cache-Control: private, no-cache`
+
+Cache isolation by user/household is achieved via `ctx.props`. The gateway verifies the JWT session, looks up the active household, and passes `{ userId, householdId }` as `props` on the env object when calling the `CachedApi` entrypoint. Since `ctx.props` is part of the Workers Cache key, each household gets an isolated cache partition. Public routes (no props) get a separate cache partition from authenticated routes.
 
 Receipt images flow through the Worker into R2. The Worker returns signed URLs so the frontend never talks to R2 directly.
 
@@ -209,29 +239,10 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
    node scripts/deploy-cf.js r2-ensure
    ```
 
-4. Attach D1 and R2 bindings to the Pages project:
-   ```bash
-   node scripts/deploy-cf.js pages-bindings
-   ```
-
-5. Set secrets (Pages secrets, since the Worker is bundled as a Pages Function):
-   ```bash
-   printf '%s' '<value>' | npx wrangler pages secret put GOOGLE_CLIENT_ID --project-name rumaq
-   printf '%s' '<value>' | npx wrangler pages secret put GOOGLE_CLIENT_SECRET --project-name rumaq
-   printf '%s' '<value>' | npx wrangler pages secret put WORKER_JWT_SECRET --project-name rumaq
-   printf '%s' '<value>' | npx wrangler pages secret put WORKER_ENCRYPTION_KEY --project-name rumaq
-   printf '%s' '<value>' | npx wrangler pages secret put EMAIL_AUTH_ENABLED --project-name rumaq
-   ```
-
-6. Deploy (builds frontend, bundles Worker as `_worker.js`, deploys to Pages):
+4. Deploy (builds + deploys Worker, then builds frontend with Worker URL, deploys static assets to Pages):
    ```bash
    ./scripts/deploy.sh cloudflare
    ```
-
-Or run the full-stack deploy script from root (handles all of the above):
-```bash
-./scripts/deploy.sh cloudflare
-```
 
 ### Environment variables
 
@@ -242,7 +253,7 @@ Or run the full-stack deploy script from root (handles all of the above):
 | `WORKER_JWT_SECRET` | Worker secret | HMAC key for session JWT |
 | `WORKER_ENCRYPTION_KEY` | Worker secret | AES-GCM key for AI keys |
 | `EMAIL_AUTH_ENABLED` | Worker var/secret | Set to `"true"` to enable email/password testing auth; `"false"` (default) keeps it disabled |
-| `VITE_API_BASE` | Pages env | `https://api.rumaq.pages.dev` (must match the deployed Worker URL) |
+| `WORKER_URL` | Build env | URL of the deployed Worker (e.g. `https://rumaq-api.haqq.workers.dev`); used at build time as `VITE_API_BASE` |
 
 ## 9. Free-tier headroom
 

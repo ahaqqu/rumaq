@@ -49,6 +49,21 @@ export class ApiContext {
     expect(this.responseBody).toMatchObject(expected)
   }
 
+  expectPublicCacheHeaders() {
+    const cc = this.response.headers.get('Cache-Control') || ''
+    expect(cc).toMatch(/public/)
+    expect(cc).toMatch(/max-age=60/)
+  }
+
+  expectAuthenticatedCacheHeaders() {
+    const cdnCC = this.response.headers.get('Cloudflare-CDN-Cache-Control') || ''
+    expect(cdnCC).toMatch(/public/)
+    expect(cdnCC).toMatch(/max-age=30/)
+    const cc = this.response.headers.get('Cache-Control') || ''
+    expect(cc).toMatch(/private/)
+    expect(cc).toMatch(/max-age=0/)
+  }
+
   expectStockArray() {
     expect(Array.isArray(this.responseBody?.stock)).toBe(true)
   }

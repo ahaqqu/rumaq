@@ -146,4 +146,26 @@ defineFeature(feature, (test) => {
       ctx.expectOrderedByRunOutDays()
     })
   })
+
+  test('Authenticated stock response has per-user cache headers', ({ given, when, then, and }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    when(/I send a (GET) request to (\S+)/, async (method, path) => {
+      await ctx.sendRequest(method, path)
+    })
+
+    then('the response status should be 200', () => {
+      ctx.expectStatus(200)
+    })
+
+    and('the response should have authenticated cache headers', () => {
+      ctx.expectAuthenticatedCacheHeaders()
+    })
+  })
 })
