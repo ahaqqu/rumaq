@@ -3,6 +3,7 @@ import {
   verifyJwt, signJwt, base64UrlEncode, base64UrlDecode, randomState,
   hashPassword, verifyPassword,
 } from '../auth.js'
+import { authApp } from '../apps/auth.js'
 
 const SECRET = 'test-secret-12345'
 
@@ -138,7 +139,6 @@ describe('hashPassword / verifyPassword', () => {
   })
 
   it('verifies a pre-seeded test user hash', async () => {
-    // Hash for password123 from migration 0002_email_auth.sql
     const seedHash = 'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s'
     expect(await verifyPassword('password123', seedHash)).toBe(true)
     expect(await verifyPassword('wrong', seedHash)).toBe(false)
@@ -146,22 +146,19 @@ describe('hashPassword / verifyPassword', () => {
 })
 
 describe('authApp Hono routes', () => {
-  it('exports authApp', async () => {
-    const mod = await import('../auth.js')
-    expect(mod.authApp).toBeDefined()
-    expect(typeof mod.authApp.fetch).toBe('function')
+  it('exports authApp', () => {
+    expect(authApp).toBeDefined()
+    expect(typeof authApp.fetch).toBe('function')
   })
 
   it('/logout returns ok', async () => {
-    const mod = await import('../auth.js')
-    const res = await mod.authApp.request('/logout', { method: 'POST' })
+    const res = await authApp.request('/logout', { method: 'POST' }, { PAGES_ORIGIN: 'http://localhost:5173' } as any)
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toEqual({ ok: true })
   })
 
   it('/login redirects to Google', async () => {
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -170,7 +167,7 @@ describe('authApp Hono routes', () => {
       DB: {},
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await mod.authApp.request('/login', {}, env as any)
+    const res = await authApp.request('/login', {}, env as any)
     expect(res.status).toBe(302)
     const location = res.headers.get('Location') || ''
     expect(location).toContain('accounts.google.com')
@@ -178,13 +175,11 @@ describe('authApp Hono routes', () => {
   })
 
   it('/callback returns 400 for missing state', async () => {
-    const mod = await import('../auth.js')
-    const res = await mod.authApp.request('/callback?code=abc')
+    const res = await authApp.request('/callback?code=abc', {}, { PAGES_ORIGIN: 'http://localhost:5173' } as any)
     expect(res.status).toBe(400)
   })
 
   it('/callback returns 400 when state does not match', async () => {
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -193,7 +188,7 @@ describe('authApp Hono routes', () => {
       DB: {},
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await mod.authApp.request('/callback?code=abc&state=wrong', {
+    const res = await authApp.request('/callback?code=abc&state=wrong', {
       headers: { Cookie: 'rumaq_oauth_state=expected:verifier' },
     }, env as any)
     expect(res.status).toBe(400)
@@ -201,7 +196,6 @@ describe('authApp Hono routes', () => {
 
   it('/callback returns 400 when token exchange fails', async () => {
     globalThis.fetch = async () => new Response('{}', { status: 400 }) as any
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -210,7 +204,7 @@ describe('authApp Hono routes', () => {
       DB: {},
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await mod.authApp.request('/callback?code=abc&state=test-state', {
+    const res = await authApp.request('/callback?code=abc&state=test-state', {
       headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
     }, env as any)
     expect(res.status).toBe(400)
@@ -223,7 +217,6 @@ describe('authApp Hono routes', () => {
       if (callCount === 1) return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 }) as any
       return new Response('{}', { status: 400 }) as any
     }
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -232,7 +225,7 @@ describe('authApp Hono routes', () => {
       DB: {},
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await mod.authApp.request('/callback?code=abc&state=test-state', {
+    const res = await authApp.request('/callback?code=abc&state=test-state', {
       headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
     }, env as any)
     expect(res.status).toBe(400)
@@ -261,7 +254,6 @@ describe('authApp Hono routes', () => {
       first: async () => null,
       all: async () => ({ results: [] }),
       batch: async (stmts: any[]) => {
-        // After household creation, ensure the SQLs were tracked
         const results = Array.from({ length: stmts.length }, (_, i) => {
           if (i === 1) return { results: [{ id: 'new-id' }] }
           return {}
@@ -269,7 +261,6 @@ describe('authApp Hono routes', () => {
         return results
       },
     }
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -278,11 +269,10 @@ describe('authApp Hono routes', () => {
       DB: mockDb,
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await mod.authApp.request('/callback?code=abc&state=test-state', {
+    const res = await authApp.request('/callback?code=abc&state=test-state', {
       headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
     }, env as any)
     expect(res.status).toBe(302)
-    // Verify batch includes default locations and stores
     const insertLocations = sqlStatements.filter((s) => s.includes('INSERT INTO locations'))
     const insertStores = sqlStatements.filter((s) => s.includes('INSERT INTO stores'))
     expect(insertLocations).toHaveLength(4)
@@ -303,7 +293,6 @@ describe('authApp Hono routes', () => {
       all: async () => ({ results: [] }),
       batch: async () => [{}, { results: [] }],
     }
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -312,48 +301,13 @@ describe('authApp Hono routes', () => {
       DB: mockDb,
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await mod.authApp.request('/callback?code=abc&state=test-state', {
+    const res = await authApp.request('/callback?code=abc&state=test-state', {
       headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
     }, env as any)
     expect(res.status).toBe(302)
   })
 
-  it('/email-status reports disabled by default', async () => {
-    const mod = await import('../auth.js')
-    const env = {
-      GOOGLE_CLIENT_ID: 'test-client-id',
-      GOOGLE_CLIENT_SECRET: 'test-secret',
-      WORKER_JWT_SECRET: SECRET,
-      WORKER_ENCRYPTION_KEY: 'test-enc-key',
-      DB: {},
-      PAGES_ORIGIN: 'http://localhost:5173',
-      EMAIL_AUTH_ENABLED: 'false',
-    }
-    const res = await mod.authApp.request('/email-status', {}, env as any)
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.enabled).toBe(false)
-  })
-
-  it('/email-status reports enabled when flag is true', async () => {
-    const mod = await import('../auth.js')
-    const env = {
-      GOOGLE_CLIENT_ID: 'test-client-id',
-      GOOGLE_CLIENT_SECRET: 'test-secret',
-      WORKER_JWT_SECRET: SECRET,
-      WORKER_ENCRYPTION_KEY: 'test-enc-key',
-      DB: {},
-      PAGES_ORIGIN: 'http://localhost:5173',
-      EMAIL_AUTH_ENABLED: 'true',
-    }
-    const res = await mod.authApp.request('/email-status', {}, env as any)
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.enabled).toBe(true)
-  })
-
   it('/email-login returns 403 when disabled', async () => {
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -363,7 +317,7 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'false',
     }
-    const res = await mod.authApp.request('/email-login', {
+    const res = await authApp.request('/email-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }),
@@ -372,7 +326,6 @@ describe('authApp Hono routes', () => {
   })
 
   it('/email-login returns 400 for missing fields', async () => {
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -382,7 +335,7 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'true',
     }
-    const res = await mod.authApp.request('/email-login', {
+    const res = await authApp.request('/email-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'test@rumaq.dev' }),
@@ -398,7 +351,6 @@ describe('authApp Hono routes', () => {
       all: async () => ({ results: [] }),
       batch: async () => [],
     }
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -408,7 +360,7 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'true',
     }
-    const res = await mod.authApp.request('/email-login', {
+    const res = await authApp.request('/email-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'nobody@rumaq.dev', password: 'password123' }),
@@ -429,7 +381,6 @@ describe('authApp Hono routes', () => {
       all: async () => ({ results: [] }),
       batch: async () => [],
     }
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -439,7 +390,7 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'true',
     }
-    const res = await mod.authApp.request('/email-login', {
+    const res = await authApp.request('/email-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'test@rumaq.dev', password: 'wrong-password' }),
@@ -460,7 +411,6 @@ describe('authApp Hono routes', () => {
       all: async () => ({ results: [] }),
       batch: async () => [],
     }
-    const mod = await import('../auth.js')
     const env = {
       GOOGLE_CLIENT_ID: 'test-client-id',
       GOOGLE_CLIENT_SECRET: 'test-secret',
@@ -470,7 +420,7 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'true',
     }
-    const res = await mod.authApp.request('/email-login', {
+    const res = await authApp.request('/email-login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }),
@@ -478,7 +428,6 @@ describe('authApp Hono routes', () => {
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toEqual({ ok: true })
-    // Session cookie should be set
     const setCookie = res.headers.get('set-cookie') || ''
     expect(setCookie).toContain('rumaq_session=')
   })

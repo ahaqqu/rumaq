@@ -1,6 +1,6 @@
 name = "rumaq-api"
 main = "src/index.ts"
-compatibility_date = "2024-06-30"
+compatibility_date = "2026-07-10"
 compatibility_flags = ["nodejs_compat"]
 
 # Local dev — uses Miniflare, does not contact Cloudflare API
@@ -20,3 +20,9 @@ database_id = "00000000-0000-0000-0000-000000000000"
 [[r2_buckets]]
 binding = "RECEIPTS"
 bucket_name = "rumaq-receipts"
+
+[exports.default]
+type = "worker"
+
+[exports.CachedApi]
+type = "worker"

@@ -25,6 +25,7 @@ fi
 
 DB_NAME="${D1_DATABASE_NAME:-rumaq}"
 PAGES_PROJECT="${PAGES_PROJECT_NAME:-rumaq}"
+WORKER_URL="${WORKER_URL:-https://rumaq-api.angga-bariesta.workers.dev}"
 
 cd "$ROOT_DIR"
 
@@ -99,7 +100,6 @@ ensure_wrangler_toml() {
     fi
     sed -i "s|YOUR_ACCOUNT_ID|$account_id|" "$config_file"
 
-    # database_id will be filled by setup_database_remote later.
     ok "Created backend/wrangler.cloudflare.toml (account_id set)."
   fi
 }
@@ -206,41 +206,44 @@ deploy_worker() {
   fi
 
   npm run deploy -w backend
-  ok "Worker deployed."
+  ok "Worker deployed to ${WORKER_URL}."
 }
 
 # ------------------------------------------------------------------
-# Build backend as Pages _worker.js
+# Put secrets on the Worker (standalone Worker, not Pages)
 # ------------------------------------------------------------------
-build_worker_js() {
-  info "Building backend as Pages Function..."
-  mkdir -p "$ROOT_DIR/frontend/dist"
+put_worker_secrets() {
+  info "Setting Worker secrets..."
+  local config="$BACKEND_DIR/wrangler.cloudflare.toml"
 
-  npx esbuild "$BACKEND_DIR/src/index.ts" \
-    --bundle --platform=neutral --format=esm \
-    --external:cloudflare:workers \
-    --outfile="$ROOT_DIR/frontend/dist/_worker.js"
+  for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
+    val="${!key:-}"
+    if [ -n "$val" ]; then
+      printf '%s' "$val" | npx wrangler secret put "$key" --config "$config" >/dev/null 2>&1 || true
+      echo "  ✓  $key"
+    else
+      echo "  -  $key (skipped — not set)"
+    fi
+  done
 
-  # Miniflare can't handle import(cfWorkers) with a variable specifier.
-  # Replace the variable with a string literal so it resolves correctly.
-  sed -i 's/await import(cfWorkers)/await import("cloudflare:workers")/' "$ROOT_DIR/frontend/dist/_worker.js"
+  local email_auth="${EMAIL_AUTH_ENABLED:-false}"
+  printf '%s' "$email_auth" | npx wrangler secret put "EMAIL_AUTH_ENABLED" --config "$config" >/dev/null 2>&1 || true
+  echo "  ✓  EMAIL_AUTH_ENABLED=${email_auth}"
 
-  ok "Backend bundled as _worker.js."
+  ok "Worker secrets set."
 }
 
 # ------------------------------------------------------------------
-# Build & deploy frontend to Cloudflare Pages (with bundled backend)
+# Build & deploy frontend to Cloudflare Pages (static only)
 # ------------------------------------------------------------------
 deploy_frontend() {
-  info "Building frontend..."
+  info "Building frontend with Worker URL: ${WORKER_URL}..."
   npm install --no-fund
-  npm run build -w frontend
+  VITE_API_BASE="$WORKER_URL" npm run build -w frontend
 
-  build_worker_js
-
-  info "Deploying to Cloudflare Pages (project: ${PAGES_PROJECT})..."
+  info "Deploying static assets to Cloudflare Pages (project: ${PAGES_PROJECT})..."
   wrangler pages deploy frontend/dist --project-name "$PAGES_PROJECT" --no-bundle
-  ok "Frontend + backend deployed."
+  ok "Frontend deployed."
 }
 
 # ------------------------------------------------------------------
@@ -270,42 +273,6 @@ check_login() {
 }
 
 # ------------------------------------------------------------------
-# Attach D1 and R2 bindings to the Pages project
-# ------------------------------------------------------------------
-attach_pages_bindings() {
-  info "Attaching D1 + R2 bindings to Pages project..."
-  result=$(node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" pages-bindings)
-  if [[ $result == "OK" ]]; then
-    ok "D1 + R2 bindings attached."
-  else
-    warn "Failed to attach bindings: $result"
-  fi
-}
-
-# ------------------------------------------------------------------
-# Put worker secrets from environment variables
-# ------------------------------------------------------------------
-put_secrets() {
-  info "Setting backend secrets (Pages project)..."
-  for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
-    val="${!key:-}"
-    if [ -n "$val" ]; then
-      printf '%s' "$val" | npx wrangler pages secret put "$key" --project-name "$PAGES_PROJECT" >/dev/null 2>&1 || true
-      echo "  ✓  $key"
-    else
-      echo "  -  $key (skipped — not set)"
-    fi
-  done
-
-  # Set EMAIL_AUTH_ENABLED (default: false)
-  local email_auth="${EMAIL_AUTH_ENABLED:-false}"
-  printf '%s' "$email_auth" | npx wrangler pages secret put "EMAIL_AUTH_ENABLED" --project-name "$PAGES_PROJECT" >/dev/null 2>&1 || true
-  echo "  ✓  EMAIL_AUTH_ENABLED=${email_auth}"
-
-  ok "Backend secrets set."
-}
-
-# ------------------------------------------------------------------
 # Print summary after local setup
 # ------------------------------------------------------------------
 summary_local() {
@@ -330,10 +297,10 @@ summary_cloudflare() {
   echo "  Cloudflare deployment complete!"
   echo "============================================"
   echo ""
-  echo "  Secrets set from .env (if present)."
+  echo "  API Worker: ${WORKER_URL}"
+  echo "  Frontend:   https://${PAGES_PROJECT}.pages.dev"
   echo ""
-  echo "  Verify at your Pages URL:"
-  echo "    https://${PAGES_PROJECT}.pages.dev"
+  echo "  Verify health: curl -I ${WORKER_URL}/api/health"
   echo "============================================"
 }
 
@@ -361,8 +328,8 @@ do_cloudflare() {
   install_deps
   setup_database_remote
   ensure_r2_bucket
-  attach_pages_bindings
-  put_secrets
+  deploy_worker
+  put_worker_secrets
   deploy_frontend
   summary_cloudflare
 }
@@ -421,12 +388,9 @@ case "$MODE" in
   frontend)
     deploy_frontend
     ;;
-  backend)
-    build_worker_js
-    ;;
   *)
     echo "Unknown mode: $MODE"
-    echo "Usage: $0 [local|cloudflare|dry-run|frontend|backend]"
+    echo "Usage: $0 [local|cloudflare|dry-run|frontend]"
     exit 1
     ;;
 esac

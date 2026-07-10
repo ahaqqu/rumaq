@@ -1,6 +1,6 @@
 name = "rumaq-api"
 main = "src/index.ts"
-compatibility_date = "2024-06-30"
+compatibility_date = "2026-07-10"
 compatibility_flags = ["nodejs_compat"]
 
 # Replace with your Cloudflare account_id
@@ -21,8 +21,25 @@ database_id = "YOUR_DATABASE_ID"
 binding = "RECEIPTS"
 bucket_name = "rumaq-receipts"
 
+# ── Production cache config (uncomment for wrangler.cloudflare.toml) ──
+# [cache]
+# enabled = true
+#
+# [exports.default]
+# type = "worker"
+#
+# [exports.default.cache]
+# enabled = false
+#
+# [exports.CachedApi]
+# type = "worker"
+#
+# [exports.CachedApi.cache]
+# enabled = true
+
 # Secrets to set with `wrangler secret put`:
 # GOOGLE_CLIENT_ID
 # GOOGLE_CLIENT_SECRET
 # WORKER_JWT_SECRET
 # WORKER_ENCRYPTION_KEY
+# EMAIL_AUTH_ENABLED

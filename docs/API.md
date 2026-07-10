@@ -1,10 +1,18 @@
 # RumaQ — REST API Contract
 
-Base URL: `https://api.rumaq.pages.dev/api`
+Base URL: `https://rumaq-api.angga-bariesta.workers.dev/api`
 
-All paths below are relative to this base. The Worker mounts routes under `/api/*`; for example, `GET /me` resolves to `https://api.rumaq.pages.dev/api/me`.
+All paths below are relative to this base. The Worker mounts routes under `/api/*`; for example, `GET /me` resolves to `https://rumaq-api.angga-bariesta.workers.dev/api/me`.
 
 Protected endpoints require the `rumaq_session` cookie issued by Google OAuth (or by email/password auth when enabled). Responses are JSON. Errors use `{ "error": "..." }`.
+
+> **Work in progress.** Only the Auth, Health, and Stock endpoints are currently implemented. The remaining endpoints (Households, Purchases, Plans, Locations, Stores, Settings, AI) are planned — their documented contracts are forward-looking and will be implemented as the project evolves.
+
+### Caching
+
+- **Public GET endpoints** (`/health`, `/auth/email-status`): cached by Workers Cache with `Cache-Control: public, max-age=60`.
+- **Authenticated GET endpoints** (`/me`, `/stock`, etc.): cached per-user/household via `Cloudflare-CDN-Cache-Control: public, max-age=30` + `Cache-Control: private, max-age=0`. Each user gets an isolated cache key.
+- **Error responses**: `Cache-Control: private, no-cache` — never cached.
 
 ## Auth
 

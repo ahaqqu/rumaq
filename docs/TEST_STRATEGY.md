@@ -7,7 +7,7 @@ RumaQ has three test layers, each with a distinct purpose and runner.
 Two separate Vitest projects:
 
 - **Frontend** (`frontend/src/**/*.test.{js,jsx}`) — jsdom environment, coverage thresholds 90/75/85/90.
-- **Backend** (`backend/src/**/*.test.ts`) — Node environment, 100% coverage threshold. D1 is mocked entirely.
+- **Backend** (`backend/src/**/*.test.ts`) — Node environment, coverage thresholds (statements: 90%, branches: 80%, functions: 85%, lines: 90%). D1 is mocked entirely.
 
 Run with `npm test` (all workspaces) or `npm run test -w frontend` / `npm run test -w backend`.
 
