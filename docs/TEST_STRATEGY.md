@@ -7,16 +7,15 @@
 | `frontend/src/**/*.test.{js,jsx}` | Vitest | jsdom | 90/75/85/90 |
 | `backend/src/**/*.test.ts` | Vitest | Node | 90/80/85/90 (D1 mocked) |
 
-```sh
-cd frontend && npx vitest run
-cd backend && npx vitest run
+```
+./scripts/test-unit.sh
 ```
 
 ## Local automation test
 
 All services behind `nginx` proxy at `localhost:3000`. Worker server exposes `TEST_MODE`-guarded admin endpoints (`/api/__test/reset`, `/api/__test/seed`).
 
-```sh
+```
 ./automation/scripts/test-local.sh
 ```
 
@@ -24,16 +23,16 @@ All services behind `nginx` proxy at `localhost:3000`. Worker server exposes `TE
 
 Gherkin features + `jest-cucumber`, run by Vitest. Auth tokens signed via `signJwt` from `backend/src/auth.ts`. Email/password login tested with seed user `test@rumaq.dev` / `password123`.
 
-```sh
-npx vitest run --config automation/vitest.config.integration.mjs
+```
+./scripts/test-api.sh
 ```
 
 ### E2E (`automation/tests/local/e2e/`)
 
 Gherkin features + `playwright-bdd`, run by Playwright.
 
-```sh
-npx bddgen --config automation/playwright.config.js && npx playwright test --config automation/playwright.config.js
+```
+./scripts/test-e2e.sh
 ```
 
 ## Live production automation test
@@ -50,8 +49,8 @@ Cucumber-js features + step definitions. Read-only `GET`:
 
 Playwright: fills email form (`alice@rumaq.dev` / `password123`), clicks submit, verifies redirect + "Alice" visible, navigates to `/api/auth/logout`, verifies redirect back to login.
 
-```sh
-npx playwright test --config automation/playwright.live.config.js
+```
+./scripts/test-live-e2e.sh
 ```
 
 ## Acceptance criteria
