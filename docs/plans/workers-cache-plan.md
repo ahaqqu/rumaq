@@ -3,34 +3,40 @@
 ## Goal
 
 Enable Cloudflare Workers Cache for the **production** deployment only, using
-the **gateway + named entrypoints** pattern (Option B).
+the **gateway + single cached entrypoint** pattern.
 
 Local development and tests do not need caching, but the new code must still run
 locally without errors.
 
 ## Decision log
 
-- **Pattern:** Option B — gateway entrypoint (cache OFF) + cached named
-  entrypoints (`PublicApi`, `AuthenticatedApi`).
+- **Pattern:** Gateway entrypoint (cache OFF) + single cached named entrypoint
+  (`CachedApi`). Auth routes handled directly in the gateway; they
+  auto-bypass Workers Cache via `Set-Cookie` or `POST` method.
 - **Production runtime:** Migrate the API from a Cloudflare Pages Function to a
   standalone Cloudflare Worker so per-entrypoint caching is supported.
 - **Production URL:** `https://rumaq-api.<account>.workers.dev` (configure via
   `WORKER_URL` env var; custom domain can be added later).
 - **Cross-version cache:** default (per-version cache isolation).
-- **TTLs:**
-  - Public endpoints: `Cache-Control: public, max-age=60, stale-while-revalidate=300`
-  - Authenticated reads: `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300` + `Cache-Control: private, max-age=0` for browsers.
+- **Cache headers per path:** branch on path within a single Hono app:
+  - Public GET routes: `Cache-Control: public, max-age=60, stale-while-revalidate=300`
+  - Authenticated GET reads: `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300` + `Cache-Control: private, max-age=0`
 
-## Why Option B + standalone Worker
+## Why this approach
 
 - Workers Cache cache keys do **not** include the session cookie. Caching
   authenticated responses directly would leak data across users.
 - The gateway entrypoint verifies the JWT session and then calls the cached
-  `AuthenticatedApi` entrypoint with `ctx.props = { userId, householdId }`.
+  `CachedApi` entrypoint with `ctx.props = { userId, householdId }`.
 - `ctx.props` is part of the cache key, so each household/user gets isolated
-  cached entries.
+  cached entries. Requests without props (public routes) get a separate cache
+  partition from requests with props.
 - `POST`/`PATCH`/`DELETE` are never cached by Workers Cache, so mutations are
   safe even when they pass through a cached entrypoint.
+- Responses with `Set-Cookie` auto-bypass Workers Cache, so auth routes
+  (login, callback) are safe without explicit cache-busting.
+- A single cached entrypoint is simpler than splitting into public + auth
+  sub-apps, while achieving the same cache isolation via `ctx.props`.
 - A standalone Worker is the better long-term architecture: it separates the API
   from static hosting, gives full access to Workers features (Durable Objects,
   queues, service bindings), and provides dedicated observability.
@@ -48,23 +54,37 @@ Cloudflare Pages (rumaq.pages.dev) — static SPA assets only
                           ▼
                   [default entrypoint]  cache OFF
                           │
-            ┌─────────────┼─────────────┐
-            ▼             ▼             ▼
-      /api/health    /api/auth/*   authenticated /api/*
-    [PublicApi]      uncached      [AuthenticatedApi]
-    cache ON         in gateway    cache ON
-                                   keyed by ctx.props
+              ┌───────────┼────────────────┐
+              ▼           ▼                ▼
+        /api/auth/*   public GET      authenticated /api/*
+        (handled      /api/health     (JWT valid)
+         in gateway)  /api/auth/        │
+        auto-bypass   email-status      │
+        via Set-         │              │
+        Cookie/POST      │              │
+              │          │              │
+              ▼          ▼              ▼
+                  [CachedApi entrypoint]  cache ON
+                  keyed by ctx.props (absent = public, present = per-user)
 ```
+
+Auth routes (`/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`,
+`/api/auth/email-login`) are handled directly in the gateway via
+`authApp.fetch()`. They never enter the cached entrypoint. Workers Cache
+auto-bypasses them:
+- `Set-Cookie` in login/callback responses → automatic cache bypass
+- `POST` in logout/email-login → POST never cached
 
 ## Cache header policy
 
-Apply headers via middleware on each Hono sub-app. No per-route boilerplate.
+Apply headers via Path-based middleware on the single Hono app. No per-route
+boilerplate.
 
-| Sub-app | Routes | Headers |
+| Path pattern | Method | Headers |
 |---|---|---|
-| `PublicApi` | `/api/health`, `/api/auth/email-status` | `Cache-Control: public, max-age=60, stale-while-revalidate=300` |
-| `AuthenticatedApi` | `/api/me`, `/api/stock`, all future protected GET reads | Edge: `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300`<br>Browser: `Cache-Control: private, max-age=0` |
-| Auth app / gateway | `/api/auth/login`, `/api/auth/callback`, `/api/auth/logout`, `/api/auth/email-login` | None; `Set-Cookie` responses bypass cache automatically |
+| `/api/health`, `/api/auth/email-status` | GET | `Cache-Control: public, max-age=60, stale-while-revalidate=300` |
+| `/api/me`, `/api/stock`, all future protected GET reads | GET | Edge: `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300`<br>Browser: `Cache-Control: private, max-age=0` |
+| Auth routes (handled in gateway) | GET/POST | None; bypassed automatically by `Set-Cookie` / `POST` |
 
 Note: `Cloudflare-CDN-Cache-Control` has higher precedence than `Cache-Control`
 and is consumed by Cloudflare. If production testing shows that `private` in
@@ -77,60 +97,89 @@ partitioning still keeps the data isolated.
 ### New / updated files
 
 - `backend/src/types.ts`
-  - Define `Env` bindings (`DB`, `RECEIPTS`, secrets, `ASSETS`, etc.).
+  - Define `Env` bindings (`DB`, `RECEIPTS`, secrets, etc.).
   - Define `AuthProps = { userId: string; householdId: string }`.
   - Extend `Env` with `props?: AuthProps` so Hono can receive the gateway props.
 
 - `backend/src/cors.ts`
-  - Extract the existing CORS origin logic into a reusable helper used by all
-    three Hono sub-apps.
-
-- `backend/src/apps/public.ts`
-  - Hono app for public routes.
-  - Mounts `/api/health` and `/api/auth/email-status`.
-  - CORS middleware.
-  - Response middleware that adds the public `Cache-Control` header to
-    successful `GET`/`HEAD` responses.
+  - Extract the existing CORS origin logic into a reusable helper used by
+    both the gateway and the `CachedApi` app.
 
 - `backend/src/apps/auth.ts`
-  - Move the existing Google OAuth and email auth routes here.
-  - CORS middleware.
-  - No cache headers; `Set-Cookie` responses bypass automatically.
+  - Move the existing Google OAuth and email auth routes here (extracted from
+    `auth.ts`).
+  - CORS middleware (reused via `cors.ts`).
+  - No cache headers; auto-bypassed by `Set-Cookie` / `POST`.
 
 - `backend/src/apps/api.ts`
-  - Hono app for authenticated routes.
+  - **Single** Hono app for all cached routes (public + authenticated).
   - CORS middleware.
   - `propsAuthMiddleware`: reads `c.env.props`, validates `userId` and
-    `householdId`, sets Hono variables. Return `401` if props are missing.
-  - Response middleware for authenticated `GET`/`HEAD` cache headers.
-  - Move existing `/api/me` and `/api/stock` here; all future protected routes
-    mount in this file.
+    `householdId` when props are present, sets Hono variables. If props are
+    missing, the request is treated as a public route — no auth required.
+    Return `401` if the path requires auth but props are missing.
+  - Response middleware that branches on path:
+    - Public paths (`/api/health`, `/api/auth/email-status`): `Cache-Control: public, max-age=60`
+    - Authenticated paths: `Cloudflare-CDN-Cache-Control: public, max-age=30` + `Cache-Control: private, max-age=0`
+  - Mount existing `/api/me`, `/api/stock`, `/api/health`,
+    `/api/auth/email-status` routes here; all future routes mount in this file.
 
 - `backend/src/gateway.ts`
   - Default `fetch` export.
   - Routing logic:
-    1. `OPTIONS` requests → return CORS preflight response.
-    2. Public paths → `ctx.exports.PublicApi.fetch(request)`.
-    3. `/api/auth/*` → run `authApp` directly (uncached).
-    4. All other `/api/*` → verify JWT cookie, look up active household, then
-       `ctx.exports.AuthenticatedApi.fetch(request, { props: { userId, householdId } })`.
+    1. `OPTIONS` requests → return CORS preflight response (via `cors.ts`).
+    2. Auth paths (`/api/auth/login`, `/api/auth/callback`,
+       `/api/auth/logout`, `/api/auth/email-login`) → run `authApp.fetch()`
+       directly (uncached; auto-bypass via `Set-Cookie`/`POST`).
+    3. All other `/api/*` → verify JWT cookie, look up active household, then
+       `ctx.exports.CachedApi.fetch(request, { ...env, props: { userId, householdId } })`.
+    4. Public `/api/health` and `/api/auth/email-status` → also go through
+       step 3 but without JWT; the gateway passes no `props` and `CachedApi`
+       handles them as public routes.
     5. Non-API paths → `env.ASSETS.fetch(request)` fallback.
 
 - `backend/src/entrypoints.ts`
-  - `export class PublicApi extends WorkerEntrypoint<Env>`
-    - Runs `publicApp.fetch(request, env, ctx)`.
-  - `export class AuthenticatedApi extends WorkerEntrypoint<Env>`
-    - Runs `apiApp.fetch(request, { ...env, props: this.ctx.props }, ctx)`.
+  - `export class CachedApi extends WorkerEntrypoint<Env>`
+    - Runs `apiApp.fetch(request, env, ctx)`.
+    - `env.props` is set by the gateway when calling via `ctx.exports`.
 
 - `backend/src/index.ts`
-  - Re-export the default gateway and both named entrypoint classes.
+  - Re-export the default gateway and the `CachedApi` entrypoint class.
+
+### Files that stay
+
+- `backend/src/auth.ts`
+  - Auth helper utilities (JWT sign/verify, password hashing, etc.) stay.
+  - The `authApp` Hono instance stays but moves the route definitions to
+    `backend/src/apps/auth.ts` (or stays in `auth.ts` if preferred and is
+    imported by the gateway).
 
 ### Removed / simplified
 
-- The monolithic Hono app in `backend/src/index.ts` is split into the three
-  sub-apps above.
+- The monolithic Hono app in `backend/src/index.ts` is split into the gateway,
+  `CachedApi` entrypoint, and the `authApp` helper.
 - `backend/src/middleware.ts` cookie verification moves into the gateway; the
   `propsAuthMiddleware` replaces it inside `api.ts`.
+
+### Simplified routing in the gateway
+
+The gateway avoids explicit `/api/auth/*` routing. The logic is driven by
+whether a JWT is present:
+
+```
+if (method === 'OPTIONS') → cors preflight
+if (path starts with '/api/') {
+  token = getCookie(request, 'rumaq_session')
+  if (token) {
+    userId, householdId = await verifySession(token, env)
+    if (userId) return ctx.exports.CachedApi.fetch(request, { ...env, props: { userId, householdId } })
+  }
+  // No valid JWT — might be an auth route (login/callback/etc.)
+  return authApp.fetch(request, env, ctx)
+}
+// Non-API
+return env.ASSETS.fetch(request)
+```
 
 ## Wrangler configuration changes
 
@@ -168,16 +217,10 @@ type = "worker"
 [exports.default.cache]
 enabled = false
 
-[exports.PublicApi]
+[exports.CachedApi]
 type = "worker"
 
-[exports.PublicApi.cache]
-enabled = true
-
-[exports.AuthenticatedApi]
-type = "worker"
-
-[exports.AuthenticatedApi.cache]
+[exports.CachedApi.cache]
 enabled = true
 ```
 
@@ -234,16 +277,172 @@ The Worker needs the same bindings and secrets as the old Pages Function:
   - `/api/auth/email-status` returns public cache headers.
   - `/api/me` and `/api/stock` return authenticated cache headers and do not
     leak data across different `ctx.props`.
-  - Gateway routes public requests to `PublicApi`, authenticated requests to
-    `AuthenticatedApi`, and auth routes to the uncached auth app.
+  - Gateway routes public requests through `CachedApi` without props,
+    authenticated requests through `CachedApi` with props, and auth routes
+    through the gateway's `authApp`.
 - Update `backend/src/__tests__/middleware.test.ts`:
   - `propsAuthMiddleware` sets Hono variables from `env.props`.
   - Missing props returns `401`.
+  - Missing props on a public route returns success.
 
-### Integration / E2E tests
+### BDD / Integration test infrastructure changes
+
+The refactored backend exports named entrypoint classes (`CachedApi`) in
+addition to the default gateway. The test infrastructure needs updates to
+support this.
+
+#### `automation/tests/support/worker-server.mjs`
+
+**Current:** Creates a Miniflare instance programmatically without a wrangler
+config. Calls `mf.dispatchFetch()` which only invokes the default export.
+
+**Required change:** Miniflare must know about the `CachedApi` named entrypoint
+so `ctx.exports.CachedApi.fetch()` works inside the gateway. Two options
+(try A first, fall back to B if Miniflare programmatic API doesn't support
+named entrypoints):
+
+**Option A (preferred):** Pass the wrangler test config to Miniflare so it
+discovers entrypoints from `[exports.*]` blocks:
+
+```js
+import { resolve, dirname } from 'node:path'
+// ...
+const mf = new Miniflare({
+  modules: true,
+  scriptPath: BUNDLE_PATH,
+  wranglerConfig: resolve(BACKEND_DIR, 'wrangler.test.toml'),
+  // remove compatibilityDate/compatibilityFlags — they come from wrangler config
+  d1Databases: { DB: 'rumaq-test' },
+  r2Buckets: { RECEIPTS: 'rumaq-receipts-test' },
+  bindings: {
+    PAGES_ORIGIN: 'http://localhost:3000',
+    GOOGLE_CLIENT_ID: 'test-client-id',
+    GOOGLE_CLIENT_SECRET: 'test-client-secret',
+    WORKER_JWT_SECRET: 'test-jwt-secret',
+    WORKER_ENCRYPTION_KEY: 'a'.repeat(32),
+    TEST_MODE: 'true',
+  },
+})
+```
+
+- `wrangler.test.toml` must have `[exports.CachedApi]` block (cache disabled,
+  see Wrangler section above).
+- Miniflare reads `compatibility_date`, `compatibility_flags`, and entrypoints
+  from the config file, so remove those from the programmatic options.
+
+**Option B (fallback):** If Miniflare doesn't support `wranglerConfig` for
+named entrypoints, add a test-mode short-circuit in the gateway that bypasses
+`ctx.exports` and calls `apiApp` directly:
+
+```typescript
+// In gateway.ts
+if (env.TEST_MODE) {
+  return apiApp.fetch(request, { ...env, props }, ctx)
+}
+return ctx.exports.CachedApi.fetch(request, { ...env, props })
+```
+
+This is less production-like but keeps tests running. The `ctx.props`
+isolation is still tested functionally since props are passed through the env
+object.
+
+#### `automation/docker/Dockerfile.api`
+
+No changes needed to the build step itself (`npx esbuild src/index.ts ...`) —
+the new `src/index.ts` re-exports the gateway and `CachedApi` class, and
+esbuild bundles them correctly. The `sed` fix for `cloudflare:workers` still
+applies.
+
+#### `automation/tests/support/auth.js`
+
+No change required. It imports `{ signJwt }` from `../../../backend/src/auth.ts`.
+`auth.ts` keeps its utility exports (`signJwt`, `verifyJwt`, etc.) — only route
+definitions move.
+
+#### `automation/tests/support/db.js`
+
+No change required. Test admin endpoints (`/api/__test/reset`, `/api/__test/seed`)
+are intercepted by `worker-server.mjs` before reaching the worker.
+
+### BDD feature/scenario additions
+
+Add cache header scenarios to existing API feature files:
+
+**`automation/tests/local/api/features/health.feature`** — add:
+
+```gherkin
+Scenario: Health check returns public cache headers
+  Given the API is running
+  When I send a GET request to /api/health
+  Then the response status should be 200
+  And the response should have public cache headers with max-age=60
+```
+
+**`automation/tests/local/api/features/me.feature`** — add:
+
+```gherkin
+Scenario: Authenticated response has per-user cache headers
+  Given the database has seed data
+  And I am authenticated as a test user
+  When I send a GET request to /api/me
+  Then the response status should be 200
+  And the response should have authenticated cache headers
+
+Scenario: Different users get isolated cache entries
+  Given the database has seed data
+  And I am authenticated as "test@rumaq.dev"
+  When I send a GET request to /api/me
+  Then the Cf-Cache-Status should be "MISS" for a fresh request
+
+  Given I am authenticated as "alice@rumaq.dev"
+  When I send a GET request to /api/me
+  Then the Cf-Cache-Status should be "MISS" (different user = different cache key)
+```
+
+**`automation/tests/local/api/features/stock.feature`** — add:
+
+```gherkin
+Scenario: Authenticated stock response has per-user cache headers
+  Given the database has seed data
+  And I am authenticated as a test user
+  When I send a GET request to /api/stock
+  Then the response status should be 200
+  And the response should have authenticated cache headers
+```
+
+### Step definition updates
+
+**`automation/tests/local/api/steps/helpers.js`** — add assertion methods:
+
+```js
+expectPublicCacheHeaders() {
+  const cc = this.response.headers.get('Cache-Control') || ''
+  expect(cc).toMatch(/public/)
+  expect(cc).toMatch(/max-age=60/)
+}
+
+expectAuthenticatedCacheHeaders() {
+  const cdnCC = this.response.headers.get('Cloudflare-CDN-Cache-Control') || ''
+  expect(cdnCC).toMatch(/public/)
+  expect(cdnCC).toMatch(/max-age=30/)
+  const cc = this.response.headers.get('Cache-Control') || ''
+  expect(cc).toMatch(/private/)
+  expect(cc).toMatch(/max-age=0/)
+}
+
+expectCfCacheStatus(expected) {
+  const status = this.response.headers.get('Cf-Cache-Status') || ''
+  expect(status).toBe(expected)
+}
+```
+
+### Existing integration / E2E tests
 
 - Run `npm run test:api` and `npm run test:e2e` after the refactor.
-- Update any integration tests that directly imported the old monolithic `app`.
+- The existing scenarios (health, me, stock, auth) should pass without
+  modification — the API contract is unchanged, only cache headers are added.
+- No integration tests directly import the monolithic `app` — they all go
+  through HTTP `fetch()`.
 
 ### Production verification
 
@@ -260,6 +459,9 @@ curl -I -b "rumaq_session=<user-a-token>" "https://$WORKER_URL/api/me"
 
 # Different user should be a separate cache entry (MISS, not user A's data)
 curl -I -b "rumaq_session=<user-b-token>" "https://$WORKER_URL/api/me"
+
+# Auth routes should bypass cache (no Cf-Cache-Status header)
+curl -I "https://$WORKER_URL/api/auth/login"  # expects 302, Set-Cookie
 ```
 
 Check the `Cf-Cache-Status` response header for `HIT`, `MISS`, or `UPDATING`.
@@ -268,8 +470,8 @@ Check the `Cf-Cache-Status` response header for `HIT`, `MISS`, or `UPDATING`.
 
 - `docs/ARCHITECTURE.md`
   - Update the request-flow diagram to show Pages → standalone Worker.
-  - Add a "Caching" subsection explaining the gateway pattern and `ctx.props`
-    isolation.
+  - Add a "Caching" subsection explaining the gateway pattern, `ctx.props`
+    isolation, and automatic cache bypass for auth routes.
 - `docs/API.md`
   - Note that public endpoints are cached and authenticated endpoints are cached
     per user/household.
@@ -280,20 +482,18 @@ Check the `Cf-Cache-Status` response header for `HIT`, `MISS`, or `UPDATING`.
 
 ## Implementation order
 
-1. Refactor backend into gateway + sub-apps + named entrypoints.
+1. Refactor backend into gateway + `CachedApi` entrypoint + `authApp` helper.
 2. Update all Wrangler files (`compatibility_date`, `[exports.*]`, production
    `[cache]`).
-3. Update backend tests for the new structure.
-4. Update `scripts/deploy.sh` to deploy the standalone Worker and build the
-   frontend with `VITE_API_BASE`.
-5. Add Worker secret setup to `scripts/deploy.sh`.
-6. Update documentation.
-7. Deploy and verify with `curl -I`.
-8. Open a PR.
-
-## Fallback note
-
-If during implementation you discover that Pages Functions can support the same
-`[exports.*]` / `WorkerEntrypoint` pattern after all, the standalone Worker
-migration can be skipped and the same backend code can run inside Pages. The
-plan assumes that is not the case based on current Cloudflare documentation.
+3. Update backend unit tests for the new structure.
+4. Update BDD test infrastructure:
+   - Update `worker-server.mjs` Miniflare config for named entrypoints.
+   - Add cache header assertion helpers to `helpers.js`.
+   - Add cache header scenarios to feature files + step definitions.
+5. Run `npm run test:api` and `npm run test:e2e` to verify tests pass.
+6. Update `scripts/deploy.sh` to deploy standalone Worker and build frontend
+   with `VITE_API_BASE`. Add Worker secret setup.
+7. Update documentation (`ARCHITECTURE.md`, `API.md`, `wrangler.toml.example`,
+   `README.md`).
+8. Deploy and verify with `curl -I`.
+9. Open a PR.
