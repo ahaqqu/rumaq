@@ -43,17 +43,17 @@
 
 ## 2. Architecture decisions
 
-| Decision | Choice | Rationale |
-|---|---|---|
-| Router | TanStack Router + file-based route tree | Type-safe, naturally pairs with Query, clean replacement for view state |
-| Server state | TanStack Query | Caching, retries, loading/error states, devtools |
-| UI components | `@cloudflare/kumo` | Accessible, Base UI primitives, Tailwind v4 native |
-| Tailwind version | v4 | Required by Kumo; CSS-first config via `@theme` |
-| Styling migration | Utility-first, page-by-page | Cleaner long-term; easier to delete dead CSS |
-| Icons | `@phosphor-icons/react` | Kumo peer dependency; reduces custom icon code |
-| Theme strategy | RumaQ overrides Kumo semantic tokens | Keeps current identity while leveraging Kumo components |
-| PWA caching | Precache static assets; runtime cache API | Simple offline shell; API data stays fresh |
-| Package manager | Keep npm | Project already uses npm workspaces; Kumo is published to npm |
+| Decision          | Choice                                    | Rationale                                                               |
+| ----------------- | ----------------------------------------- | ----------------------------------------------------------------------- |
+| Router            | TanStack Router + file-based route tree   | Type-safe, naturally pairs with Query, clean replacement for view state |
+| Server state      | TanStack Query                            | Caching, retries, loading/error states, devtools                        |
+| UI components     | `@cloudflare/kumo`                        | Accessible, Base UI primitives, Tailwind v4 native                      |
+| Tailwind version  | v4                                        | Required by Kumo; CSS-first config via `@theme`                         |
+| Styling migration | Utility-first, page-by-page               | Cleaner long-term; easier to delete dead CSS                            |
+| Icons             | `@phosphor-icons/react`                   | Kumo peer dependency; reduces custom icon code                          |
+| Theme strategy    | RumaQ overrides Kumo semantic tokens      | Keeps current identity while leveraging Kumo components                 |
+| PWA caching       | Precache static assets; runtime cache API | Simple offline shell; API data stays fresh                              |
+| Package manager   | Keep npm                                  | Project already uses npm workspaces; Kumo is published to npm           |
 
 ---
 
@@ -64,6 +64,7 @@
 **Goal:** Add dependencies and configure Vite, Tailwind, and Kumo without changing any UI.
 
 1. **Install runtime dependencies**
+
    ```bash
    npm install -w frontend \
      @cloudflare/kumo \
@@ -74,6 +75,7 @@
    ```
 
 2. **Install dev dependencies**
+
    ```bash
    npm install -w frontend -D \
      @tanstack/router-vite-plugin \
@@ -104,10 +106,13 @@
    - Replace the three CSS imports with `import './styles.css'`.
 
 7. **Create `frontend/src/lib/cn.js`**
+
    ```js
    import clsx from 'clsx'
    import { twMerge } from 'tailwind-merge'
-   export function cn(...inputs) { return twMerge(clsx(inputs)) }
+   export function cn(...inputs) {
+     return twMerge(clsx(inputs))
+   }
    ```
 
 8. **Verify build**
@@ -127,9 +132,10 @@
 
 2. **Create theme override CSS**
    In `frontend/src/styles.css`, add:
+
    ```css
    :root,
-   [data-theme="rumaq"] {
+   [data-theme='rumaq'] {
      --color-kumo-canvas: var(--surface);
      --color-kumo-elevated: var(--surface-raised);
      --color-kumo-recessed: var(--surface-sunken);
@@ -170,6 +176,7 @@
 **Goal:** Replace `useState('view')` with a file-based route tree.
 
 1. **Create route files**
+
    ```
    frontend/src/routes/
    ├── __root.jsx          # Root layout: providers + AppShell wrapper
@@ -220,6 +227,7 @@
 
 1. **Create query client**
    In `__root.jsx`:
+
    ```jsx
    const queryClient = new QueryClient({
      defaultOptions: {
@@ -233,6 +241,7 @@
 
 2. **Create query hooks**
    Create `frontend/src/lib/queries/`:
+
    ```
    queries/
    ├── me.js
@@ -245,6 +254,7 @@
    ├── history.js
    └── index.js
    ```
+
    Each file exports:
    - `useX()` query hook
    - `useXQueryOptions()` for dependent queries
@@ -315,6 +325,7 @@
 
 1. **Configure `vite-plugin-pwa`**
    In `vite.config.js`:
+
    ```js
    VitePWA({
      registerType: 'prompt',
@@ -398,6 +409,7 @@
    - Update Playwright BDD step definitions in `automation/tests/local/e2e/` if they depend on class names or old navigation behavior.
 
 4. **Run full test matrix**
+
    ```bash
    npm test -w frontend
    npm run test -w backend
@@ -424,14 +436,14 @@
 
 ## 4. Route mapping
 
-| Current view state | TanStack route | Route file | Page component |
-|---|---|---|---|
-| `home` | `/` | `src/routes/index.jsx` | `Home` |
-| `inventory` | `/inventory` | `src/routes/inventory.jsx` | `Inventory` |
-| `add` | `/add` | `src/routes/add.jsx` | `AddFromReceipt` |
-| `plan` | `/plan` | `src/routes/plan.jsx` | `Plan` |
-| `history` | `/history` | `src/routes/history.jsx` | `History` |
-| `settings` | `/settings` | `src/routes/settings.jsx` | `Settings` |
+| Current view state | TanStack route | Route file                 | Page component   |
+| ------------------ | -------------- | -------------------------- | ---------------- |
+| `home`             | `/`            | `src/routes/index.jsx`     | `Home`           |
+| `inventory`        | `/inventory`   | `src/routes/inventory.jsx` | `Inventory`      |
+| `add`              | `/add`         | `src/routes/add.jsx`       | `AddFromReceipt` |
+| `plan`             | `/plan`        | `src/routes/plan.jsx`      | `Plan`           |
+| `history`          | `/history`     | `src/routes/history.jsx`   | `History`        |
+| `settings`         | `/settings`    | `src/routes/settings.jsx`  | `Settings`       |
 
 ---
 
@@ -439,19 +451,19 @@
 
 Create these in `src/lib/queries/`:
 
-| Hook | Query key | API function | Notes |
-|---|---|---|---|
-| `useMe()` | `['me']` | `getMe()` | Auth gate |
-| `useStock({ location, q })` | `['stock', { location, q }]` | `getStock(...)` | Used on Home and Inventory |
-| `useSettings()` | `['settings']` | `getSettings()` | New backend endpoint needed |
-| `useUpdateSettings()` | mutation | `updateSettings(...)` | Optimistic update |
-| `useUsage()` | `['usage']` | `getUsage()` | New backend endpoint needed |
-| `useLocations()` | `['locations']` | `getLocations()` | New backend endpoint needed |
-| `useStores()` | `['stores']` | `getStores()` | New backend endpoint needed |
-| `usePlans()` | `['plans']` | `getPlans()` | New backend endpoint needed |
-| `useGeneratePlan()` | mutation | `generatePlan(...)` | |
-| `useHistory({ ... })` | `['history', filters]` | `getPurchases(...)` | New backend endpoint needed |
-| `useLogout()` | mutation | `logout()` | Clears `['me']` query |
+| Hook                        | Query key                    | API function          | Notes                       |
+| --------------------------- | ---------------------------- | --------------------- | --------------------------- |
+| `useMe()`                   | `['me']`                     | `getMe()`             | Auth gate                   |
+| `useStock({ location, q })` | `['stock', { location, q }]` | `getStock(...)`       | Used on Home and Inventory  |
+| `useSettings()`             | `['settings']`               | `getSettings()`       | New backend endpoint needed |
+| `useUpdateSettings()`       | mutation                     | `updateSettings(...)` | Optimistic update           |
+| `useUsage()`                | `['usage']`                  | `getUsage()`          | New backend endpoint needed |
+| `useLocations()`            | `['locations']`              | `getLocations()`      | New backend endpoint needed |
+| `useStores()`               | `['stores']`                 | `getStores()`         | New backend endpoint needed |
+| `usePlans()`                | `['plans']`                  | `getPlans()`          | New backend endpoint needed |
+| `useGeneratePlan()`         | mutation                     | `generatePlan(...)`   |                             |
+| `useHistory({ ... })`       | `['history', filters]`       | `getPurchases(...)`   | New backend endpoint needed |
+| `useLogout()`               | mutation                     | `logout()`            | Clears `['me']` query       |
 
 > **Note:** Several backend endpoints (`/api/settings`, `/api/locations`, `/api/stores`, `/api/plans`, `/api/purchases`, `/api/ai/usage`) are currently not implemented. This refactor assumes they are added in parallel backend PRs or already exist. If not, stub the query hooks and mark the backend work as a dependency.
 
@@ -461,25 +473,25 @@ Create these in `src/lib/queries/`:
 
 Map RumaQ custom properties to Kumo semantic tokens. Keep the underlying RumaQ variables so persona hue-shifting still works.
 
-| RumaQ variable | Kumo token | Usage |
-|---|---|---|
-| `--surface` | `color-kumo-canvas` | App background |
-| `--surface-raised` | `color-kumo-elevated` / `color-kumo-base` | Cards, rail, panels |
-| `--surface-sunken` | `color-kumo-recessed` | Hover states, inset areas |
-| `--border` | `color-kumo-line` | Dividers, input borders |
-| `--border-strong` | `color-kumo-hairline` | Stronger borders |
-| `--text` | `text-color-kumo-default` | Primary text |
-| `--text-muted` | `text-color-kumo-subtle` | Secondary text |
-| `--text-faint` | `text-color-kumo-inactive` | Placeholder, disabled |
-| `--accent` | `color-kumo-brand` | Primary buttons, links |
-| `--accent-hover` | `color-kumo-brand-hover` | Primary button hover |
-| `--accent-soft` | `color-kumo-info-tint` | Tinted backgrounds |
-| `--danger` | `color-kumo-danger` | Errors, danger badges |
-| `--danger-soft` | `color-kumo-danger-tint` | Danger backgrounds |
-| `--warn` | `color-kumo-warning` | Warnings |
-| `--warn-soft` | `color-kumo-warning-tint` | Warning backgrounds |
-| `--ok` | `color-kumo-success` | Success states |
-| `--ok-soft` | `color-kumo-success-tint` | Success backgrounds |
+| RumaQ variable     | Kumo token                                | Usage                     |
+| ------------------ | ----------------------------------------- | ------------------------- |
+| `--surface`        | `color-kumo-canvas`                       | App background            |
+| `--surface-raised` | `color-kumo-elevated` / `color-kumo-base` | Cards, rail, panels       |
+| `--surface-sunken` | `color-kumo-recessed`                     | Hover states, inset areas |
+| `--border`         | `color-kumo-line`                         | Dividers, input borders   |
+| `--border-strong`  | `color-kumo-hairline`                     | Stronger borders          |
+| `--text`           | `text-color-kumo-default`                 | Primary text              |
+| `--text-muted`     | `text-color-kumo-subtle`                  | Secondary text            |
+| `--text-faint`     | `text-color-kumo-inactive`                | Placeholder, disabled     |
+| `--accent`         | `color-kumo-brand`                        | Primary buttons, links    |
+| `--accent-hover`   | `color-kumo-brand-hover`                  | Primary button hover      |
+| `--accent-soft`    | `color-kumo-info-tint`                    | Tinted backgrounds        |
+| `--danger`         | `color-kumo-danger`                       | Errors, danger badges     |
+| `--danger-soft`    | `color-kumo-danger-tint`                  | Danger backgrounds        |
+| `--warn`           | `color-kumo-warning`                      | Warnings                  |
+| `--warn-soft`      | `color-kumo-warning-tint`                 | Warning backgrounds       |
+| `--ok`             | `color-kumo-success`                      | Success states            |
+| `--ok-soft`        | `color-kumo-success-tint`                 | Success backgrounds       |
 
 ---
 
@@ -488,6 +500,7 @@ Map RumaQ custom properties to Kumo semantic tokens. Keep the underlying RumaQ v
 Use this checklist during implementation and in the PR description.
 
 ### Tooling
+
 - [ ] Install Kumo, TanStack, PWA, Tailwind dependencies
 - [ ] Update `vite.config.js`
 - [ ] Create `src/styles.css`
@@ -496,12 +509,14 @@ Use this checklist during implementation and in the PR description.
 - [ ] Verify build passes
 
 ### Theme
+
 - [ ] Port RumaQ tokens to Kumo semantic tokens in `styles.css`
 - [ ] Set `data-theme="rumaq"`
 - [ ] Update `src/lib/persona.js` to mutate Kumo-referenced variables
 - [ ] Verify Kumo components render in RumaQ colors
 
 ### Router
+
 - [ ] Create `src/routes/__root.jsx`
 - [ ] Create route files for `/`, `/inventory`, `/add`, `/plan`, `/history`, `/settings`
 - [ ] Refactor `App.jsx` to use `RouterProvider`
@@ -510,12 +525,14 @@ Use this checklist during implementation and in the PR description.
 - [ ] Remove `VIEWS` array and view state
 
 ### Query
+
 - [ ] Create `QueryClient` in `__root.jsx`
 - [ ] Create query/mutation hooks in `src/lib/queries/`
 - [ ] Replace `useEffect` data fetching in all pages
 - [ ] Add `ReactQueryDevtools`
 
 ### UI migration
+
 - [ ] Migrate `AppShell.jsx` to Tailwind + Kumo
 - [ ] Migrate `src/components/ui.jsx` primitives
 - [ ] Replace custom icons with Phosphor icons
@@ -529,6 +546,7 @@ Use this checklist during implementation and in the PR description.
 - [ ] Delete `tokens.css`, `base.css`, `components.css`
 
 ### PWA
+
 - [ ] Configure `vite-plugin-pwa` in `vite.config.js`
 - [ ] Generate `public/icon-192x192.png` and `public/icon-512x512.png`
 - [ ] Create `src/components/PwaUpdatePrompt.jsx`
@@ -536,6 +554,7 @@ Use this checklist during implementation and in the PR description.
 - [ ] Verify Lighthouse PWA audit
 
 ### Tests & docs
+
 - [ ] Update `src/test-setup.js` with providers
 - [ ] Update `App.test.jsx`
 - [ ] Update `AppShell.test.jsx`
@@ -554,16 +573,19 @@ Use this checklist during implementation and in the PR description.
 ## 8. Testing strategy
 
 ### Unit tests
+
 - Use a custom `renderWithProviders` helper that wraps every test in QueryClient + Router + i18n + Persona providers.
 - Mock TanStack Query hooks only when testing pure UI behavior; otherwise let queries hit MSW or mock `api.js` functions.
 - Keep coverage above thresholds: statements 90%, branches 75%, functions 85%, lines 90%.
 
 ### E2E tests
+
 - Update Playwright BDD steps that reference old class names or button text.
 - Verify navigation via URLs, not via internal view state.
 - Add a PWA installability check if feasible in CI.
 
 ### Manual checks
+
 - Verify persona hue-shifting still updates accent colors.
 - Verify dark mode (if enabled) uses Kumo `light-dark()` correctly.
 - Verify PWA install prompt on mobile/desktop.
@@ -573,16 +595,16 @@ Use this checklist during implementation and in the PR description.
 
 ## 9. Risks & mitigations
 
-| Risk | Impact | Mitigation |
-|---|---|---|
-| Kumo does not support React 19 | High | Check peer deps before install; temporarily pin React 18 if needed |
-| Tailwind v4 breaks existing tooling | Medium | Verify Vite plugin compatibility; pin versions if necessary |
-| Kumo CSS import path is different than expected | Low | Inspect `node_modules/@cloudflare/kumo/package.json` exports |
-| Test coverage drops below thresholds | Medium | Update tests incrementally per phase; do not delete old CSS until coverage is green |
-| PWA service worker intercepts `/api` proxy in dev | Medium | Configure `runtimeCaching` and dev-only `navigateFallback` correctly |
-| Persona hue-shifting breaks | Medium | Keep RumaQ CSS variables; update only the mapping in `styles.css` |
-| Backend endpoints missing | High | Coordinate with backend PRs; stub query hooks and mark dependencies |
-| npm peer dependency warnings | Low | Use `--legacy-peer-deps` only as last resort; prefer fixing version constraints |
+| Risk                                              | Impact | Mitigation                                                                          |
+| ------------------------------------------------- | ------ | ----------------------------------------------------------------------------------- |
+| Kumo does not support React 19                    | High   | Check peer deps before install; temporarily pin React 18 if needed                  |
+| Tailwind v4 breaks existing tooling               | Medium | Verify Vite plugin compatibility; pin versions if necessary                         |
+| Kumo CSS import path is different than expected   | Low    | Inspect `node_modules/@cloudflare/kumo/package.json` exports                        |
+| Test coverage drops below thresholds              | Medium | Update tests incrementally per phase; do not delete old CSS until coverage is green |
+| PWA service worker intercepts `/api` proxy in dev | Medium | Configure `runtimeCaching` and dev-only `navigateFallback` correctly                |
+| Persona hue-shifting breaks                       | Medium | Keep RumaQ CSS variables; update only the mapping in `styles.css`                   |
+| Backend endpoints missing                         | High   | Coordinate with backend PRs; stub query hooks and mark dependencies                 |
+| npm peer dependency warnings                      | Low    | Use `--legacy-peer-deps` only as last resort; prefer fixing version constraints     |
 
 ---
 
@@ -655,11 +677,11 @@ export default defineConfig({
 ### `frontend/src/styles.css` target shape
 
 ```css
-@import "tailwindcss";
-@import "@cloudflare/kumo/styles";
+@import 'tailwindcss';
+@import '@cloudflare/kumo/styles';
 
 :root,
-[data-theme="rumaq"] {
+[data-theme='rumaq'] {
   --surface: oklch(0.945 0.028 230);
   --surface-raised: oklch(0.975 0.018 230);
   --surface-sunken: oklch(0.915 0.032 230);

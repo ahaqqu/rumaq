@@ -4,7 +4,10 @@ import path from 'path'
 export default defineConfig({
   resolve: {
     alias: {
-      'virtual:pwa-register/react': path.resolve(__dirname, 'src/__mocks__/virtual-pwa-register-react.js'),
+      'virtual:pwa-register/react': path.resolve(
+        __dirname,
+        'src/__mocks__/virtual-pwa-register-react.js'
+      ),
     },
   },
   test: {

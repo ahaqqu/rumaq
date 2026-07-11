@@ -4,7 +4,7 @@ import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
 import { IconHistory, IconSpark } from '../components/icons.jsx'
 
-export default function History({ askAssistant }) {
+export function History({ askAssistant }) {
   const { t } = useTranslation()
   const { persona } = usePersona()
   const monthNames = t('history.months', { returnObjects: true })
@@ -34,9 +34,7 @@ export default function History({ askAssistant }) {
   return (
     <>
       <div className="page__head">
-        <p className="page__lead">
-          {personaText('historyLead', persona, t)}
-        </p>
+        <p className="page__lead">{personaText('historyLead', persona, t)}</p>
       </div>
 
       <div className="panel">
@@ -51,19 +49,39 @@ export default function History({ askAssistant }) {
           </thead>
           <tbody>
             {groups.map((g) => (
-              <Group key={g.month} g={g} monthLabel={monthLabel} fmtDate={fmtDate} t={t} formatRp={formatRp} />
+              <Group
+                key={g.month}
+                g={g}
+                monthLabel={monthLabel}
+                fmtDate={fmtDate}
+                t={t}
+                formatRp={formatRp}
+              />
             ))}
           </tbody>
         </table>
       </div>
 
       <section className="section">
-        <div className="panel" style={{ padding: 'var(--sp-5)', display: 'flex', gap: 'var(--sp-4)', alignItems: 'center' }}>
-          <div style={{ color: 'var(--accent)' }}><IconSpark size={20} /></div>
-          <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
-            <strong>{t('history.patternDetected')}</strong> {t('history.patternText')}
+        <div
+          className="panel"
+          style={{
+            padding: 'var(--sp-5)',
+            display: 'flex',
+            gap: 'var(--sp-4)',
+            alignItems: 'center',
+          }}
+        >
+          <div style={{ color: 'var(--accent)' }}>
+            <IconSpark size={20} />
           </div>
-          <button className="btn btn--ghost btn--sm" onClick={askAssistant}>{t('history.makePlan')}</button>
+          <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
+            <strong>{t('history.patternDetected')}</strong>{' '}
+            {t('history.patternText')}
+          </div>
+          <button className="btn btn--ghost btn--sm" onClick={askAssistant}>
+            {t('history.makePlan')}
+          </button>
         </div>
       </section>
     </>
@@ -74,12 +92,17 @@ function Group({ g, monthLabel, fmtDate, t, formatRp }) {
   return (
     <>
       <tr className="month-sep">
-        <td colSpan={4}>{monthLabel(g.month)} · {t('history.total')} {formatRp(g.total)}</td>
+        <td colSpan={4}>
+          {monthLabel(g.month)} · {t('history.total')} {formatRp(g.total)}
+        </td>
       </tr>
       {g.rows.map((r, i) => (
         <tr key={r.date + r.item + i}>
           <td style={{ whiteSpace: 'nowrap' }}>{fmtDate(r.date)}</td>
-          <td>{r.item} <span style={{ color: 'var(--text-muted)' }}>· {r.qty}</span></td>
+          <td>
+            {r.item}{' '}
+            <span style={{ color: 'var(--text-muted)' }}>· {r.qty}</span>
+          </td>
           <td>{storeLabel(r.store)}</td>
           <td className="num">{formatRp(r.price)}</td>
         </tr>

@@ -1,6 +1,6 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
-export default function PwaUpdatePrompt() {
+export function PwaUpdatePrompt() {
   const {
     needRefresh: [needRefresh, setNeedRefresh],
     updateServiceWorker,

@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
 import React from 'react'
-import App from './App.jsx'
+import { App } from './App.jsx'
 
 const mockGetMe = vi.fn()
 
@@ -25,7 +25,9 @@ vi.mock('./data/mock.js', async () => {
 
 describe('App', () => {
   beforeEach(() => {
-    mockGetMe.mockResolvedValue({ user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null } })
+    mockGetMe.mockResolvedValue({
+      user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null },
+    })
   })
 
   it('renders without crashing', async () => {
@@ -36,6 +38,8 @@ describe('App', () => {
 
   it('sets motion on document', async () => {
     render(React.createElement(App))
-    await waitFor(() => expect(document.documentElement.dataset.motion).toBe('standard'))
+    await waitFor(() =>
+      expect(document.documentElement.dataset.motion).toBe('standard')
+    )
   })
 })

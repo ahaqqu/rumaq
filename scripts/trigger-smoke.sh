@@ -21,15 +21,15 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WATCH="${1:-}"
 
 require_cmd() {
-  if ! command -v "$1" &>/dev/null; then
+  if ! command -v "$1" &> /dev/null; then
     echo "Error: $1 is not installed. $2"
     exit 1
   fi
 }
 
-info()  { echo -e "==> $1"; }
-ok()    { echo -e "  ✓  $1"; }
-fail()  { echo -e "  ✗  $1"; }
+info() { echo -e "==> $1"; }
+ok() { echo -e "  ✓  $1"; }
+fail() { echo -e "  ✗  $1"; }
 
 require_cmd gh "Install GitHub CLI: https://cli.github.com"
 
@@ -54,7 +54,7 @@ sleep 3
 # ------------------------------------------------------------------
 info "Polling latest smoke run..."
 
-RUN_ID=$(gh run list --workflow=smoke.yml --limit 1 --json databaseId --jq '.[0].databaseId' 2>/dev/null)
+RUN_ID=$(gh run list --workflow=smoke.yml --limit 1 --json databaseId --jq '.[0].databaseId' 2> /dev/null)
 
 if [[ -z "$RUN_ID" ]]; then
   fail "Could not find workflow run. Check: gh run list --workflow=smoke.yml"
@@ -67,7 +67,7 @@ info "Run ID: $RUN_ID"
 # Poll until completion
 # ------------------------------------------------------------------
 while true; do
-  STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '"\(.status) \(.conclusion)"' 2>/dev/null | xargs)
+  STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '"\(.status) \(.conclusion)"' 2> /dev/null | xargs)
 
   case "$STATUS" in
     "completed success")

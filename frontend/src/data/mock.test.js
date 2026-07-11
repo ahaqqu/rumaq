@@ -1,17 +1,39 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
-  LOCATIONS, STORES, STOCK, PLAN, HISTORY, PARSED_RECEIPT,
-  formatRp, locLabel, storeLabel, relUpdated, usageState, AI_USAGE,
+  LOCATIONS,
+  STORES,
+  STOCK,
+  PLAN,
+  HISTORY,
+  PARSED_RECEIPT,
+  formatRp,
+  locLabel,
+  storeLabel,
+  relUpdated,
+  usageState,
+  AI_USAGE,
 } from './mock.js'
-import i18n from '../i18n/index.js'
+import { i18n } from '../i18n/index.js'
 
 describe('static data', () => {
-  it('exports LOCATIONS array', () => { expect(Array.isArray(LOCATIONS)).toBe(true) })
-  it('exports STORES array', () => { expect(Array.isArray(STORES)).toBe(true) })
-  it('exports STOCK array', () => { expect(Array.isArray(STOCK)).toBe(true) })
-  it('exports PLAN array', () => { expect(Array.isArray(PLAN)).toBe(true) })
-  it('exports HISTORY array', () => { expect(Array.isArray(HISTORY)).toBe(true) })
-  it('exports PARSED_RECEIPT', () => { expect(PARSED_RECEIPT.store).toBe('indomaret') })
+  it('exports LOCATIONS array', () => {
+    expect(Array.isArray(LOCATIONS)).toBe(true)
+  })
+  it('exports STORES array', () => {
+    expect(Array.isArray(STORES)).toBe(true)
+  })
+  it('exports STOCK array', () => {
+    expect(Array.isArray(STOCK)).toBe(true)
+  })
+  it('exports PLAN array', () => {
+    expect(Array.isArray(PLAN)).toBe(true)
+  })
+  it('exports HISTORY array', () => {
+    expect(Array.isArray(HISTORY)).toBe(true)
+  })
+  it('exports PARSED_RECEIPT', () => {
+    expect(PARSED_RECEIPT.store).toBe('indomaret')
+  })
 })
 
 describe('formatRp', () => {

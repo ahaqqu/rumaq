@@ -33,19 +33,21 @@ cd "$ROOT_DIR"
 # Helpers
 # ------------------------------------------------------------------
 require_cmd() {
-  if ! command -v "$1" &>/dev/null; then
+  if ! command -v "$1" &> /dev/null; then
     echo "Error: $1 is not installed. $2"
     exit 1
   fi
 }
 
-info()  { echo -e "==> $1"; }
-ok()    { echo -e "  ok  $1"; }
-warn()  { echo -e "  warn $1"; }
+info() { echo -e "==> $1"; }
+ok() { echo -e "  ok  $1"; }
+warn() { echo -e "  warn $1"; }
 
 wrangler_cmd() {
-  local config=$1; shift
-  local db=$1; shift
+  local config=$1
+  shift
+  local db=$1
+  shift
   wrangler d1 migrations apply "$db" --config "$config" "$@"
 }
 
@@ -114,7 +116,7 @@ ensure_dev_vars() {
 
   info "backend/.dev.vars not found – creating template."
 
-  cat > "$BACKEND_DIR/.dev.vars" <<-EOF
+  cat > "$BACKEND_DIR/.dev.vars" <<- EOF
 # Local-only secrets for \`wrangler dev\`.
 # Obtain real values from your Google Cloud Console and generate strong
 # random strings for JWT and encryption secrets.
@@ -160,7 +162,7 @@ setup_database_remote() {
   cd "$BACKEND_DIR"
 
   local db_id
-  db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2>/dev/null || true)
+  db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2> /dev/null || true)
 
   if [[ $db_id == "YOUR_DATABASE_ID" || -z $db_id ]]; then
     db_id=$(node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" d1-setup)
@@ -219,7 +221,7 @@ put_worker_secrets() {
   for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
     val="${!key:-}"
     if [ -n "$val" ]; then
-      printf '%s' "$val" | npx wrangler secret put "$key" --config "$config" >/dev/null 2>&1 || true
+      printf '%s' "$val" | npx wrangler secret put "$key" --config "$config" > /dev/null 2>&1 || true
       echo "  ✓  $key"
     else
       echo "  -  $key (skipped — not set)"
@@ -260,7 +262,7 @@ check_login() {
     ok "Authenticated via CLOUDFLARE_API_TOKEN."
     return 0
   fi
-  if ! wrangler whoami &>/dev/null; then
+  if ! wrangler whoami &> /dev/null; then
     echo "Error: not logged in to Cloudflare."
     echo "Set CLOUDFLARE_API_TOKEN or run: wrangler login"
     exit 1
@@ -340,8 +342,8 @@ do_local() {
   cleanup() {
     echo ""
     info "Shutting down dev servers..."
-    kill $FRONTEND_PID $BACKEND_PID 2>/dev/null || true
-    wait $FRONTEND_PID $BACKEND_PID 2>/dev/null || true
+    kill $FRONTEND_PID $BACKEND_PID 2> /dev/null || true
+    wait $FRONTEND_PID $BACKEND_PID 2> /dev/null || true
   }
   trap cleanup EXIT INT TERM
 
@@ -372,7 +374,7 @@ do_dry_run() {
 # Main dispatch
 # ==================================================================
 case "$MODE" in
-  local|"")
+  local | "")
     do_local
     ;;
   cloudflare)

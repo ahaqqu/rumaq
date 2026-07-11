@@ -12,7 +12,16 @@ export function AppProvider({ children }) {
   }, [motion])
 
   return (
-    <AppContext.Provider value={{ aiKey, setAiKey, motion, setMotion, assistantOpen, setAssistantOpen }}>
+    <AppContext.Provider
+      value={{
+        aiKey,
+        setAiKey,
+        motion,
+        setMotion,
+        assistantOpen,
+        setAssistantOpen,
+      }}
+    >
       {children}
     </AppContext.Provider>
   )

@@ -83,7 +83,21 @@
     "store": "Store",
     "price": "Price",
     "total": "total",
-    "months": ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+    "months": [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec"
+    ],
     "patternDetected": "Pattern detected:",
     "patternText": "Milk and bread are bought every 7 days from Indomaret. The assistant can remind you before they run out.",
     "makePlan": "Make plan"

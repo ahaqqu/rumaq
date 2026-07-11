@@ -16,19 +16,22 @@ async function d1Setup() {
   const dbName = process.env.D1_DATABASE_NAME || 'rumaq'
   const resp = await cf.d1.database.list({ account_id: accountId })
   const dbs = resp.result
-  const existing = dbs?.find(d => d.name === dbName)
+  const existing = dbs?.find((d) => d.name === dbName)
   if (existing) {
     console.log(existing.uuid)
     return
   }
-  const created = await cf.d1.database.create({ account_id: accountId, name: dbName })
+  const created = await cf.d1.database.create({
+    account_id: accountId,
+    name: dbName,
+  })
   console.log(created.uuid)
 }
 
 async function r2Ensure() {
   const bucketName = process.env.R2_BUCKET_NAME || 'rumaq-receipts'
   const { buckets } = await cf.r2.buckets.list({ account_id: accountId })
-  const existing = buckets?.find(b => b.name === bucketName)
+  const existing = buckets?.find((b) => b.name === bucketName)
   if (existing) {
     console.log('EXISTS')
     return
@@ -39,7 +42,12 @@ async function r2Ensure() {
 
 async function putSecrets() {
   const scriptName = 'api'
-  const secrets = ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'WORKER_JWT_SECRET', 'WORKER_ENCRYPTION_KEY']
+  const secrets = [
+    'GOOGLE_CLIENT_ID',
+    'GOOGLE_CLIENT_SECRET',
+    'WORKER_JWT_SECRET',
+    'WORKER_ENCRYPTION_KEY',
+  ]
   const results = []
   for (const name of secrets) {
     const val = process.env[name]
@@ -69,20 +77,25 @@ async function pagesBindings() {
 
   // Get database ID
   const dbs = await cf.d1.database.list({ account_id: accountId })
-  const db = dbs.result?.find(d => d.name === dbName)
+  const db = dbs.result?.find((d) => d.name === dbName)
   if (!db) {
     console.error(`D1 database "${dbName}" not found`)
     process.exit(1)
   }
 
   // Get current project to preserve existing config
-  const project = await cf.pages.projects.get(projectName, { account_id: accountId })
+  const project = await cf.pages.projects.get(projectName, {
+    account_id: accountId,
+  })
   const prod = project.deployment_configs?.production || {}
   const preview = project.deployment_configs?.preview || {}
 
   // Pages API uses dictionary format: binding name is the key
   const d1Databases = { ...(prod.d1_databases || {}), DB: { id: db.uuid } }
-  const r2Buckets = { ...(prod.r2_buckets || {}), RECEIPTS: { name: bucketName } }
+  const r2Buckets = {
+    ...(prod.r2_buckets || {}),
+    RECEIPTS: { name: bucketName },
+  }
 
   await cf.pages.projects.edit(projectName, {
     account_id: accountId,
@@ -110,7 +123,9 @@ async function main() {
         await pagesBindings()
         break
       default:
-        console.error(`Usage: deploy-cf.js <d1-setup|r2-ensure|put-secrets|pages-bindings>`)
+        console.error(
+          `Usage: deploy-cf.js <d1-setup|r2-ensure|put-secrets|pages-bindings>`
+        )
         process.exit(1)
     }
   } catch (e) {

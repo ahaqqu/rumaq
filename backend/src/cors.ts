@@ -6,7 +6,9 @@ export function createCors() {
     origin: (origin, c) => {
       const env = c.env as Env['Bindings']
       const allowed = env.PAGES_ORIGIN || 'https://rumaq.pages.dev'
-      return origin === allowed || origin === 'http://localhost:5173' ? origin : allowed
+      return origin === allowed || origin === 'http://localhost:5173'
+        ? origin
+        : allowed
     },
     credentials: true,
   })

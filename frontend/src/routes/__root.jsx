@@ -3,9 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { PersonaProvider } from '../context/PersonaContext.jsx'
 import { AppProvider } from '../context/AppContext.jsx'
-import AppShell from '../components/AppShell.jsx'
-import Login from '../pages/Login.jsx'
-import PwaUpdatePrompt from '../components/PwaUpdatePrompt.jsx'
+import { AppShell } from '../components/AppShell.jsx'
+import { Login } from '../pages/Login.jsx'
+import { PwaUpdatePrompt } from '../components/PwaUpdatePrompt.jsx'
 import { useMe } from '../lib/queries/me.js'
 
 const queryClient = new QueryClient({

@@ -1,5 +1,9 @@
 import { describe, test as it, beforeEach, expect } from 'vitest'
-import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
+import {
+  setJestCucumberConfiguration,
+  loadFeature,
+  defineFeature,
+} from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
@@ -40,9 +44,12 @@ defineFeature(feature, (test) => {
       await ctx.resetAndSeed()
     })
 
-    when(/I login via email as "([^"]+)" with password "([^"]+)"/, async (email, password) => {
-      await ctx.authenticateViaEmail(email, password)
-    })
+    when(
+      /I login via email as "([^"]+)" with password "([^"]+)"/,
+      async (email, password) => {
+        await ctx.authenticateViaEmail(email, password)
+      }
+    )
 
     then('the response status should be 200', () => {
       ctx.expectStatus(200)
@@ -63,9 +70,12 @@ defineFeature(feature, (test) => {
       await ctx.resetAndSeed()
     })
 
-    when(/I login via email as "([^"]+)" with password "([^"]+)"/, async (email, password) => {
-      await ctx.authenticateViaEmail(email, password)
-    })
+    when(
+      /I login via email as "([^"]+)" with password "([^"]+)"/,
+      async (email, password) => {
+        await ctx.authenticateViaEmail(email, password)
+      }
+    )
 
     then('the response status should be 200', () => {
       ctx.expectStatus(200)
@@ -86,7 +96,10 @@ defineFeature(feature, (test) => {
 
   test('Login redirects to Google', ({ when, then }) => {
     when(/I send a (GET) request to (\S+)/, async (method, path) => {
-      ctx.response = await fetch(`${ctx.baseUrl}${path}`, { method, redirect: 'manual' })
+      ctx.response = await fetch(`${ctx.baseUrl}${path}`, {
+        method,
+        redirect: 'manual',
+      })
       ctx.responseBody = null
     })
 

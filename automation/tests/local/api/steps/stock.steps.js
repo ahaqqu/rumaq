@@ -1,5 +1,9 @@
 import { describe, test as it, beforeEach } from 'vitest'
-import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
+import {
+  setJestCucumberConfiguration,
+  loadFeature,
+  defineFeature,
+} from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
@@ -147,7 +151,12 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Authenticated stock response has per-user cache headers', ({ given, when, then, and }) => {
+  test('Authenticated stock response has per-user cache headers', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

@@ -14,20 +14,20 @@ frontend/src/i18n/
 
 Translation keys are grouped by component:
 
-| Prefix | Content |
-|---|---|
-| `nav.*` | Navigation and page titles |
-| `home.*` | Home page |
-| `inventory.*` | Inventory page |
-| `addReceipt.*` | Add from receipt flow |
-| `plan.*` | Shopping plan page |
-| `history.*` | Purchase history |
-| `settings.*` | Settings page |
-| `assistant.*` | Assistant panel |
-| `ui.*` | Shared UI component strings |
-| `common.*` | Shared utility strings (dates, counts) |
-| `data.*` | Default location/store labels |
-| `persona.*` | Persona engine base text, mood wrappers, system prompts |
+| Prefix         | Content                                                 |
+| -------------- | ------------------------------------------------------- |
+| `nav.*`        | Navigation and page titles                              |
+| `home.*`       | Home page                                               |
+| `inventory.*`  | Inventory page                                          |
+| `addReceipt.*` | Add from receipt flow                                   |
+| `plan.*`       | Shopping plan page                                      |
+| `history.*`    | Purchase history                                        |
+| `settings.*`   | Settings page                                           |
+| `assistant.*`  | Assistant panel                                         |
+| `ui.*`         | Shared UI component strings                             |
+| `common.*`     | Shared utility strings (dates, counts)                  |
+| `data.*`       | Default location/store labels                           |
+| `persona.*`    | Persona engine base text, mood wrappers, system prompts |
 
 ## How to add a new locale
 

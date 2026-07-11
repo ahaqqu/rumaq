@@ -23,5 +23,7 @@ Then('the topbar should be visible', async ({ page }) => {
 })
 
 Then('a heading should be visible', async ({ page }) => {
-  await expect(page.locator('h1, h2, h3').first()).toBeVisible({ timeout: 5_000 })
+  await expect(page.locator('h1, h2, h3').first()).toBeVisible({
+    timeout: 5_000,
+  })
 })

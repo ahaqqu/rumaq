@@ -9,8 +9,12 @@ const AUTH_ROUTES = new Set([
   '/api/auth/email-login',
 ])
 
-export default {
-  async fetch(request: Request, env: Env['Bindings'], ctx: ExecutionContext): Promise<Response> {
+export const gateway = {
+  async fetch(
+    request: Request,
+    env: Env['Bindings'],
+    ctx: ExecutionContext
+  ): Promise<Response> {
     const url = new URL(request.url)
     const path = url.pathname
 
@@ -42,5 +46,3 @@ export default {
     })
   },
 }
-
-

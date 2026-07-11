@@ -23,14 +23,14 @@ Household shopping & inventory assistant. Snap a receipt — stock updates. Know
 
 ## For developers
 
-| Layer | Technology |
-|---|---|
+| Layer    | Technology                                                                              |
+| -------- | --------------------------------------------------------------------------------------- |
 | Frontend | React + Vite + TanStack Router + TanStack Query + Cloudflare Kumo UI → Cloudflare Pages |
-| Backend | Cloudflare Workers + Hono |
-| Database | Cloudflare D1 (SQLite) |
-| Files | Cloudflare R2 |
-| Auth | Google OAuth 2.0 + JWT |
-| AI | BYO key proxied through the Worker |
+| Backend  | Cloudflare Workers + Hono                                                               |
+| Database | Cloudflare D1 (SQLite)                                                                  |
+| Files    | Cloudflare R2                                                                           |
+| Auth     | Google OAuth 2.0 + JWT                                                                  |
+| AI       | BYO key proxied through the Worker                                                      |
 
 ### Quick start
 
@@ -47,8 +47,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architecture, au
 ### Testing
 
 ```bash
-./scripts/test-unit.sh                  # unit tests (Vitest)
-./scripts/test-automation-local.sh      # integration + E2E in Docker (Miniflare + Playwright)
+./scripts/test-unit.sh             # unit tests (Vitest)
+./scripts/test-automation-local.sh # integration + E2E in Docker (Miniflare + Playwright)
 ```
 
 See [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md).
@@ -89,8 +89,8 @@ A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) verifies `ru
 ```
 Read and implement docs/plans/api-docs-autogeneration-plan.md in the branch from 'main'. Read docs/ARCHITECTURE.md as an architecture guideline.
 
-The plan and architecture are intents, directions, and guidelines, not strictly must be followed, you are allowed to be critical, verify, or provide better alternatives. 
-Ask and verify anything unclear or has alternative solution. Finalizing the steps by steps first before starting implementation. 
+The plan and architecture are intents, directions, and guidelines, not strictly must be followed, you are allowed to be critical, verify, or provide better alternatives.
+Ask and verify anything unclear or has alternative solution. Finalizing the steps by steps first before starting implementation.
 
 Always confirm to me first before implementing something that deviate from plan or has different architecture.
 
