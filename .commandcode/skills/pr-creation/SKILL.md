@@ -37,7 +37,7 @@ Then <expected outcome>
 
 ## Summary
 
-Summary of the changes, not a list of files. Start with the `As Given When Then` sentence from Context without the prefix.
+Clear and concise summary of the changes, not a list of files.
 
 ## Architecture
 
