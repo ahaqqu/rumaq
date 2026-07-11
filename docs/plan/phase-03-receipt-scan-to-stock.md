@@ -23,7 +23,7 @@ This phase touches R2, AI provider proxy, multi-table D1 writes, and the full Ad
 4. The AddFromReceipt page implements the full 4-phase flow: capture → scanning → review → done.
 5. The frontend receives signed R2 URLs for receipt preview instead of direct bucket access.
 6. AI prompts only include data from the current household.
-7. All endpoints use Zod validation and household-scoped queries.
+7. All endpoints use Valibot validation and household-scoped queries.
 8. API integration tests cover scan endpoint, purchase creation, and R2 upload handling.
 9. Frontend tests cover the 4-phase flow and review edits.
 10. `npm test` and `npx tsc --noEmit` pass.
@@ -69,7 +69,7 @@ This phase touches R2, AI provider proxy, multi-table D1 writes, and the full Ad
    - Validate AI usage limit (default 20/day). If exceeded, return 429.
 
 4. **Purchase creation endpoint** (`POST /api/purchases`):
-   - Zod schema: `store_id` (optional), `date` (ISO date), `items` array of `{ name, qty, unit, price, item_id? }`.
+   - Valibot schema: `store_id` (optional), `date` (ISO date), `items` array of `{ name, qty, unit, price, item_id? }`.
    - If `item_id` is missing, canonicalize name and create a new `items` row for the household (or match an existing one by normalized name).
    - Insert into `purchases` with `receipt_image_key` from scan if provided.
    - Insert into `purchase_items`.
@@ -192,7 +192,7 @@ Add to `automation/tests/local/api/`:
 
 | Risk                                                   | Impact | Mitigation                                                                                                         |
 | ------------------------------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------------ |
-| AI OCR fails or returns bad JSON                       | High   | Validate JSON with Zod, show a clear "AI couldn't read this" state, and allow manual entry.                        |
+| AI OCR fails or returns bad JSON                       | High   | Validate JSON with Valibot, show a clear "AI couldn't read this" state, and allow manual entry.                    |
 | AI key is missing or invalid                           | High   | Return a 402/400 with a message pointing to Settings. Frontend redirects to Settings.                              |
 | R2 upload or signed URL fails                          | High   | Catch errors and show retry UI; fallback to base64 data URI for AI if R2 is unavailable.                           |
 | D1 batch fails mid-write and leaves inconsistent state | High   | Use D1 batch for atomicity; if batch fails, return 500 and do not commit partial writes. Test with malformed data. |

@@ -16,16 +16,25 @@ Errors use `{ "error": "..." }`.
 
 ## Implemented endpoints
 
-| Method | Path                   | Auth | Query             | Body | Description                                                                      |
-| ------ | ---------------------- | ---- | ----------------- | ---- | -------------------------------------------------------------------------------- |
-| GET    | /api/auth/callback     | —    | —                 | —    | Google OAuth callback. Sets rumaq_session and redirects to /.                    |
-| POST   | /api/auth/email-login  | —    | —                 | —    | Validates credentials and sets rumaq_session.                                    |
-| GET    | /api/auth/email-status | —    | —                 | —    | Reports whether email/password auth is enabled.                                  |
-| GET    | /api/auth/login        | —    | —                 | —    | Redirects to Google OAuth 2.0 login.                                             |
-| GET    | /api/auth/logout       | —    | —                 | —    | Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}. |
-| GET    | /api/health            | —    | —                 | —    | Public health check.                                                             |
-| GET    | /api/me                | Yes  | —                 | —    | Returns the current authenticated user.                                          |
-| GET    | /api/stock             | Yes  | `location?`, `q?` | —    | Current inventory for the active household.                                      |
+| Method | Path                   | Auth | Query | Body | Description                                                                      |
+| ------ | ---------------------- | ---- | ----- | ---- | -------------------------------------------------------------------------------- |
+| GET    | /api/ai/usage          | Yes  | —     | —    | Returns today AI usage for the current user.                                     |
+| GET    | /api/auth/callback     | —    | —     | —    | Google OAuth callback. Sets rumaq_session and redirects to /.                    |
+| POST   | /api/auth/email-login  | —    | —     | —    | Validates credentials and sets rumaq_session.                                    |
+| GET    | /api/auth/email-status | —    | —     | —    | Reports whether email/password auth is enabled.                                  |
+| GET    | /api/auth/login        | —    | —     | —    | Redirects to Google OAuth 2.0 login.                                             |
+| GET    | /api/auth/logout       | —    | —     | —    | Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}. |
+| GET    | /api/health            | —    | —     | —    | Public health check.                                                             |
+| GET    | /api/locations         | Yes  | —     | —    | Lists locations for the active household.                                        |
+| POST   | /api/locations         | Yes  | —     | —    | Creates a new location for the active household.                                 |
+| DELETE | /api/locations/{id}    | Yes  | `id`  | —    | Deletes a location if not referenced by stock.                                   |
+| GET    | /api/me                | Yes  | —     | —    | Returns the current authenticated user.                                          |
+| GET    | /api/settings          | Yes  | —     | —    | Returns the current authenticated user settings.                                 |
+| PATCH  | /api/settings          | Yes  | —     | —    | Updates the current user settings.                                               |
+| GET    | /api/stock             | Yes  | —     | —    | Current inventory for the active household.                                      |
+| GET    | /api/stores            | Yes  | —     | —    | Lists stores for the active household.                                           |
+| POST   | /api/stores            | Yes  | —     | —    | Creates a new store for the active household.                                    |
+| DELETE | /api/stores/{id}       | Yes  | `id`  | —    | Deletes a store if not referenced by purchases or plans.                         |
 
 ## Planned endpoints
 

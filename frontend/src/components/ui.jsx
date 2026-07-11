@@ -76,21 +76,27 @@ export function SkeletonRows({ n = 5 }) {
   )
 }
 
-export function UsageMeter({ usage = AI_USAGE }) {
+export function UsageMeter({ usage }) {
   const { t } = useTranslation()
-  const { pct, remaining, warn, danger } = usageState(usage)
+  const normalized = usage
+    ? { ...usage, limit: usage.limit ?? usage.daily_limit ?? 20 }
+    : AI_USAGE
+  const { pct, remaining, warn, danger } = usageState(normalized)
   const tone = danger ? 'is-danger' : warn ? 'is-warn' : ''
   return (
     <div className="usage">
       <div className="usage__head">
         <div>
-          <div className="usage__title">{usage.provider}</div>
+          <div className="usage__title">{normalized.provider}</div>
           <div className="usage__sub">
-            {t('ui.requestsToday', { used: usage.used, limit: usage.limit })}
+            {t('ui.requestsToday', {
+              used: normalized.used,
+              limit: normalized.limit,
+            })}
           </div>
         </div>
         <div className={`usage__count ${tone}`}>
-          {usage.used}/{usage.limit}
+          {normalized.used}/{normalized.limit}
         </div>
       </div>
       <div className="usage__bar">

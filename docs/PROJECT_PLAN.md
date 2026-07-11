@@ -72,7 +72,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Settings endpoints                            | Not started | P0       | `GET/PATCH /api/settings`                                                  |
 | AI chat endpoint                              | Not started | P0       | `POST /api/ai/chat` with streaming                                         |
 | AI usage endpoint                             | Not started | P0       | `GET /api/ai/usage`                                                        |
-| Input validation with Zod                     | Not started | P0       | Add to all routes                                                          |
+| Input validation with Valibot                 | Not started | P0       | Add to all routes                                                          |
 | Centralized error handling                    | Done        | P1       | `app.onError` catches all unhandled errors; middleware returns JSON errors |
 | Rate limiting                                 | Not started | P1       | Per-user AI and API limits                                                 |
 | Request logging / observability               | Not started | P2       | Structured logs, optional analytics                                        |
@@ -151,7 +151,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 ## P0 Implementation Plan — Pull Request Basis
 
-This plan translates the remaining P0 work into a sequence of user-impact-focused Pull Requests. Each PR delivers a complete, testable piece of functionality and builds on the previous one. Zod validation, centralized error handling, and multi-household isolation are established in PR 1 and extended per PR.
+This plan translates the remaining P0 work into a sequence of user-impact-focused Pull Requests. Each PR delivers a complete, testable piece of functionality and builds on the previous one. Valibot validation, centralized error handling, and multi-household isolation are established in PR 1 and extended per PR.
 
 Dependency order:
 

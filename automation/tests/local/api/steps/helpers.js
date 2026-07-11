@@ -115,4 +115,68 @@ export class ApiContext {
       .filter(Boolean)
     expect(runOutDays).toEqual([3, 7, 14])
   }
+
+  async sendRequestWithBody(method, path, body) {
+    const opts = { method, headers: { 'Content-Type': 'application/json' } }
+    if (this.headers) opts.headers = { ...opts.headers, ...this.headers }
+    if (body != null) opts.body = JSON.stringify(body)
+    this.response = await fetch(`${BASE_URL}${path}`, opts)
+    try {
+      this.responseBody = await this.response.json()
+    } catch {
+      this.responseBody = null
+    }
+  }
+
+  expectSettingsShape() {
+    expect(this.responseBody).toHaveProperty('motion_preference')
+    expect(this.responseBody).toHaveProperty('currency')
+    expect(this.responseBody).toHaveProperty('has_ai_key')
+  }
+
+  expectHasAiKey(value) {
+    expect(this.responseBody.has_ai_key).toBe(value)
+  }
+
+  expectSetting(field, value) {
+    expect(this.responseBody[field]).toBe(value)
+  }
+
+  expectNoAiKeyInResponse() {
+    expect(this.responseBody).not.toHaveProperty('encrypted_ai_key')
+    expect(this.responseBody).not.toHaveProperty('ai_key')
+  }
+
+  expectLocationsArray() {
+    expect(Array.isArray(this.responseBody?.locations)).toBe(true)
+  }
+
+  expectLocationsLength(n) {
+    expect(this.responseBody.locations).toHaveLength(n)
+  }
+
+  expectCreatedLocationLabel(label) {
+    expect(this.responseBody.location).toBeDefined()
+    expect(this.responseBody.location.label).toBe(label)
+  }
+
+  expectStoresArray() {
+    expect(Array.isArray(this.responseBody?.stores)).toBe(true)
+  }
+
+  expectStoresLength(n) {
+    expect(this.responseBody.stores).toHaveLength(n)
+  }
+
+  expectCreatedStoreLabel(label) {
+    expect(this.responseBody.store).toBeDefined()
+    expect(this.responseBody.store.label).toBe(label)
+  }
+
+  expectUsageDefaults() {
+    expect(this.responseBody).toHaveProperty('used')
+    expect(this.responseBody).toHaveProperty('daily_limit')
+    expect(this.responseBody.used).toBe(0)
+    expect(this.responseBody.daily_limit).toBe(20)
+  }
 }

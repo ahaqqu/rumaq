@@ -1,13 +1,11 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import {
-  LOCATIONS,
   STORES,
   STOCK,
   PLAN,
   HISTORY,
   PARSED_RECEIPT,
   formatRp,
-  locLabel,
   storeLabel,
   relUpdated,
   usageState,
@@ -16,9 +14,6 @@ import {
 import { i18n } from '../i18n/index.js'
 
 describe('static data', () => {
-  it('exports LOCATIONS array', () => {
-    expect(Array.isArray(LOCATIONS)).toBe(true)
-  })
   it('exports STORES array', () => {
     expect(Array.isArray(STORES)).toBe(true)
   })
@@ -54,18 +49,6 @@ describe('formatRp', () => {
     const result = formatRp(18500)
     expect(result).toBeTruthy()
     i18n.language = origLang
-  })
-})
-
-describe('locLabel', () => {
-  it('returns label for known location', () => {
-    const label = locLabel('kulkas')
-    expect(typeof label).toBe('string')
-    expect(label.length).toBeGreaterThan(0)
-  })
-
-  it('returns id for unknown location', () => {
-    expect(locLabel('unknown')).toBe('unknown')
   })
 })
 

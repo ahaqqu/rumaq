@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { STOCK, LOCATIONS, locLabel, relUpdated } from '../data/mock.js'
+import { STOCK, relUpdated } from '../data/mock.js'
 import { LocChip, TimeSignal, EmptyState } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
@@ -17,6 +17,11 @@ export function Inventory() {
       .filter((s) => s.name.toLowerCase().includes(q.toLowerCase()))
       .sort((a, b) => a.runOut - b.runOut)
   }, [q, loc])
+
+  const locations = useMemo(
+    () => [...new Set(STOCK.map((s) => s.location))],
+    []
+  )
 
   return (
     <>
@@ -67,14 +72,14 @@ export function Inventory() {
         >
           {t('inventory.all')}
         </button>
-        {LOCATIONS.map((l) => (
+        {locations.map((locId) => (
           <button
-            key={l.id}
+            key={locId}
             className="chip chip--filter"
-            aria-pressed={loc === l.id}
-            onClick={() => setLoc(l.id)}
+            aria-pressed={loc === locId}
+            onClick={() => setLoc(locId)}
           >
-            {l.label}
+            {locId}
           </button>
         ))}
       </div>
@@ -92,7 +97,7 @@ export function Inventory() {
               <div className="row" key={s.id}>
                 <div className="row__main">
                   <div className="row__name">
-                    {s.name} <LocChip loc={locLabel(s.location)} />
+                    {s.name} <LocChip loc={s.location} />
                   </div>
                   <div className="row__meta">
                     <TimeSignal

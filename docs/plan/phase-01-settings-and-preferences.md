@@ -23,9 +23,9 @@ This phase delivers the first fully functional settings backend and removes the 
 4. `GET/POST/DELETE /api/locations` and `GET/POST/DELETE /api/stores` are implemented, household-scoped, and enforce `owner`/`member` role checks (or at least household membership; see Open Questions).
 5. `GET /api/ai/usage` returns today's request count and daily limit for the current user.
 6. The Settings page reads real locations and stores from the API, allows adding/removing them, persists AI provider/key via the API, and shows the real `UsageMeter` from `GET /api/ai/usage`.
-7. All new endpoints use Zod validation and return consistent JSON errors through the existing `app.onError` handler.
+7. All new endpoints use Valibot validation and return consistent JSON errors through the existing `app.onError` handler.
 8. API integration tests cover settings CRUD, encryption round-trip, location/store CRUD, and AI usage counter.
-9. Unit tests cover the encryption helpers and Zod schemas.
+9. Unit tests cover the encryption helpers and Valibot schemas.
 10. `npm test` and `npx tsc --noEmit` pass before the PR is opened.
 
 ---
@@ -50,7 +50,7 @@ This phase delivers the first fully functional settings backend and removes the 
    - Use `crypto.subtle.importKey` with raw key material, derive an AES-GCM key, generate a 96-bit IV, and tag length 128.
    - Format suggestion: `base64url(iv:ciphertext)` or `base64url(iv)|base64url(ciphertext)`. Keep it simple and versioned so future key rotation is possible (e.g., prefix with `v1:`).
 
-2. **Zod schemas** (`backend/src/schemas.ts` or inline in `apps/api.ts`):
+2. **Valibot schemas** (`backend/src/schemas.ts` or inline in `apps/api.ts`):
    - `settingsPatchSchema` for `PATCH /api/settings`.
    - `locationSchema` for `POST /api/locations`.
    - `storeSchema` for `POST /api/stores`.
@@ -185,7 +185,7 @@ Add to `automation/tests/local/api/`:
 | Encryption helper format changes and old keys break                                             | Medium | Prefix ciphertext with `v1:` and write a version-aware decrypt function.                                                                                          |
 | Deleting a location/store referenced by stock/purchases leaves orphan data or fails confusingly | Medium | Return 409 with a message like "Cannot delete location because it is used by X items". Offer to reassign in the UI later.                                         |
 | Frontend and backend language state diverge                                                     | Low    | Either persist language in `user_settings` or keep it in `localStorage` only. Document the decision.                                                              |
-| Zod validation errors leak internal details                                                     | Low    | Use a centralized error formatter that returns only `path` and a generic message.                                                                                 |
+| Valibot validation errors leak internal details                                                 | Low    | Use a centralized error formatter that returns only `path` and a generic message.                                                                                 |
 
 ---
 
@@ -212,7 +212,7 @@ Add to `automation/tests/local/api/`:
 ## Implementation Notes for a Future Session
 
 1. Start with the crypto helpers and unit tests. They are pure and safe to write without touching the UI.
-2. Then implement the backend endpoints with Zod validation and integration tests.
+2. Then implement the backend endpoints with Valibot validation and integration tests.
 3. Then wire the frontend Settings page to the new endpoints.
 4. Finally, run the full test suite (`npm test`, `./scripts/test.sh unit frontend`, `./scripts/test.sh automation-local`) and open the PR.
 

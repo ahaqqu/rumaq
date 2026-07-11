@@ -23,7 +23,7 @@ This phase also introduces the first household-level state that other phases dep
 4. The Inventory page supports search, location filter, urgency sort, and inline quantity updates.
 5. Run-out estimates are computed from purchase history and current quantity when enough data exists; otherwise a sensible default is used.
 6. Stock urgency is visually signalled (green/yellow/red) based on run-out days and expiry.
-7. All endpoints use Zod validation and household-scoped queries.
+7. All endpoints use Valibot validation and household-scoped queries.
 8. API integration tests cover stock queries, run-out calculation, and PATCH validation.
 9. Frontend tests cover Inventory filters, sorting, and updates.
 10. `npm test` and `npx tsc --noEmit` pass.
@@ -60,7 +60,7 @@ This phase also introduces the first household-level state that other phases dep
    - Return fields: `id`, `item_id`, `name`, `qty`, `unit`, `expiry_date`, `run_out_days`, `basis`, `location_id`, `location`.
 
 3. **PATCH /api/stock/:id**:
-   - Zod schema allows `qty` (number, >= 0), `unit` (string, optional), `location_id` (string, optional, must exist in household), `expiry_date` (string date, optional), `name` (string, optional, updates `items.name` canonicalization), `basis` (read-only, ignored).
+   - Valibot schema allows `qty` (number, >= 0), `unit` (string, optional), `location_id` (string, optional, must exist in household), `expiry_date` (string date, optional), `name` (string, optional, updates `items.name` canonicalization), `basis` (read-only, ignored).
    - Validate stock row belongs to the household. Return 404 if not found.
    - If `qty` is 0, keep the row but mark it as empty; optionally archive it later (out of scope).
    - Recalculate `run_out_days` after the update using the same helper.
@@ -194,7 +194,7 @@ Add to `automation/tests/local/api/`:
 
 1. **What is the default `run_out_days` when no history exists?** 30 days is a safe default for most pantry items. Perishable items should rely on expiry date instead.
 2. **Should items be shared across households?** No, `items` is household-scoped. Keep it that way.
-3. **Should we allow negative stock?** No, reject `qty < 0` in Zod validation.
+3. **Should we allow negative stock?** No, reject `qty < 0` in Valibot validation.
 4. **Should PATCH allow renaming the item, and should that rename affect purchase history?** Yes, update `items.name`; it is a canonical label, so history stays linked by `item_id`.
 5. **Should we archive zero-qty stock?** Not in this phase. Keep the row with `qty = 0` and `run_out_days = 0`.
 6. **Should `GET /api/home` include the next shopping plan?** Only if Phase 04 is done. For this phase, return `next_trip: null` or omit it.

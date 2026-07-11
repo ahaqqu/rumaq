@@ -1,6 +1,10 @@
-// TODO: Backend endpoint /api/ai/usage not yet implemented
-// Stub hook — replace with real API call when backend is ready
+import { useQuery } from '@tanstack/react-query'
+import { getAiUsage } from '../api.js'
 
 export function useUsage() {
-  throw new Error('useUsage: /api/ai/usage endpoint not yet implemented')
+  return useQuery({
+    queryKey: ['ai-usage'],
+    queryFn: getAiUsage,
+    staleTime: 1000 * 60,
+  })
 }
