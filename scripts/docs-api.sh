@@ -5,3 +5,4 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$ROOT_DIR"
 npx tsx scripts/generate-api-docs.ts
+npx prettier --write docs/API.md > /dev/null

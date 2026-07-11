@@ -16,16 +16,16 @@ Errors use `{ "error": "..." }`.
 
 ## Implemented endpoints
 
-| Method | Path                     | Auth | Query               | Body                  | Description                                                                                |
-| ------ | ------------------------ | ---- | ------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
-| GET    | /api/auth/callback       | —    | —                   | —                     | Google OAuth callback. Sets rumaq_session and redirects to /. |
-| POST   | /api/auth/email-login    | —    | —                   | —                     | Validates credentials and sets rumaq_session. |
-| GET    | /api/auth/email-status   | —    | —                   | —                     | Reports whether email/password auth is enabled. |
-| GET    | /api/auth/login          | —    | —                   | —                     | Redirects to Google OAuth 2.0 login. |
-| GET    | /api/auth/logout         | —    | —                   | —                     | Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}. |
-| GET    | /api/health              | —    | —                   | —                     | Public health check. |
-| GET    | /api/me                  | Yes  | —                   | —                     | Returns the current authenticated user. |
-| GET    | /api/stock               | Yes  | `location?`, `q?`   | —                     | Current inventory for the active household. |
+| Method | Path                   | Auth | Query             | Body | Description                                                                      |
+| ------ | ---------------------- | ---- | ----------------- | ---- | -------------------------------------------------------------------------------- |
+| GET    | /api/auth/callback     | —    | —                 | —    | Google OAuth callback. Sets rumaq_session and redirects to /.                    |
+| POST   | /api/auth/email-login  | —    | —                 | —    | Validates credentials and sets rumaq_session.                                    |
+| GET    | /api/auth/email-status | —    | —                 | —    | Reports whether email/password auth is enabled.                                  |
+| GET    | /api/auth/login        | —    | —                 | —    | Redirects to Google OAuth 2.0 login.                                             |
+| GET    | /api/auth/logout       | —    | —                 | —    | Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}. |
+| GET    | /api/health            | —    | —                 | —    | Public health check.                                                             |
+| GET    | /api/me                | Yes  | —                 | —    | Returns the current authenticated user.                                          |
+| GET    | /api/stock             | Yes  | `location?`, `q?` | —    | Current inventory for the active household.                                      |
 
 ## Planned endpoints
 
