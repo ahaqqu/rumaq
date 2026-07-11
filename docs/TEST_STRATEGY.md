@@ -29,6 +29,7 @@ Runs every 6 hours via `.github/workflows/smoke.yml`. Two base URLs: `rumaq.page
 
 ## Acceptance criteria
 
+- Meet unit tests coverages criteria
 - New API endpoint → add scenario in `automation/tests/local/api/`
 - New UI flow → add scenario in `automation/tests/local/e2e/`
 - Must pass `./scripts/test-automation-local.sh` and CI before merge

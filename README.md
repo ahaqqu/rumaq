@@ -83,3 +83,16 @@ A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) verifies `ru
 - [`docs/features/persona.md`](docs/features/persona.md) — persona personalisation
 - [`docs/features/internationalisation.md`](docs/features/internationalisation.md) — i18n
 - [`backend/migrations/0001_schema.sql`](backend/migrations/0001_schema.sql) — D1 schema
+
+## Prompt Cheat Sheets
+
+```
+Read and implement docs/plans/api-docs-autogeneration-plan.md in the branch from 'main'. Read docs/ARCHITECTURE.md as an architecture guideline.
+
+The plan and architecture are intents, directions, and guidelines, not strictly must be followed, you are allowed to be critical, verify, or provide better alternatives. 
+Ask and verify anything unclear or has alternative solution. Finalizing the steps by steps first before starting implementation. 
+
+Always confirm to me first before implementing something that deviate from plan or has different architecture.
+
+Meet acceptance criteria in docs/TEST_STRATEGY.md.
+```
