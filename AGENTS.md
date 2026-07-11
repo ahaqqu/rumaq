@@ -13,6 +13,6 @@
 - When implementing a complex or unclear plan from a file, follow the `/guided-implementation` skill.
 - Before merging a PR, ensure the GitHub Action succeeds.
 - When creating new shell scripts or `.js` files with a shebang, make them executable (`chmod +x`) and run `git update-index --chmod=+x` before committing — otherwise CI will fail with `Permission denied`.
-  When asked to update this file, use format: "When <condition>, <action>", keep it concise and clear.
+- When asked to update this file, use format: "When <condition>, <action>", keep it concise and clear.
 - Follow `docs/FRONTEND_CONVENTIONS.md` for frontend coding conventions.
 - Follow `docs/BACKEND_CONVENTIONS.md` for backend coding conventions.
