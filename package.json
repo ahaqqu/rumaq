@@ -17,6 +17,7 @@
     "test:e2e": "bddgen --config automation/playwright.config.js && playwright test --config automation/playwright.config.js",
     "test:docker": "./automation/scripts/test-local.sh",
     "smoke": "./automation/scripts/run-smoke-tests.sh",
+    "docs:api": "./scripts/docs-api.sh",
     "db:setup": "node scripts/setup-db.js",
     "style": "./scripts/style.sh",
     "style:check": "./scripts/style.sh --check",

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
+import { openAPIRouteHandler, describeRoute } from 'hono-openapi'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import {
@@ -19,7 +20,24 @@ const authApp = new Hono<Env>()
 
 authApp.use('*', createCors())
 
-authApp.get('/login', async (c) => {
+authApp.get(
+  '/openapi.json',
+  openAPIRouteHandler(authApp, {
+    documentation: {
+      info: { title: 'RumaQ API', version: '0.1.0' },
+    },
+  })
+)
+
+authApp.get(
+  '/login',
+  describeRoute({
+    description: 'Redirects to Google OAuth 2.0 login.',
+    responses: {
+      302: { description: 'Redirect to Google' },
+    },
+  }),
+  async (c) => {
   const state = randomState()
   const verifier = randomState()
   const redirectUri = `${new URL(c.req.url).origin}/api/auth/callback`
@@ -50,7 +68,16 @@ authApp.get('/login', async (c) => {
   return c.redirect(`${GOOGLE_AUTH_URL}?${params.toString()}`)
 })
 
-authApp.get('/callback', async (c) => {
+authApp.get(
+  '/callback',
+  describeRoute({
+    description: 'Google OAuth callback. Sets rumaq_session and redirects to /.',
+    responses: {
+      302: { description: 'Redirect to app' },
+      400: { description: 'Bad request' },
+    },
+  }),
+  async (c) => {
   const { code, state } = c.req.query()
   const cookie = getCookie(c, 'rumaq_oauth_state') || ''
   deleteCookie(c, 'rumaq_oauth_state')
@@ -186,7 +213,19 @@ authApp.get('/callback', async (c) => {
   return c.redirect(c.env.PAGES_ORIGIN || '/')
 })
 
-authApp.all('/logout', (c) => {
+authApp.all(
+  '/logout',
+  describeRoute({
+    description: 'Clears the session cookie. POST returns { ok: true }; GET redirects to /.',
+    responses: {
+      200: {
+        description: 'OK',
+        content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' } } } } },
+      },
+      302: { description: 'Redirect to origin (GET)' },
+    },
+  }),
+  (c) => {
   setCookie(c, COOKIE_NAME, '', {
     path: '/',
     httpOnly: true,
@@ -200,7 +239,21 @@ authApp.all('/logout', (c) => {
   return c.json({ ok: true })
 })
 
-authApp.post('/email-login', async (c) => {
+authApp.post(
+  '/email-login',
+  describeRoute({
+    description: 'Validates credentials and sets rumaq_session.',
+    responses: {
+      200: {
+        description: 'OK',
+        content: { 'application/json': { schema: { type: 'object', properties: { ok: { type: 'boolean' } } } } },
+      },
+      400: { description: 'Missing email or password' },
+      401: { description: 'Invalid email or password' },
+      403: { description: 'Email auth is disabled' },
+    },
+  }),
+  async (c) => {
   if (c.env.EMAIL_AUTH_ENABLED !== 'true') {
     return c.json({ error: 'Email auth is disabled' }, 403)
   }
