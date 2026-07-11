@@ -13,4 +13,5 @@
 
 # pr-creation
 - Creating a PR while the style/test gate is red is acceptable; only merging requires green gates. PR readiness should be based on acceptance criteria in docs/TEST_STRATEGY.md. Confidence: 0.80
+- PR body/description must not be empty; include a meaningful description explaining the change. Confidence: 0.70
 
