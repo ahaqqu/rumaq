@@ -26,16 +26,45 @@ Scope: the resource or route touched
 
 The PR description is the body shown in GitHub. Write it in Markdown with the following sections in order:
 
-- **Why:** concise and clear objectives for the changes.
-- **Summary:** summary of the changes, not a list of files.
-- **Architecture:** architectural changes.
-- **Backend:** backend changes with automation test proof.
-- **Frontend:** frontend changes with automation test proof.
-- **Security Review:** security implications of the actual changes.
-- **Performance Review:** performance implications of the actual changes.
-- **Acceptance Criteria:** checklist of acceptance criteria met or not, based on `docs/TEST_STRATEGY.md`.
-- **Documentation:** checklist of documentation updated or added.
-- **Limitations & Warnings:** any limitations or warnings.
+## Why
+
+Concise and clear objectives for the changes.
+
+## Summary
+
+Summary of the changes, not a list of files.
+
+## Architecture
+
+Architectural changes. Write `None` if none.
+
+## Backend
+
+Backend changes with automation test proof. Write `None` if none.
+
+## Frontend
+
+Frontend changes with automation test proof. Write `None` if none.
+
+## Security Review
+
+Security implications of the actual changes. Write `None` if none.
+
+## Performance Review
+
+Performance implications of the actual changes. Write `None` if none.
+
+## Acceptance Criteria
+
+Checklist of acceptance criteria met or not, based on `docs/TEST_STRATEGY.md`.
+
+## Documentation
+
+Checklist of documentation updated or added.
+
+## Limitations & Warnings
+
+Any limitations or warnings, or `None`.
 
 All sections must be written. Write `None` if there are no relevant changes for that section.
 

@@ -1,7 +1,7 @@
 import { writeFileSync } from 'node:fs'
 import { generateSpecs } from 'hono-openapi'
-import { apiApp } from '../backend/src/apps/api.js'
-import { authApp } from '../backend/src/apps/auth.js'
+import { apiApp } from '../../backend/src/apps/api.js'
+import { authApp } from '../../backend/src/apps/auth.js'
 
 const DOCS_OPTIONS = {
   documentation: {
