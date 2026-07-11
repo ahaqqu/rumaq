@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+SUITE="${1:-all}"
+shift || true
+
+case "$SUITE" in
+  unit)
+    exec "$ROOT_DIR/scripts/test/unit.sh" "$@"
+    ;;
+  automation-local)
+    exec "$ROOT_DIR/scripts/test/automation-local.sh" "$@"
+    ;;
+  automation-live)
+    exec "$ROOT_DIR/scripts/test/automation-live.sh" "$@"
+    ;;
+  all)
+    "$ROOT_DIR/scripts/test/unit.sh" "$@"
+    "$ROOT_DIR/scripts/test/automation-local.sh" "$@"
+    "$ROOT_DIR/scripts/test/automation-live.sh" "$@"
+    ;;
+  *)
+    echo "Usage: $0 [unit|automation-local|automation-live|all]"
+    exit 1
+    ;;
+esac

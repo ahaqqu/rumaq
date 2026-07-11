@@ -54,10 +54,10 @@ High-level objectives and defaults for backend work. Prefer these over one-off c
 
 ## API documentation
 
-- `docs/API.md` is auto-generated from route definitions via `./scripts/docs-api.sh`.
+- `docs/API.md` is auto-generated from route definitions via `./scripts/docs.sh`.
 - Do not edit `docs/API.md` manually — regenerate it after adding, removing, or changing routes.
 - Use `describeRoute` from `hono-openapi` to annotate each handler with a description, response schemas, and security requirements so the generated doc is accurate.
-- Run `./scripts/docs-api.sh` before committing backend route changes that affect the public API surface.
+- Run `./scripts/docs.sh` before committing backend route changes that affect the public API surface.
 
 ## Dependencies
 

@@ -10,7 +10,7 @@ Use this skill whenever creating or opening a pull request in this repository.
 4. Read `docs/` (`README.md` and all `.md` files), validate them against the code, and update whichever side is out of sync so they stay consistent.
 5. Ensure all acceptance criteria in `docs/TEST_STRATEGY.md` pass.
 6. Run `./scripts/style.sh` to auto-format and lint-fix (use `./scripts/style.sh --check` to verify without writing).
-7. Run `./scripts/test-unit.sh`.
+7. Run `./scripts/test.sh unit`.
 8. Create the PR when the acceptance criteria in `docs/TEST_STRATEGY.md` are met.
 
 ## PR Title Format
@@ -26,16 +26,48 @@ Scope: the resource or route touched
 
 The PR description is the body shown in GitHub. Write it in Markdown with the following sections in order:
 
-- **Why:** concise and clear objectives for the changes.
-- **Summary:** summary of the changes, not a list of files.
-- **Architecture:** architectural changes.
-- **Backend:** backend changes with automation test proof.
-- **Frontend:** frontend changes with automation test proof.
-- **Security Review:** security implications of the actual changes.
-- **Performance Review:** performance implications of the actual changes.
-- **Acceptance Criteria:** checklist of acceptance criteria met or not, based on `docs/TEST_STRATEGY.md`.
-- **Documentation:** checklist of documentation updated or added.
-- **Limitations & Warnings:** any limitations or warnings.
+## Context
+
+**As** <role>
+**Given** <current situation>
+**When** <change is applied>
+**Then** <expected outcome>
+
+## Summary
+
+Clear and concise summary of the changes, not a list of files.
+
+## Architecture
+
+Architectural changes. Write `None` if none.
+
+## Backend
+
+Backend changes with automation test proof. Write `None` if none.
+
+## Frontend
+
+Frontend changes with automation test proof. Write `None` if none.
+
+## Security Review
+
+Security implications of the actual changes. Write `None` if none.
+
+## Performance Review
+
+Performance implications of the actual changes. Write `None` if none.
+
+## Acceptance Criteria
+
+Checklist of acceptance criteria met or not, based on `docs/TEST_STRATEGY.md`.
+
+## Documentation
+
+Checklist of documentation updated or added.
+
+## Limitations & Warnings
+
+Any limitations or warnings, or `None`.
 
 All sections must be written. Write `None` if there are no relevant changes for that section.
 

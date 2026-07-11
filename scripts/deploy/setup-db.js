@@ -1,13 +1,4 @@
 #!/usr/bin/env node
-/**
- * RumaQ D1 setup script
- *
- * Usage:
- *   node scripts/setup-db.js [database-name]
- *
- * Defaults to "rumaq". The script creates the D1 database (if it does not exist)
- * and applies migrations from backend/migrations/.
- */
 
 import { spawnSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -43,13 +34,11 @@ function runCapture(command, args = []) {
 
 console.log(`Setting up RumaQ D1 database: ${DB_NAME}\n`)
 
-// Verify wrangler is installed.
 if (runCapture('wrangler', ['--version']).status !== 0) {
   console.error('wrangler CLI is not installed. Run: npm install -g wrangler')
   process.exit(1)
 }
 
-// Verify migrations directory exists.
 if (!existsSync(MIGRATIONS_DIR)) {
   console.error(`Migrations directory not found: ${MIGRATIONS_DIR}`)
   process.exit(1)
@@ -63,7 +52,6 @@ if (!existsSync(WRANGLER_TOML)) {
   process.exit(1)
 }
 
-// Check whether the database already exists.
 const list = runCapture('wrangler', ['d1', 'list', '--config', WRANGLER_TOML])
 if (list.status !== 0) {
   console.error(
@@ -97,7 +85,6 @@ if (!hasDb) {
   console.log(`Database "${DB_NAME}" already exists.`)
 }
 
-// Apply migrations.
 console.log('Applying migrations...')
 const LOCAL_TOML = resolve('backend', 'wrangler.local.toml')
 run(

@@ -9,8 +9,8 @@ set -euo pipefail
 #   automation/scripts/run-smoke-tests.sh
 #
 # Usage:
-#   ./scripts/trigger-smoke.sh              # run with saved session secret
-#   ./scripts/trigger-smoke.sh --watch       # stream logs while waiting
+#   ./scripts/github/trigger-smoke.sh              # run with saved session secret
+#   ./scripts/github/trigger-smoke.sh --watch       # stream logs while waiting
 #
 # Prerequisites:
 #   - `gh` CLI installed and authenticated

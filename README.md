@@ -44,17 +44,6 @@ Prepares config, dependencies, database, and build, then starts dev servers on `
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architecture, auth flow, and free-tier limits.
 
-### Testing
-
-```bash
-./scripts/test-unit.sh             # unit tests (Vitest)
-./scripts/test-automation-local.sh # integration + E2E in Docker (Miniflare + Playwright)
-```
-
-See [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md).
-
----
-
 ## For cloud ops
 
 ### Deploy
@@ -69,20 +58,17 @@ Creates D1 database and R2 bucket if missing, deploys Worker and Pages. Idempote
 
 A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) verifies `rumaq.pages.dev` and `api.rumaq.workers.dev` every 6 hours — includes API health checks and a Playwright login/logout test via email form. On failure, a `smoke-failure` issue is auto-created.
 
-```bash
-./scripts/test-automation-live.sh
-```
-
 ---
 
-## Further docs
+## Scripts
 
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — full-stack architecture
-- [`docs/API.md`](docs/API.md) — REST API contract
-- [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) — testing strategy
-- [`docs/features/persona.md`](docs/features/persona.md) — persona personalisation
-- [`docs/features/internationalisation.md`](docs/features/internationalisation.md) — i18n
-- [`backend/migrations/0001_schema.sql`](backend/migrations/0001_schema.sql) — D1 schema
+| Script              | When to use                                                                  | How to use                                                                                        | What it does                                                                                                                   |
+| ------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `scripts/build.sh`  | Before deployment or to verify the frontend compiles                         | `./scripts/build.sh`                                                                              | Builds the frontend (Vite)                                                                                                     |
+| `scripts/deploy.sh` | Setting up local dev, deploying to Cloudflare, or dry-running a build        | `./scripts/deploy.sh` for local dev, `./scripts/deploy.sh cloudflare` for production              | Idempotent — prepares config, deps, database; starts dev servers or deploys Worker + Pages                                     |
+| `scripts/docs.sh`   | After adding/changing API endpoints to regenerate docs/API.md                | `./scripts/docs.sh`                                                                               | Generates REST API docs from Hono route definitions and formats with Prettier                                                  |
+| `scripts/style.sh`  | Before committing to check or fix formatting and lint                        | `./scripts/style.sh` to fix, `./scripts/style.sh --check` to verify                               | Runs Prettier and ESLint across the repo                                                                                       |
+| `scripts/test.sh`   | Running any test suite — unit, automation-local (Docker), or automation-live | `./scripts/test.sh unit`, `./scripts/test.sh unit frontend`, `./scripts/test.sh automation-local` | Dispatches to the appropriate test runner (Vitest, Playwright, Cucumber). See [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) |
 
 ## Agent skills
 
@@ -100,3 +86,14 @@ Use whenever creating a PR. It creates a branch, analyzes security and performan
 ### `/guided-implementation`
 
 Use when asked to implement a plan that may be ambiguous, cross-cutting, or architectural. It reads the plan, `docs/ARCHITECTURE.md`, and `docs/TEST_STRATEGY.md`; analyzes the plan critically; proposes a step-by-step implementation; and waits for your confirmation before deviating from the plan or making architecture changes. See [`.commandcode/skills/guided-implementation/SKILL.md`](.commandcode/skills/guided-implementation/SKILL.md).
+
+---
+
+## Further docs
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — full-stack architecture
+- [`docs/API.md`](docs/API.md) — REST API contract
+- [`docs/TEST_STRATEGY.md`](docs/TEST_STRATEGY.md) — testing strategy
+- [`docs/features/persona.md`](docs/features/persona.md) — persona personalisation
+- [`docs/features/internationalisation.md`](docs/features/internationalisation.md) — i18n
+- [`backend/migrations/0001_schema.sql`](backend/migrations/0001_schema.sql) — D1 schema
