@@ -11,6 +11,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  style:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: bash ./scripts/style.sh
+
+      - name: Ensure no uncommitted changes
+        run: git diff --exit-code
+
   test-frontend:
     runs-on: ubuntu-latest
     steps:
