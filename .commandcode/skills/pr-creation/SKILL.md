@@ -44,6 +44,5 @@ All sections must be written. Write `None` if there are no relevant changes for 
 - Ensure acceptance criteria in `docs/TEST_STRATEGY.md` are met before creating the PR.
 - Never merge your own PR — submit for human review only.
 - Never create a PR with a dirty working tree (must be committed).
-- Never add a co-author.
 - Always create a PR even for trivial changes — every change needs a review trail.
 - If a human-review gate was triggered (destructive migration, new dependency, auth change), state it prominently in **Limitations & Warnings**.
