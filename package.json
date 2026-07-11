@@ -37,6 +37,7 @@
     "esbuild": "^0.28.1",
     "eslint": "^9.39.5",
     "eslint-plugin-import": "^2.32.0",
+    "hono": "^4.12.29",
     "jest-cucumber": "^4.5.0",
     "miniflare": "^4.20260708.1",
     "playwright-bdd": "^9.2.0",
