@@ -11,7 +11,7 @@ Use this skill whenever creating or opening a pull request in this repository.
 5. Ensure all acceptance criteria in `docs/TEST_STRATEGY.md` pass.
 6. Run `./scripts/style.sh` to auto-format and lint-fix (use `./scripts/style.sh --check` to verify without writing).
 7. Run `./scripts/test-unit.sh`.
-8. Create the PR only when the full gate is green.
+8. Create the PR when the acceptance criteria in `docs/TEST_STRATEGY.md` are met.
 
 ## PR Title Format
 
@@ -41,7 +41,7 @@ All sections must be written. Write `None` if there are no relevant changes for 
 
 ## PR Rules (non-negotiable)
 
-- Never create a PR while the full gate is red.
+- Ensure acceptance criteria in `docs/TEST_STRATEGY.md` are met before creating the PR.
 - Never merge your own PR — submit for human review only.
 - Never create a PR with a dirty working tree (must be committed).
 - Never add a co-author.
