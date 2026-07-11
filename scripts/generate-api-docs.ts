@@ -8,7 +8,11 @@ const DOCS_OPTIONS = {
     info: { title: 'RumaQ API', version: '0.1.0' },
     components: {
       securitySchemes: {
-        cookieAuth: { type: 'apiKey' as const, in: 'cookie' as const, name: 'rumaq_session' },
+        cookieAuth: {
+          type: 'apiKey' as const,
+          in: 'cookie' as const,
+          name: 'rumaq_session',
+        },
       },
     },
   },
@@ -70,7 +74,9 @@ function extractEntries(paths: Record<string, any>): PathEntry[] {
       })
     }
   }
-  entries.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
+  entries.sort(
+    (a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method)
+  )
   return entries
 }
 
@@ -129,7 +135,8 @@ async function main() {
     ...allPaths['/logout'],
     get: {
       operationId: 'getLogout',
-      description: 'Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}.',
+      description:
+        'Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}.',
       responses: {
         '200': { description: 'OK' },
         '302': { description: 'Redirect (GET)' },
