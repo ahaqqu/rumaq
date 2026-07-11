@@ -165,7 +165,7 @@ setup_database_remote() {
   db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2> /dev/null || true)
 
   if [[ $db_id == "YOUR_DATABASE_ID" || -z $db_id ]]; then
-    db_id=$(node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" d1-setup)
+    db_id=$(node --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" d1-setup)
     if [[ -n $db_id ]]; then
       sed -i "s|database_id = \".*\"|database_id = \"$db_id\"|" "$config_file"
       ok "Updated database_id in wrangler.cloudflare.toml."
@@ -186,7 +186,7 @@ ensure_r2_bucket() {
   local bucket_name="${R2_BUCKET_NAME:-rumaq-receipts}"
   info "Ensuring R2 bucket \"${bucket_name}\"..."
   cd "$BACKEND_DIR"
-  result=$(node --no-deprecation "$ROOT_DIR/scripts/deploy-cf.js" r2-ensure)
+  result=$(node --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" r2-ensure)
   if [[ $result == "EXISTS" ]]; then
     ok "R2 bucket \"$bucket_name\" already exists."
   else

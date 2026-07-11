@@ -75,7 +75,6 @@ async function pagesBindings() {
   const dbName = process.env.D1_DATABASE_NAME || 'rumaq'
   const bucketName = process.env.R2_BUCKET_NAME || 'rumaq-receipts'
 
-  // Get database ID
   const dbs = await cf.d1.database.list({ account_id: accountId })
   const db = dbs.result?.find((d) => d.name === dbName)
   if (!db) {
@@ -83,14 +82,12 @@ async function pagesBindings() {
     process.exit(1)
   }
 
-  // Get current project to preserve existing config
   const project = await cf.pages.projects.get(projectName, {
     account_id: accountId,
   })
   const prod = project.deployment_configs?.production || {}
   const preview = project.deployment_configs?.preview || {}
 
-  // Pages API uses dictionary format: binding name is the key
   const d1Databases = { ...(prod.d1_databases || {}), DB: { id: db.uuid } }
   const r2Buckets = {
     ...(prod.r2_buckets || {}),

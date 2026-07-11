@@ -10,7 +10,7 @@ Use this skill whenever creating or opening a pull request in this repository.
 4. Read `docs/` (`README.md` and all `.md` files), validate them against the code, and update whichever side is out of sync so they stay consistent.
 5. Ensure all acceptance criteria in `docs/TEST_STRATEGY.md` pass.
 6. Run `./scripts/style.sh` to auto-format and lint-fix (use `./scripts/style.sh --check` to verify without writing).
-7. Run `./scripts/test-unit.sh`.
+7. Run `./scripts/test.sh unit`.
 8. Create the PR when the acceptance criteria in `docs/TEST_STRATEGY.md` are met.
 
 ## PR Title Format

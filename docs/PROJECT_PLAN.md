@@ -82,7 +82,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item                            | Status      | Priority | Notes                                                                           |
 | ------------------------------- | ----------- | -------- | ------------------------------------------------------------------------------- |
 | Relational schema design        | Done        | P0       | `backend/migrations/0001_schema.sql`                                            |
-| Migration runner / setup script | Done        | P0       | `scripts/setup-db.js`                                                           |
+| Migration runner / setup script | Done        | P0       | `scripts/deploy/setup-db.js`                                                    |
 | Seed default locations & stores | Done        | P0       | Kulkas, Freezer, Lemari, Rak + Indomaret, Alfamart, Pasar on household creation |
 | Run-out estimate computation    | Not started | P0       | SQL/view or Worker logic from purchase history                                  |
 | Index tuning                    | Partial     | P0       | Basic indexes in schema; validate with query patterns                           |
@@ -125,7 +125,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | ----------------------------------- | ----------- | -------- | -------------------------------------------------------- |
 | Cloudflare Pages deployment config  | Partial     | P0       | Vite build ready; need `wrangler pages deploy`           |
 | Cloudflare Worker deployment config | Partial     | P0       | `backend/wrangler.toml.example`; user must copy and fill |
-| D1 database creation guide          | Done        | P0       | `scripts/setup-db.js` + README                           |
+| D1 database creation guide          | Done        | P0       | `scripts/deploy/setup-db.js` + README                    |
 | R2 bucket creation guide            | Not started | P0       | Add to README or script                                  |
 | GitHub Actions CI                   | Done        | P1       | Unit tests + build on push/PR to main                    |
 | Test automation CI                  | Done        | P1       | Docker-based integration/E2E tests on push/PR to main    |

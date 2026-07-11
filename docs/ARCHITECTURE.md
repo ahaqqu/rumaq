@@ -243,7 +243,7 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 1. Create the D1 database:
 
    ```bash
-   node scripts/deploy-cf.js d1-setup
+   node scripts/deploy/deploy-cf.js d1-setup
    ```
 
    Copy the returned UUID into `backend/wrangler.cloudflare.toml` as `database_id`.
@@ -257,7 +257,7 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 3. Create the R2 bucket:
 
    ```bash
-   node scripts/deploy-cf.js r2-ensure
+   node scripts/deploy/deploy-cf.js r2-ensure
    ```
 
 4. Deploy (builds + deploys Worker, then builds frontend with Worker URL, deploys static assets to Pages):

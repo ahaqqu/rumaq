@@ -6,7 +6,7 @@ set -euo pipefail
 # This is what the smoke.yml GitHub Actions workflow calls.
 #
 # To trigger this remotely from a dev machine, use:
-#   scripts/trigger-smoke.sh
+#   scripts/github/trigger-smoke.sh
 # ============================================================
 
 ROOT_DIR="$(cd "$(dirname "$0")/../.." && pwd)"
