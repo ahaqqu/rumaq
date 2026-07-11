@@ -11,7 +11,7 @@ Use this skill whenever creating or opening a pull request in this repository.
 5. Ensure all acceptance criteria in `docs/TEST_STRATEGY.md` pass.
 6. Run `./scripts/style.sh` to auto-format and lint-fix (use `./scripts/style.sh --check` to verify without writing).
 7. Run `./scripts/test-unit.sh`.
-8. Create the PR only when the full gate is green.
+8. Create the PR when the acceptance criteria in `docs/TEST_STRATEGY.md` are met.
 
 ## PR Title Format
 
@@ -22,9 +22,9 @@ Use this skill whenever creating or opening a pull request in this repository.
 Types: `feat` · `fix` · `refactor` · `docs` · `chore`
 Scope: the resource or route touched
 
-## PR Description Format
+## PR Description / Body Format
 
-Write the PR description in Markdown with the following sections in order:
+The PR description is the body shown in GitHub. Write it in Markdown with the following sections in order:
 
 - **Why:** concise and clear objectives for the changes.
 - **Summary:** summary of the changes, not a list of files.
@@ -41,9 +41,9 @@ All sections must be written. Write `None` if there are no relevant changes for 
 
 ## PR Rules (non-negotiable)
 
-- Never create a PR while the full gate is red.
+- Ensure acceptance criteria in `docs/TEST_STRATEGY.md` are met before creating the PR.
+- PR title and PR body/description must follow the formats defined above.
 - Never merge your own PR — submit for human review only.
 - Never create a PR with a dirty working tree (must be committed).
-- Never add a co-author.
 - Always create a PR even for trivial changes — every change needs a review trail.
 - If a human-review gate was triggered (destructive migration, new dependency, auth change), state it prominently in **Limitations & Warnings**.

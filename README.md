@@ -84,15 +84,19 @@ A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) verifies `ru
 - [`docs/features/internationalisation.md`](docs/features/internationalisation.md) — i18n
 - [`backend/migrations/0001_schema.sql`](backend/migrations/0001_schema.sql) — D1 schema
 
-## Prompt Cheat Sheets
+## Agent skills
 
-```
-Read and implement docs/plans/api-docs-autogeneration-plan.md in the branch from 'main'. Read docs/ARCHITECTURE.md as an architecture guideline.
+This project uses agent skills to keep complex workflows consistent. Invoke them with `/<skill-name>`.
 
-The plan and architecture are intents, directions, and guidelines, not strictly must be followed, you are allowed to be critical, verify, or provide better alternatives.
-Ask and verify anything unclear or has alternative solution. Finalizing the steps by steps first before starting implementation.
+| Skill                    | When to use                                                   | How to use                                              | Benefit                                                                            |
+| ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| `/pr-creation`           | Creating or opening a pull request                            | Mention or invoke `/pr-creation`                        | Ensures a green gate, proper description, and review rules before submitting       |
+| `/guided-implementation` | Implementing a difficult or unclear plan from a markdown file | Invoke `/guided-implementation` with the plan file path | Confirms the high-level approach before coding and protects architecture decisions |
 
-Always confirm to me first before implementing something that deviate from plan or has different architecture.
+### `/pr-creation`
 
-Meet acceptance criteria in docs/TEST_STRATEGY.md.
-```
+Use whenever creating a PR. It creates a branch, analyzes security and performance, runs the full gate (lint, style, tests), validates docs, and writes the PR description. See [`.commandcode/skills/pr-creation/SKILL.md`](.commandcode/skills/pr-creation/SKILL.md).
+
+### `/guided-implementation`
+
+Use when asked to implement a plan that may be ambiguous, cross-cutting, or architectural. It reads the plan, `docs/ARCHITECTURE.md`, and `docs/TEST_STRATEGY.md`; analyzes the plan critically; proposes a step-by-step implementation; and waits for your confirmation before deviating from the plan or making architecture changes. See [`.commandcode/skills/guided-implementation/SKILL.md`](.commandcode/skills/guided-implementation/SKILL.md).
