@@ -13,4 +13,3 @@
 - When asked to update this file, keep it concise and clear.
 - Follow `docs/FRONTEND_CONVENTIONS.md` for frontend coding conventions.
 - Follow `docs/BACKEND_CONVENTIONS.md` for backend coding conventions.
-
