@@ -22,7 +22,9 @@ test('login and logout with alice@rumaq.dev', async ({ page }) => {
   await page.waitForURL(`${APP}/`, { timeout: 15_000 })
 
   // 5. Verify Alice is shown (logged in)
-  await expect(page.locator('body')).toContainText(/Alice|alice/, { timeout: 10_000 })
+  await expect(page.locator('body')).toContainText(/Alice|alice/, {
+    timeout: 10_000,
+  })
 
   // 6. Logout — navigate to logout URL
   await page.goto(`${API}/api/auth/logout`, {
@@ -30,9 +32,12 @@ test('login and logout with alice@rumaq.dev', async ({ page }) => {
   })
 
   // 7. Should redirect back to the app
-  await expect(page).toHaveURL(new RegExp(APP.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), {
-    timeout: 10_000,
-  })
+  await expect(page).toHaveURL(
+    new RegExp(APP.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
+    {
+      timeout: 10_000,
+    }
+  )
 
   // 8. Should see login page (email form) — no longer logged in
   await page.waitForSelector('input#email', { timeout: 10_000 })

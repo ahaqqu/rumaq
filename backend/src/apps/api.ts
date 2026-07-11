@@ -23,12 +23,18 @@ apiApp.onError((err, c) => {
 })
 
 apiApp.get('/api/health', (c) => {
-  c.res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+  c.res.headers.set(
+    'Cache-Control',
+    'public, max-age=60, stale-while-revalidate=300'
+  )
   return c.json({ ok: true })
 })
 
 apiApp.get('/api/auth/email-status', (c) => {
-  c.res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+  c.res.headers.set(
+    'Cache-Control',
+    'public, max-age=60, stale-while-revalidate=300'
+  )
   return c.json({ enabled: c.env.EMAIL_AUTH_ENABLED === 'true' })
 })
 
@@ -36,7 +42,9 @@ apiApp.use('/api/me', propsAuthMiddleware)
 apiApp.use('/api/stock', propsAuthMiddleware)
 
 apiApp.get('/api/me', async (c) => {
-  const user = await c.env.DB.prepare('SELECT id, email, name, picture FROM users WHERE id = ?')
+  const user = await c.env.DB.prepare(
+    'SELECT id, email, name, picture FROM users WHERE id = ?'
+  )
     .bind(c.get('userId'))
     .first()
   const res = c.json({ user })
@@ -65,7 +73,9 @@ apiApp.get('/api/stock', zValidator('query', stockQuery), async (c) => {
 
   sql += ' ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date'
 
-  const { results } = await c.env.DB.prepare(sql).bind(...params).all()
+  const { results } = await c.env.DB.prepare(sql)
+    .bind(...params)
+    .all()
   const res = c.json({ stock: results })
   res.headers.set('Cache-Control', 'private, no-cache')
   return res

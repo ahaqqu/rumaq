@@ -45,13 +45,15 @@ Example shape:
 ```ts
 import { openApi } from 'hono-openapi'
 
-apiApp.use(openApi({
-  endpoint: '/openapi.json',
-  info: {
-    title: 'RumaQ API',
-    version: '0.1.0',
-  },
-}))
+apiApp.use(
+  openApi({
+    endpoint: '/openapi.json',
+    info: {
+      title: 'RumaQ API',
+      version: '0.1.0',
+    },
+  })
+)
 ```
 
 Choose a path that does not conflict with real API routes. `/api/openapi.json` is fine because the app is mounted under `/api/*`.
@@ -66,7 +68,10 @@ Example for `/api/health`:
 
 ```ts
 apiApp.get('/api/health', (c) => {
-  c.res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
+  c.res.headers.set(
+    'Cache-Control',
+    'public, max-age=60, stale-while-revalidate=300'
+  )
   return c.json({ ok: true })
 })
 ```
@@ -94,6 +99,7 @@ If full response schemas feel too heavy for the MVP, start with only `describeRo
 Create `scripts/generate-api-docs.mjs`:
 
 Responsibilities:
+
 1. Start the backend in a temporary local mode, or import the `apiApp` and `authApp` and call the OpenAPI endpoint handler directly.
 2. Fetch `/api/openapi.json`.
 3. Convert the OpenAPI document into the concise Markdown format used today.

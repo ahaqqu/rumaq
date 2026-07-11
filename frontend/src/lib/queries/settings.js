@@ -6,5 +6,7 @@ export function useSettings() {
 }
 
 export function useUpdateSettings() {
-  throw new Error('useUpdateSettings: /api/settings endpoint not yet implemented')
+  throw new Error(
+    'useUpdateSettings: /api/settings endpoint not yet implemented'
+  )
 }

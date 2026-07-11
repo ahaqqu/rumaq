@@ -6,7 +6,10 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '../..')
 
-const vitestJsonPath = resolve(ROOT, 'automation/test-results/vitest/api-results.json')
+const vitestJsonPath = resolve(
+  ROOT,
+  'automation/test-results/vitest/api-results.json'
+)
 const playwrightReportDir = resolve(ROOT, 'automation/test-results/playwright')
 const outputPath = resolve(ROOT, 'automation/test-results/test-report.html')
 
@@ -56,37 +59,53 @@ function generateHtml(vitest) {
     const fileName = basename(file.name ?? '', '.test.js')
       .replace(/\.spec$/, '')
       .replace(/[-_]/g, ' ')
-      .replace(/\b\w/g, c => c.toUpperCase())
+      .replace(/\b\w/g, (c) => c.toUpperCase())
 
     // Group by ancestorTitles (first element = scenario)
     const groups = {}
     for (const t of tests) {
       const key = (t.ancestorTitles ?? ['']).join(' > ')
-      if (!groups[key]) groups[key] = { ancestor: t.ancestorTitles ?? [], tests: [] }
+      if (!groups[key])
+        groups[key] = { ancestor: t.ancestorTitles ?? [], tests: [] }
       groups[key].tests.push(t)
     }
 
     for (const [groupKey, group] of Object.entries(groups)) {
       const scenario = group.ancestor[0] ?? groupKey
-      const steps = group.tests.map(t => {
-        const status = t.status === 'passed' ? 'passed' : t.status === 'failed' ? 'failed' : 'skipped'
-        const prefix = stepPrefix(t.title)
-        const failureMsg = t.failureMessages?.length ? t.failureMessages[0] : ''
-        const errorBlock = failureMsg
-          ? `<details class="error-detail"><summary>details</summary><pre>${esc(failureMsg.slice(0, 500))}</pre></details>`
-          : ''
-        return `<div class="step ${status}">
+      const steps = group.tests
+        .map((t) => {
+          const status =
+            t.status === 'passed'
+              ? 'passed'
+              : t.status === 'failed'
+                ? 'failed'
+                : 'skipped'
+          const prefix = stepPrefix(t.title)
+          const failureMsg = t.failureMessages?.length
+            ? t.failureMessages[0]
+            : ''
+          const errorBlock = failureMsg
+            ? `<details class="error-detail"><summary>details</summary><pre>${esc(failureMsg.slice(0, 500))}</pre></details>`
+            : ''
+          return `<div class="step ${status}">
           <span class="step-icon">${status === 'passed' ? '✓' : status === 'failed' ? '✗' : '○'}</span>
           ${prefix ? `<span class="step-keyword">${prefix}</span>` : ''}
           <span class="step-text">${esc(t.title)}</span>
           ${errorBlock}
         </div>`
-      }).join('\n')
+        })
+        .join('\n')
 
-      const groupPassed = group.tests.every(t => t.status === 'passed')
-      const groupFailed = group.tests.some(t => t.status === 'failed')
-      const groupSkipped = group.tests.some(t => t.status === 'pending' || t.status === 'skipped')
-      const groupStatus = groupFailed ? 'failed' : groupPassed ? 'passed' : 'skipped'
+      const groupPassed = group.tests.every((t) => t.status === 'passed')
+      const groupFailed = group.tests.some((t) => t.status === 'failed')
+      const groupSkipped = group.tests.some(
+        (t) => t.status === 'pending' || t.status === 'skipped'
+      )
+      const groupStatus = groupFailed
+        ? 'failed'
+        : groupPassed
+          ? 'passed'
+          : 'skipped'
 
       scenarioHtml += `<div class="scenario ${groupStatus}">
         <div class="scenario-header">

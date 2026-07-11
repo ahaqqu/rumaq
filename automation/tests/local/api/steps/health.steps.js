@@ -1,10 +1,16 @@
 import { describe, test as it } from 'vitest'
-import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
+import {
+  setJestCucumberConfiguration,
+  loadFeature,
+  defineFeature,
+} from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
 
-const feature = loadFeature('automation/tests/local/api/features/health.feature')
+const feature = loadFeature(
+  'automation/tests/local/api/features/health.feature'
+)
 
 defineFeature(feature, (test) => {
   test('Health check returns ok', ({ given, when, then, and }) => {
@@ -25,7 +31,12 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Health check returns public cache headers', ({ given, when, then, and }) => {
+  test('Health check returns public cache headers', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
     const ctx = new ApiContext()
 
     given('the API is running', () => {})

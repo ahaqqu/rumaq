@@ -20,7 +20,9 @@ describe('propsAuthMiddleware', () => {
     const c = {
       env: {},
       set: vi.fn(),
-      json: vi.fn((body, status) => new Response(JSON.stringify(body), { status })),
+      json: vi.fn(
+        (body, status) => new Response(JSON.stringify(body), { status })
+      ),
     } as any
     await propsAuthMiddleware(c, vi.fn())
     expect(c.json).toHaveBeenCalledWith({ error: 'Unauthorized' }, 401)
@@ -30,7 +32,9 @@ describe('propsAuthMiddleware', () => {
     const c = {
       env: { props: { householdId: 'house-456' } },
       set: vi.fn(),
-      json: vi.fn((body, status) => new Response(JSON.stringify(body), { status })),
+      json: vi.fn(
+        (body, status) => new Response(JSON.stringify(body), { status })
+      ),
     } as any
     await propsAuthMiddleware(c, vi.fn())
     expect(c.json).toHaveBeenCalledWith({ error: 'Unauthorized' }, 401)
@@ -40,7 +44,9 @@ describe('propsAuthMiddleware', () => {
     const c = {
       env: { props: { userId: 'user-123' } },
       set: vi.fn(),
-      json: vi.fn((body, status) => new Response(JSON.stringify(body), { status })),
+      json: vi.fn(
+        (body, status) => new Response(JSON.stringify(body), { status })
+      ),
     } as any
     await propsAuthMiddleware(c, vi.fn())
     expect(c.json).toHaveBeenCalledWith({ error: 'Unauthorized' }, 401)

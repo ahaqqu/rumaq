@@ -17,7 +17,9 @@ export function loadLang() {
 function saveLang(lng) {
   try {
     localStorage.setItem(LANG_KEY, lng)
-  } catch { /* noop */ }
+  } catch {
+    /* noop */
+  }
 }
 
 i18n.use(initReactI18next).init({
@@ -35,4 +37,4 @@ i18n.on('languageChanged', (lng) => {
 
 document.documentElement.lang = i18n.language
 
-export default i18n
+export { i18n }

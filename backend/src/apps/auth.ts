@@ -3,7 +3,10 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import {
-  signJwt, verifyPassword, base64UrlEncode, randomState,
+  signJwt,
+  verifyPassword,
+  base64UrlEncode,
+  randomState,
 } from '../auth.js'
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
@@ -20,7 +23,10 @@ authApp.get('/login', async (c) => {
   const state = randomState()
   const verifier = randomState()
   const redirectUri = `${new URL(c.req.url).origin}/api/auth/callback`
-  const sha256 = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
+  const sha256 = await crypto.subtle.digest(
+    'SHA-256',
+    new TextEncoder().encode(verifier)
+  )
   const challenge = base64UrlEncode(sha256)
 
   setCookie(c, 'rumaq_oauth_state', `${state}:${verifier}`, {
@@ -100,9 +106,17 @@ authApp.get('/callback', async (c) => {
        name = excluded.name,
        picture = excluded.picture,
        updated_at = datetime('now')`
-  ).bind(finalUserId, googleUser.email, googleUser.name || null, googleUser.picture || null, googleUser.sub)
+  ).bind(
+    finalUserId,
+    googleUser.email,
+    googleUser.name || null,
+    googleUser.picture || null,
+    googleUser.sub
+  )
 
-  const lookupStmt = c.env.DB.prepare('SELECT id FROM users WHERE google_id = ?').bind(googleUser.sub)
+  const lookupStmt = c.env.DB.prepare(
+    'SELECT id FROM users WHERE google_id = ?'
+  ).bind(googleUser.sub)
 
   const batchResults = await c.env.DB.batch([userStmt, lookupStmt])
   const rows = batchResults[1]?.results as { id?: string }[] | undefined
@@ -110,7 +124,9 @@ authApp.get('/callback', async (c) => {
 
   const existingMember = await c.env.DB.prepare(
     'SELECT 1 FROM household_members WHERE user_id = ?'
-  ).bind(actualUserId).first()
+  )
+    .bind(actualUserId)
+    .first()
 
   if (!existingMember) {
     const locationSeeds = [
@@ -126,8 +142,9 @@ authApp.get('/callback', async (c) => {
     ]
 
     await c.env.DB.batch([
-      c.env.DB.prepare('INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)')
-        .bind(householdId, 'Rumahku', actualUserId),
+      c.env.DB.prepare(
+        'INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)'
+      ).bind(householdId, 'Rumahku', actualUserId),
       c.env.DB.prepare(
         'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
       ).bind(householdId, actualUserId, 'owner'),
@@ -149,7 +166,12 @@ authApp.get('/callback', async (c) => {
 
   const iat = Date.now()
   const jwt = await signJwt(
-    { sub: actualUserId, email: googleUser.email, iat, exp: iat + SESSION_DURATION_MS },
+    {
+      sub: actualUserId,
+      email: googleUser.email,
+      iat,
+      exp: iat + SESSION_DURATION_MS,
+    },
     c.env.WORKER_JWT_SECRET
   )
 
@@ -197,7 +219,9 @@ authApp.post('/email-login', async (c) => {
 
   const user = await c.env.DB.prepare(
     'SELECT id, email, name, password_hash FROM users WHERE email = ?'
-  ).bind(email).first<{ id: string; email: string; name: string; password_hash: string }>()
+  )
+    .bind(email)
+    .first<{ id: string; email: string; name: string; password_hash: string }>()
 
   if (!user || !user.password_hash) {
     return c.json({ error: 'Invalid email or password' }, 401)
@@ -210,7 +234,9 @@ authApp.post('/email-login', async (c) => {
 
   const existingMember = await c.env.DB.prepare(
     'SELECT 1 FROM household_members WHERE user_id = ?'
-  ).bind(user.id).first()
+  )
+    .bind(user.id)
+    .first()
 
   if (!existingMember) {
     const householdId = crypto.randomUUID()
@@ -228,8 +254,9 @@ authApp.post('/email-login', async (c) => {
     ]
 
     await c.env.DB.batch([
-      c.env.DB.prepare('INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)')
-        .bind(householdId, 'Rumahku', user.id),
+      c.env.DB.prepare(
+        'INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)'
+      ).bind(householdId, 'Rumahku', user.id),
       c.env.DB.prepare(
         'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
       ).bind(householdId, user.id, 'owner'),

@@ -83,7 +83,21 @@
     "store": "Toko",
     "price": "Harga",
     "total": "total",
-    "months": ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"],
+    "months": [
+      "",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "Mei",
+      "Jun",
+      "Jul",
+      "Agu",
+      "Sep",
+      "Okt",
+      "Nov",
+      "Des"
+    ],
     "patternDetected": "Pola terdeteksi:",
     "patternText": "Susu cair dan roti dibeli tiap 7 hari dari Indomaret. Asisten bisa mengingatkan sebelum habis.",
     "makePlan": "Buat rencana"

@@ -8,14 +8,28 @@ vi.mock('react-i18next', () => {
     return key
   }
   return {
-    useTranslation: () => ({ t, i18n: { language: 'en', changeLanguage: vi.fn(), on: vi.fn(), off: vi.fn() } }),
+    useTranslation: () => ({
+      t,
+      i18n: {
+        language: 'en',
+        changeLanguage: vi.fn(),
+        on: vi.fn(),
+        off: vi.fn(),
+      },
+    }),
     I18nextProvider: ({ children }) => children,
     initReactI18next: { type: '3rdParty', init: vi.fn() },
   }
 })
 
 const mockPersona = {
-  persona: { enabled: false, userRole: '', aiRole: '', hue: 230, generatedCopy: null },
+  persona: {
+    enabled: false,
+    userRole: '',
+    aiRole: '',
+    hue: 230,
+    generatedCopy: null,
+  },
   setPersona: vi.fn(),
   regenerateCopy: vi.fn(),
 }
@@ -32,7 +46,11 @@ vi.mock('@tanstack/react-router', async () => {
     useMatches: () => [{ routeId: '/', pathname: '/' }],
     useNavigate: () => vi.fn(),
     Link: ({ children, to, className, ...props }) =>
-      React.createElement('a', { ...props, className, href: to, 'data-testid': 'link' }, children),
+      React.createElement(
+        'a',
+        { ...props, className, href: to, 'data-testid': 'link' },
+        children
+      ),
     Outlet: () => null,
   }
 })

@@ -3,6 +3,6 @@ import { routeTree } from './routeTree.gen'
 
 const router = createRouter({ routeTree })
 
-export default function App() {
+export function App() {
   return <RouterProvider router={router} />
 }

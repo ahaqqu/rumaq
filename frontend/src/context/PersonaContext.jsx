@@ -1,5 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { loadPersona, savePersona, deriveHue, applyTheme, generatePersonaCopy } from '../lib/persona.js'
+import {
+  loadPersona,
+  savePersona,
+  deriveHue,
+  applyTheme,
+  generatePersonaCopy,
+} from '../lib/persona.js'
 
 const PersonaContext = createContext(null)
 
@@ -11,7 +17,10 @@ export function PersonaProvider({ children }) {
       const updated = {
         ...prev,
         ...next,
-        hue: deriveHue(next.userRole ?? prev.userRole, next.aiRole ?? prev.aiRole),
+        hue: deriveHue(
+          next.userRole ?? prev.userRole,
+          next.aiRole ?? prev.aiRole
+        ),
       }
       savePersona(updated)
       return updated

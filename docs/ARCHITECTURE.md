@@ -15,15 +15,15 @@ This document describes the production architecture for RumaQ on Cloudflare's fr
 
 ## 2. High-level stack
 
-| Layer | Service | Role | Free-tier limit |
-|---|---|---|---|
-| Frontend | Cloudflare Pages | Hosts the React + Vite SPA | Unlimited requests, 500 builds/mo |
-| API | Cloudflare Workers | Hono HTTP API, auth, AI proxy | 100,000 requests/day |
-| Database | Cloudflare D1 | Relational SQLite database | 500 MB storage, 100,000 queries/day |
-| Files | Cloudflare R2 | Receipt image storage | 10 GB storage, 10 M reads/mo |
-| Cache/metadata | Cloudflare KV (optional) | Rate-limit counters, AI usage windows | 1 GB, 100,000 reads/day |
-| Auth | Google OAuth 2.0 | SSO login, managed inside the Worker | Free |
-| AI | OpenAI / Gemini / Anthropic / OpenCode | External LLM calls proxied through the Worker | User's own billing |
+| Layer          | Service                                | Role                                          | Free-tier limit                     |
+| -------------- | -------------------------------------- | --------------------------------------------- | ----------------------------------- |
+| Frontend       | Cloudflare Pages                       | Hosts the React + Vite SPA                    | Unlimited requests, 500 builds/mo   |
+| API            | Cloudflare Workers                     | Hono HTTP API, auth, AI proxy                 | 100,000 requests/day                |
+| Database       | Cloudflare D1                          | Relational SQLite database                    | 500 MB storage, 100,000 queries/day |
+| Files          | Cloudflare R2                          | Receipt image storage                         | 10 GB storage, 10 M reads/mo        |
+| Cache/metadata | Cloudflare KV (optional)               | Rate-limit counters, AI usage windows         | 1 GB, 100,000 reads/day             |
+| Auth           | Google OAuth 2.0                       | SSO login, managed inside the Worker          | Free                                |
+| AI             | OpenAI / Gemini / Anthropic / OpenCode | External LLM calls proxied through the Worker | User's own billing                  |
 
 ## 3. Repository layout
 
@@ -191,13 +191,13 @@ A second auth method is available for testing, gated behind the `EMAIL_AUTH_ENAB
 
 Seed test users are inserted by migration `0002_email_auth.sql`. All five share the password `password123`:
 
-| Email | Name |
-|---|---|
-| `test@rumaq.dev` | Test User One |
-| `alice@rumaq.dev` | Alice |
-| `bob@rumaq.dev` | Bob |
-| `charlie@rumaq.dev` | Charlie |
-| `diana@rumaq.dev` | Diana |
+| Email               | Name          |
+| ------------------- | ------------- |
+| `test@rumaq.dev`    | Test User One |
+| `alice@rumaq.dev`   | Alice         |
+| `bob@rumaq.dev`     | Bob           |
+| `charlie@rumaq.dev` | Charlie       |
+| `diana@rumaq.dev`   | Diana         |
 
 ## 6. Database
 
@@ -241,17 +241,21 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 ### One-time setup
 
 1. Create the D1 database:
+
    ```bash
    node scripts/deploy-cf.js d1-setup
    ```
+
    Copy the returned UUID into `backend/wrangler.cloudflare.toml` as `database_id`.
 
 2. Apply migrations:
+
    ```bash
    cd backend && wrangler d1 migrations apply rumaq --remote
    ```
 
 3. Create the R2 bucket:
+
    ```bash
    node scripts/deploy-cf.js r2-ensure
    ```
@@ -263,14 +267,14 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 
 ### Environment variables
 
-| Variable | Where | Purpose |
-|---|---|---|
-| `GOOGLE_CLIENT_ID` | Worker secret | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Worker secret | Google OAuth client secret |
-| `WORKER_JWT_SECRET` | Worker secret | HMAC key for session JWT |
-| `WORKER_ENCRYPTION_KEY` | Worker secret | AES-GCM key for AI keys |
-| `EMAIL_AUTH_ENABLED` | Worker var | Set to `"true"` to enable email/password testing auth; `"false"` (default) keeps it disabled |
-| `WORKER_URL` | Build env | URL of the deployed Worker (e.g. `https://api.rumaq.workers.dev`); used at build time as `VITE_API_BASE` |
+| Variable                | Where         | Purpose                                                                                                  |
+| ----------------------- | ------------- | -------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID`      | Worker secret | Google OAuth client ID                                                                                   |
+| `GOOGLE_CLIENT_SECRET`  | Worker secret | Google OAuth client secret                                                                               |
+| `WORKER_JWT_SECRET`     | Worker secret | HMAC key for session JWT                                                                                 |
+| `WORKER_ENCRYPTION_KEY` | Worker secret | AES-GCM key for AI keys                                                                                  |
+| `EMAIL_AUTH_ENABLED`    | Worker var    | Set to `"true"` to enable email/password testing auth; `"false"` (default) keeps it disabled             |
+| `WORKER_URL`            | Build env     | URL of the deployed Worker (e.g. `https://api.rumaq.workers.dev`); used at build time as `VITE_API_BASE` |
 
 ## 9. Free-tier headroom
 
@@ -307,9 +311,9 @@ See [`docs/TEST_STRATEGY.md`](TEST_STRATEGY.md) for the full testing strategy, i
 
 Two automated mechanisms keep dependencies secure:
 
-| Mechanism | Trigger | Action |
-|---|---|---|
-| **Dependabot** (`.github/dependabot.yml`) | Daily 06:00 JKT | Opens PRs for available version bumps, grouped by minor/patch |
+| Mechanism                                          | Trigger         | Action                                                                                                               |
+| -------------------------------------------------- | --------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Dependabot** (`.github/dependabot.yml`)          | Daily 06:00 JKT | Opens PRs for available version bumps, grouped by minor/patch                                                        |
 | **Audit workflow** (`.github/workflows/audit.yml`) | Daily 07:00 JKT | Runs `npm audit`, attempts `npm audit fix`, creates PR with fixes or opens an issue if manual intervention is needed |
 
 - Production dependencies (`npm audit --omit=dev`) are checked separately and treated as urgent.

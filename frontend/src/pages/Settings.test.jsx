@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import React from 'react'
-import Settings from './Settings.jsx'
+import { Settings } from './Settings.jsx'
 
 describe('Settings', () => {
   const baseProps = {
@@ -74,8 +74,9 @@ describe('Settings', () => {
     const { container } = render(
       React.createElement(Settings, { ...baseProps, aiKey: 'existing-key' })
     )
-    const testBtn = Array.from(container.querySelectorAll('.btn--secondary'))
-      .find((btn) => btn.textContent?.includes('settings.test'))
+    const testBtn = Array.from(
+      container.querySelectorAll('.btn--secondary')
+    ).find((btn) => btn.textContent?.includes('settings.test'))
     if (testBtn) {
       fireEvent.click(testBtn)
       vi.advanceTimersByTime(1300)
@@ -85,12 +86,15 @@ describe('Settings', () => {
 
   it('adds a new location', () => {
     const { container } = render(React.createElement(Settings, baseProps))
-    const locInput = container.querySelector('input[placeholder="settings.locationName"]')
+    const locInput = container.querySelector(
+      'input[placeholder="settings.locationName"]'
+    )
     if (locInput) {
       fireEvent.change(locInput, { target: { value: 'Garage' } })
     }
-    const addBtn = Array.from(container.querySelectorAll('.btn--secondary'))
-      .find((btn) => btn.textContent?.includes('settings.add'))
+    const addBtn = Array.from(
+      container.querySelectorAll('.btn--secondary')
+    ).find((btn) => btn.textContent?.includes('settings.add'))
     if (addBtn) {
       fireEvent.click(addBtn)
     }
@@ -137,8 +141,12 @@ describe('Settings', () => {
   it('handles persona role inputs', () => {
     const { container } = render(React.createElement(Settings, baseProps))
     const inputs = container.querySelectorAll('input[placeholder]')
-    const myRole = Array.from(inputs).find((inp) => inp.getAttribute('placeholder') === 'settings.myRolePlaceholder')
-    const aiRole = Array.from(inputs).find((inp) => inp.getAttribute('placeholder') === 'settings.aiRolePlaceholder')
+    const myRole = Array.from(inputs).find(
+      (inp) => inp.getAttribute('placeholder') === 'settings.myRolePlaceholder'
+    )
+    const aiRole = Array.from(inputs).find(
+      (inp) => inp.getAttribute('placeholder') === 'settings.aiRolePlaceholder'
+    )
     if (myRole) {
       fireEvent.change(myRole, { target: { value: 'raja' } })
     }
@@ -149,8 +157,9 @@ describe('Settings', () => {
 
   it('applies persona with apply button', () => {
     const { container } = render(React.createElement(Settings, baseProps))
-    const applyBtn = Array.from(container.querySelectorAll('.btn--primary'))
-      .find((btn) => btn.textContent?.includes('settings.apply'))
+    const applyBtn = Array.from(
+      container.querySelectorAll('.btn--primary')
+    ).find((btn) => btn.textContent?.includes('settings.apply'))
     if (applyBtn) {
       fireEvent.click(applyBtn)
     }
@@ -167,7 +176,9 @@ describe('Settings', () => {
 
   it('adds location with Enter key', () => {
     const { container } = render(React.createElement(Settings, baseProps))
-    const locInput = container.querySelector('input[placeholder="settings.locationName"]')
+    const locInput = container.querySelector(
+      'input[placeholder="settings.locationName"]'
+    )
     if (locInput) {
       fireEvent.change(locInput, { target: { value: 'Pantry' } })
       fireEvent.keyDown(locInput, { key: 'Enter' })

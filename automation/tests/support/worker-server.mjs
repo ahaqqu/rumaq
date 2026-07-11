@@ -51,10 +51,10 @@ const db = await mf.getD1Database('DB')
 // within each statement.
 function flattenSql(sql) {
   return sql
-    .replace(/--.*$/gm, '')           // strip single-line comments
-    .replace(/\n\s*/g, ' ')            // collapse multi-line into single line
-    .replace(/\s*;\s*/g, ';\n')        // put each statement on its own line
-    .replace(/\n{2,}/g, '\n')          // collapse blank lines
+    .replace(/--.*$/gm, '') // strip single-line comments
+    .replace(/\n\s*/g, ' ') // collapse multi-line into single line
+    .replace(/\s*;\s*/g, ';\n') // put each statement on its own line
+    .replace(/\n{2,}/g, '\n') // collapse blank lines
     .trim()
 }
 
@@ -98,17 +98,17 @@ const server = createServer(async (req, res) => {
       body = Buffer.concat(chunks)
     }
 
-    const workerResponse = await mf.dispatchFetch(
-      url.toString(),
-      {
-        method: req.method,
-        headers,
-        body,
-      },
-    )
+    const workerResponse = await mf.dispatchFetch(url.toString(), {
+      method: req.method,
+      headers,
+      body,
+    })
     const responseBody = await workerResponse.text()
 
-    res.writeHead(workerResponse.status, Object.fromEntries(workerResponse.headers))
+    res.writeHead(
+      workerResponse.status,
+      Object.fromEntries(workerResponse.headers)
+    )
     res.end(responseBody)
   } catch (err) {
     console.error('Worker server error:', err)

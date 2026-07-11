@@ -79,11 +79,11 @@ implicit cache bypass.
 Apply headers via Path-based middleware on the single Hono app. No per-route
 boilerplate.
 
-| Path pattern | Method | Headers |
-|---|---|---|
-| `/api/health`, `/api/auth/email-status` | GET | `Cache-Control: public, max-age=60, stale-while-revalidate=300` |
-| `/api/me`, `/api/stock`, all future protected GET reads | GET | Edge: `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300`<br>Browser: `Cache-Control: private, max-age=0` |
-| Auth routes (handled in gateway) | GET/POST | None; never reach the cached entrypoint |
+| Path pattern                                            | Method   | Headers                                                                                                                              |
+| ------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `/api/health`, `/api/auth/email-status`                 | GET      | `Cache-Control: public, max-age=60, stale-while-revalidate=300`                                                                      |
+| `/api/me`, `/api/stock`, all future protected GET reads | GET      | Edge: `Cloudflare-CDN-Cache-Control: public, max-age=30, stale-while-revalidate=300`<br>Browser: `Cache-Control: private, max-age=0` |
+| Auth routes (handled in gateway)                        | GET/POST | None; never reach the cached entrypoint                                                                                              |
 
 Note: `Cloudflare-CDN-Cache-Control` has higher precedence than `Cache-Control`
 and is consumed by Cloudflare. If production testing shows that `private` in
@@ -435,7 +435,7 @@ curl -I -b "rumaq_session=<user-a-token>" "https://$WORKER_URL/api/me"
 curl -I -b "rumaq_session=<user-b-token>" "https://$WORKER_URL/api/me"
 
 # Auth routes should bypass cache (no Cf-Cache-Status header)
-curl -I "https://$WORKER_URL/api/auth/login"  # expects 302, Set-Cookie
+curl -I "https://$WORKER_URL/api/auth/login" # expects 302, Set-Cookie
 ```
 
 Check the `Cf-Cache-Status` response header for `HIT`, `MISS`, or `UPDATING`.

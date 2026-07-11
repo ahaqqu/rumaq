@@ -1,11 +1,19 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useMatches, useNavigate } from '@tanstack/react-router'
-import { IconHome, IconBox, IconPlan, IconHistory, IconSettings, IconReceipt, BrandMark } from './icons.jsx'
+import {
+  IconHome,
+  IconBox,
+  IconPlan,
+  IconHistory,
+  IconSettings,
+  IconReceipt,
+  BrandMark,
+} from './icons.jsx'
 import { AI_USAGE, usageState } from '../data/mock.js'
 import { useApp } from '../context/AppContext.jsx'
 import { useMe, useLogout } from '../lib/queries/me.js'
-import Assistant from './Assistant.jsx'
+import { Assistant } from './Assistant.jsx'
 
 const NAV = [
   { id: 'home', key: 'nav.home', Icon: IconHome, to: '/' },
@@ -15,7 +23,7 @@ const NAV = [
   { id: 'settings', key: 'nav.settings', Icon: IconSettings, to: '/settings' },
 ]
 
-export default function AppShell({ children }) {
+export function AppShell({ children }) {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const matches = useMatches()
@@ -46,7 +54,12 @@ export default function AppShell({ children }) {
         </Link>
         <nav className="nav">
           {NAV.map(({ id, key, Icon, to }) => (
-            <Link key={id} to={to} className="nav__item" aria-current={isActive(to) ? 'page' : undefined}>
+            <Link
+              key={id}
+              to={to}
+              className="nav__item"
+              aria-current={isActive(to) ? 'page' : undefined}
+            >
               <Icon size={18} /> {t(key)}
             </Link>
           ))}
@@ -55,7 +68,12 @@ export default function AppShell({ children }) {
           {user && (
             <div className="rail__user">
               {user.picture && !imgError ? (
-                <img className="rail__avatar" src={user.picture} alt="" onError={() => setImgError(true)} />
+                <img
+                  className="rail__avatar"
+                  src={user.picture}
+                  alt=""
+                  onError={() => setImgError(true)}
+                />
               ) : (
                 <div className="rail__avatar rail__avatar--initials">
                   {(user.name || '')
@@ -68,8 +86,15 @@ export default function AppShell({ children }) {
                 </div>
               )}
               <div className="rail__user-info">
-                <div className="rail__user-name">{user.name || t('nav.settings')}</div>
-                <button className="rail__logout" onClick={() => logout.mutate()}>{t('nav.logout', 'Logout')}</button>
+                <div className="rail__user-name">
+                  {user.name || t('nav.settings')}
+                </div>
+                <button
+                  className="rail__logout"
+                  onClick={() => logout.mutate()}
+                >
+                  {t('nav.logout', 'Logout')}
+                </button>
               </div>
             </div>
           )}
@@ -80,16 +105,30 @@ export default function AppShell({ children }) {
           {aiKey && (
             <div className="rail__usage">
               <div className="rail__usage-row">
-                <span className="rail__usage-label">{t('common.requestsToday', { used: AI_USAGE.used, limit: AI_USAGE.limit })}</span>
-                <span className={`rail__usage-count ${usageTone}`}>{AI_USAGE.used}/{AI_USAGE.limit}</span>
+                <span className="rail__usage-label">
+                  {t('common.requestsToday', {
+                    used: AI_USAGE.used,
+                    limit: AI_USAGE.limit,
+                  })}
+                </span>
+                <span className={`rail__usage-count ${usageTone}`}>
+                  {AI_USAGE.used}/{AI_USAGE.limit}
+                </span>
               </div>
               <div className="rail__mini-bar">
-                <div className={`rail__mini-fill ${usageTone}`} style={{ width: pct + '%' }} />
+                <div
+                  className={`rail__mini-fill ${usageTone}`}
+                  style={{ width: pct + '%' }}
+                />
               </div>
               {danger ? (
-                <div className="rail__usage-note is-danger">{t('ui.dailyLimitReached')}</div>
+                <div className="rail__usage-note is-danger">
+                  {t('ui.dailyLimitReached')}
+                </div>
               ) : warn ? (
-                <div className="rail__usage-note is-warn">{t('assistant.closeToLimit')}</div>
+                <div className="rail__usage-note is-warn">
+                  {t('assistant.closeToLimit')}
+                </div>
               ) : null}
             </div>
           )}
@@ -100,26 +139,41 @@ export default function AppShell({ children }) {
         <header className="topbar">
           <h1 className="topbar__title">{title}</h1>
           <div className="topbar__spacer" />
-          <Link to="/add" className="topbar__btn" aria-label={t('nav.addFromReceipt')}>
+          <Link
+            to="/add"
+            className="topbar__btn"
+            aria-label={t('nav.addFromReceipt')}
+          >
             <IconReceipt size={18} />
           </Link>
-          <Link to="/settings" className="topbar__btn" aria-label={t('nav.settings')}>
+          <Link
+            to="/settings"
+            className="topbar__btn"
+            aria-label={t('nav.settings')}
+          >
             <IconSettings size={18} />
           </Link>
         </header>
 
-        <main className="page">
-          {children}
-        </main>
+        <main className="page">{children}</main>
       </div>
 
       <nav className="bottombar" aria-label={t('nav.home')}>
         {NAV.filter((n) => n.id !== 'settings').map(({ id, key, Icon, to }) => (
-          <Link key={id} to={to} className="bottombar__item" aria-current={isActive(to) ? 'page' : undefined}>
+          <Link
+            key={id}
+            to={to}
+            className="bottombar__item"
+            aria-current={isActive(to) ? 'page' : undefined}
+          >
             <Icon size={20} /> {t(key)}
           </Link>
         ))}
-        <Link to="/settings" className="bottombar__item" aria-current={isActive('/settings') ? 'page' : undefined}>
+        <Link
+          to="/settings"
+          className="bottombar__item"
+          aria-current={isActive('/settings') ? 'page' : undefined}
+        >
           <IconSettings size={20} /> {t('nav.settings')}
         </Link>
       </nav>
@@ -129,7 +183,9 @@ export default function AppShell({ children }) {
         onOpen={() => setAssistantOpen(true)}
         onClose={() => setAssistantOpen(false)}
         aiKey={aiKey}
-        onNavigate={(view) => navigate({ to: `/${view === 'home' ? '' : view}` })}
+        onNavigate={(view) =>
+          navigate({ to: `/${view === 'home' ? '' : view}` })
+        }
       />
     </div>
   )

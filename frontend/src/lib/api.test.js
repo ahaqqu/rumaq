@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
-  getMe, getStock, getHealth, login, logout, isAuthenticated,
-  emailAuthStatus, emailLogin,
+  getMe,
+  getStock,
+  getHealth,
+  login,
+  logout,
+  isAuthenticated,
+  emailAuthStatus,
+  emailLogin,
 } from './api.js'
 
 beforeEach(() => {
@@ -16,9 +22,12 @@ describe('api', () => {
     })
     const result = await getMe()
     expect(result).toEqual({ user: { id: '1', email: 'a@b.com' } })
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/me', expect.objectContaining({
-      credentials: 'include',
-    }))
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/me',
+      expect.objectContaining({
+        credentials: 'include',
+      })
+    )
   })
 
   it('getStock without params', async () => {
@@ -28,7 +37,10 @@ describe('api', () => {
     })
     const result = await getStock()
     expect(result).toEqual({ stock: [] })
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/stock', expect.anything())
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      '/api/stock',
+      expect.anything()
+    )
   })
 
   it('getStock with location and q params', async () => {
@@ -92,7 +104,9 @@ describe('api', () => {
       writable: true,
     })
     login()
-    expect(setter).toHaveBeenCalledWith(expect.stringContaining('/api/auth/login'))
+    expect(setter).toHaveBeenCalledWith(
+      expect.stringContaining('/api/auth/login')
+    )
     Object.defineProperty(window, 'location', {
       value: origLocation,
       configurable: true,
@@ -111,7 +125,9 @@ describe('api', () => {
       writable: true,
     })
     logout()
-    expect(setter).toHaveBeenCalledWith(expect.stringContaining('/api/auth/logout'))
+    expect(setter).toHaveBeenCalledWith(
+      expect.stringContaining('/api/auth/logout')
+    )
     Object.defineProperty(window, 'location', {
       value: origLocation,
       configurable: true,
@@ -169,6 +185,8 @@ describe('api', () => {
     const [url, opts] = globalThis.fetch.mock.calls[0]
     expect(url).toContain('/api/auth/email-login')
     expect(opts.method).toBe('POST')
-    expect(opts.body).toBe(JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }))
+    expect(opts.body).toBe(
+      JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' })
+    )
   })
 })

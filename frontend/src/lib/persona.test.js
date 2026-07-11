@@ -13,15 +13,22 @@ import {
 } from './persona.js'
 
 const ID_TEMPLATES = {
-  'persona.mood.servant-to-royal': 'Yang Mulia {{user}}, izinkan hamba {{ai}} melaporkan: {{text}} Demikian yang dapat hamba sampaikan, Yang Mulia.',
-  'persona.mood.student-to-teacher': 'Maaf mengganggu, {{user}}. Saya {{ai}} ingin menyampaikan: {{text}} Terima kasih, {{user}}.',
-  'persona.mood.medical': 'Selamat datang, {{user}}. Saya {{ai}} Anda. {{text}}',
-  'persona.mood.employee-to-boss': 'Permisi, {{user}}. Izin melaporkan dari {{ai}}: {{text}}',
+  'persona.mood.servant-to-royal':
+    'Yang Mulia {{user}}, izinkan hamba {{ai}} melaporkan: {{text}} Demikian yang dapat hamba sampaikan, Yang Mulia.',
+  'persona.mood.student-to-teacher':
+    'Maaf mengganggu, {{user}}. Saya {{ai}} ingin menyampaikan: {{text}} Terima kasih, {{user}}.',
+  'persona.mood.medical':
+    'Selamat datang, {{user}}. Saya {{ai}} Anda. {{text}}',
+  'persona.mood.employee-to-boss':
+    'Permisi, {{user}}. Izin melaporkan dari {{ai}}: {{text}}',
   'persona.mood.casual': 'Hei {{user}}, {{ai}} di sini. {{text}}',
   'persona.mood.generic': 'Halo {{user}}, saya {{ai}}. {{text}}',
-  'persona.homeLead': 'Stok terpantau otomatis dari struk belanja. Sisa dihitung dari kebiasaanmu, bukan diisi manual.',
-  'persona.systemPrompt': 'Kamu adalah asisten inventaris dan belanja rumah tangga bernama RumaQ. Jawab dengan jelas, singkat, dan praktis.',
-  'persona.roleInstructionBase': 'Bayangkan kamu adalah {{ai}} dan pengguna adalah {{user}}. Seluruh jawabanmu harus sesuai peran tersebut.',
+  'persona.homeLead':
+    'Stok terpantau otomatis dari struk belanja. Sisa dihitung dari kebiasaanmu, bukan diisi manual.',
+  'persona.systemPrompt':
+    'Kamu adalah asisten inventaris dan belanja rumah tangga bernama RumaQ. Jawab dengan jelas, singkat, dan praktis.',
+  'persona.roleInstructionBase':
+    'Bayangkan kamu adalah {{ai}} dan pengguna adalah {{user}}. Seluruh jawabanmu harus sesuai peran tersebut.',
 }
 
 function idT(key, opts) {
@@ -45,7 +52,13 @@ describe('loadPersona / savePersona', () => {
   })
 
   it('round-trips a persona', () => {
-    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270, generatedCopy: null }
+    const p = {
+      enabled: true,
+      userRole: 'raja',
+      aiRole: 'prajurit',
+      hue: 270,
+      generatedCopy: null,
+    }
     savePersona(p)
     const loaded = loadPersona()
     expect(loaded.userRole).toBe('raja')
@@ -85,7 +98,9 @@ describe('speak', () => {
   })
 
   it('returns base text when roles are empty', () => {
-    expect(speak('hello', { enabled: true, userRole: '', aiRole: '' }, idT)).toBe('hello')
+    expect(
+      speak('hello', { enabled: true, userRole: '', aiRole: '' }, idT)
+    ).toBe('hello')
   })
 
   it('servant-to-royal mood', () => {
@@ -131,7 +146,9 @@ describe('speak', () => {
 
 describe('personaText', () => {
   it('returns base text when persona is not enabled', () => {
-    expect(personaText('homeLead', DEFAULT_PERSONA, idT)).toBe(ID_TEMPLATES['persona.homeLead'])
+    expect(personaText('homeLead', DEFAULT_PERSONA, idT)).toBe(
+      ID_TEMPLATES['persona.homeLead']
+    )
   })
 
   it('returns AI-generated copy when available', () => {
@@ -146,7 +163,13 @@ describe('personaText', () => {
   })
 
   it('falls back to speak() when no AI copy', () => {
-    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270, generatedCopy: null }
+    const p = {
+      enabled: true,
+      userRole: 'raja',
+      aiRole: 'prajurit',
+      hue: 270,
+      generatedCopy: null,
+    }
     const result = personaText('homeLead', p, idT)
     expect(result).toContain('Yang Mulia')
     expect(result).toContain(ID_TEMPLATES['persona.homeLead'])
@@ -161,19 +184,28 @@ describe('buildSystemPrompt', () => {
   })
 
   it('includes role instruction for enabled persona', () => {
-    const p = buildSystemPrompt({ enabled: true, userRole: 'raja', aiRole: 'prajurit' }, idT)
+    const p = buildSystemPrompt(
+      { enabled: true, userRole: 'raja', aiRole: 'prajurit' },
+      idT
+    )
     expect(p).toContain('Bayangkan')
     expect(p).toContain('raja')
     expect(p).toContain('prajurit')
   })
 
   it('includes mood instruction for employee-to-boss mood', () => {
-    const p = buildSystemPrompt({ enabled: true, userRole: 'bos', aiRole: 'pegawai' }, idT)
+    const p = buildSystemPrompt(
+      { enabled: true, userRole: 'bos', aiRole: 'pegawai' },
+      idT
+    )
     expect(p).toContain('formal')
   })
 
   it('does not include mood instruction for generic mood', () => {
-    const p = buildSystemPrompt({ enabled: true, userRole: 'tamu', aiRole: 'host' }, idT)
+    const p = buildSystemPrompt(
+      { enabled: true, userRole: 'tamu', aiRole: 'host' },
+      idT
+    )
     expect(p).not.toContain('form')
   })
 })
@@ -188,14 +220,23 @@ describe('applyTheme', () => {
 
   it('sets custom properties when persona is enabled', () => {
     const el = { style: { setProperty: vi.fn() }, dataset: {} }
-    applyTheme({ enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }, el)
-    expect(el.style.setProperty).toHaveBeenCalledWith('--accent', expect.any(String))
+    applyTheme(
+      { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 },
+      el
+    )
+    expect(el.style.setProperty).toHaveBeenCalledWith(
+      '--accent',
+      expect.any(String)
+    )
     expect(el.dataset.persona).toBe('raja|prajurit')
   })
 
   it('derives hue when persona hue is null', () => {
     const el = { style: { setProperty: vi.fn() }, dataset: {} }
-    applyTheme({ enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: null }, el)
+    applyTheme(
+      { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: null },
+      el
+    )
     expect(el.style.setProperty).toHaveBeenCalled()
   })
 
@@ -208,7 +249,12 @@ describe('applyTheme', () => {
 
 describe('generatePersonaCopy', () => {
   it('returns null when persona is not enabled', async () => {
-    const result = await generatePersonaCopy(DEFAULT_PERSONA, 'sk-test', 'opencode', idT)
+    const result = await generatePersonaCopy(
+      DEFAULT_PERSONA,
+      'sk-test',
+      'opencode',
+      idT
+    )
     expect(result).toBeNull()
   })
 
@@ -227,7 +273,9 @@ describe('generatePersonaCopy', () => {
   it('returns null when AI returns non-JSON', async () => {
     globalThis.fetch = async () => ({
       ok: true,
-      json: async () => ({ candidates: [{ content: { parts: [{ text: 'not json' }] } }] }),
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: 'not json' }] } }],
+      }),
     })
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
     const result = await generatePersonaCopy(p, 'sk-valid', 'gemini', idT)
@@ -248,9 +296,17 @@ describe('generatePersonaCopy', () => {
     })
     globalThis.fetch = async () => ({
       ok: true,
-      json: async () => ({ candidates: [{ content: { parts: [{ text: jsonResponse }] } }] }),
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: jsonResponse }] } }],
+      }),
     })
-    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270, generatedCopy: null }
+    const p = {
+      enabled: true,
+      userRole: 'raja',
+      aiRole: 'prajurit',
+      hue: 270,
+      generatedCopy: null,
+    }
     const result = await generatePersonaCopy(p, 'sk-valid', 'gemini', idT)
     expect(result).not.toBeNull()
     expect(result.homeLead).toBe('AI home lead')
@@ -260,7 +316,9 @@ describe('generatePersonaCopy', () => {
     const jsonResponse = '```json\n{"homeLead": "MD lead"}\n```'
     globalThis.fetch = async () => ({
       ok: true,
-      json: async () => ({ candidates: [{ content: { parts: [{ text: jsonResponse }] } }] }),
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: jsonResponse }] } }],
+      }),
     })
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
     const result = await generatePersonaCopy(p, 'sk-valid', 'gemini', idT)
@@ -271,7 +329,9 @@ describe('generatePersonaCopy', () => {
   it('generates with openai provider', async () => {
     globalThis.fetch = async () => ({
       ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"homeLead":"AI"}' } }] }),
+      json: async () => ({
+        choices: [{ message: { content: '{"homeLead":"AI"}' } }],
+      }),
     })
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
     const result = await generatePersonaCopy(p, 'sk-valid', 'openai', idT)
@@ -291,7 +351,9 @@ describe('generatePersonaCopy', () => {
   it('generates with opencode provider (default)', async () => {
     globalThis.fetch = async () => ({
       ok: true,
-      json: async () => ({ choices: [{ message: { content: '{"homeLead":"AI"}' } }] }),
+      json: async () => ({
+        choices: [{ message: { content: '{"homeLead":"AI"}' } }],
+      }),
     })
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
     const result = await generatePersonaCopy(p, 'sk-valid', 'opencode', idT)
@@ -301,7 +363,9 @@ describe('generatePersonaCopy', () => {
   it('returns null when AI response is empty', async () => {
     globalThis.fetch = async () => ({
       ok: true,
-      json: async () => ({ candidates: [{ content: { parts: [{ text: '' }] } }] }),
+      json: async () => ({
+        candidates: [{ content: { parts: [{ text: '' }] } }],
+      }),
     })
     const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }
     const result = await generatePersonaCopy(p, 'sk-valid', 'gemini', idT)

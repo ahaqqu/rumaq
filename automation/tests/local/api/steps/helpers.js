@@ -3,7 +3,8 @@ import { resetDb, seedDb } from '../../../support/db.js'
 import { signTestCookie } from '../../../support/auth.js'
 
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
-const TEST_USER_ID = process.env.TEST_USER_ID || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+const TEST_USER_ID =
+  process.env.TEST_USER_ID || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 
 export class ApiContext {
   constructor() {
@@ -26,7 +27,9 @@ export class ApiContext {
   }
 
   async authenticate() {
-    const cookie = await signTestCookie(TEST_USER_ID, { email: 'test@rumaq.dev' })
+    const cookie = await signTestCookie(TEST_USER_ID, {
+      email: 'test@rumaq.dev',
+    })
     this.headers = { Cookie: cookie }
   }
 
@@ -107,7 +110,9 @@ export class ApiContext {
   }
 
   expectOrderedByRunOutDays() {
-    const runOutDays = this.responseBody.stock.map(s => s.run_out_days).filter(Boolean)
+    const runOutDays = this.responseBody.stock
+      .map((s) => s.run_out_days)
+      .filter(Boolean)
     expect(runOutDays).toEqual([3, 7, 14])
   }
 }

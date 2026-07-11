@@ -2,14 +2,14 @@
 
 ## Decisions locked in
 
-| # | Decision | Implementation impact |
-|---|---|---|
-| 1 | Persona stored **both** backend + localStorage | `GET /api/settings` returns persona; `PersonaContext` seeds from API, caches in `localStorage`; "Apply" saves to both. |
-| 2 | Stores get **full CRUD UI** | Add add/delete controls to the Recorded Stores section, same pattern as locations. |
-| 3 | "Test key" performs **real AI call** | New backend `POST /api/ai/test` that makes one tiny request to the user's provider; consumes 1 request from today's quota. |
-| 4 | **Language** added to `user_settings` | New migration column `language TEXT DEFAULT 'en' CHECK (language IN ('en','id'))`; Settings page syncs it. |
-| 5 | AES key derived via **SHA-256** | `crypto.subtle.digest('SHA-256', encoder.encode(WORKER_ENCRYPTION_KEY))` → 256-bit AES-GCM key. No env changes. |
-| 6 | Referenced locations/stores return **409** | `DELETE` catches FK violations and returns `{ error: "..." }` 409. |
+| #   | Decision                                       | Implementation impact                                                                                                      |
+| --- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Persona stored **both** backend + localStorage | `GET /api/settings` returns persona; `PersonaContext` seeds from API, caches in `localStorage`; "Apply" saves to both.     |
+| 2   | Stores get **full CRUD UI**                    | Add add/delete controls to the Recorded Stores section, same pattern as locations.                                         |
+| 3   | "Test key" performs **real AI call**           | New backend `POST /api/ai/test` that makes one tiny request to the user's provider; consumes 1 request from today's quota. |
+| 4   | **Language** added to `user_settings`          | New migration column `language TEXT DEFAULT 'en' CHECK (language IN ('en','id'))`; Settings page syncs it.                 |
+| 5   | AES key derived via **SHA-256**                | `crypto.subtle.digest('SHA-256', encoder.encode(WORKER_ENCRYPTION_KEY))` → 256-bit AES-GCM key. No env changes.            |
+| 6   | Referenced locations/stores return **409**     | `DELETE` catches FK violations and returns `{ error: "..." }` 409.                                                         |
 
 ---
 
@@ -211,7 +211,7 @@ Changes:
 ```bash
 npm test
 npx tsc --noEmit
-npm run test:api   # if integration stack is running
+npm run test:api # if integration stack is running
 npm run test:docker
 ```
 
@@ -221,34 +221,34 @@ npm run test:docker
 
 ### Create
 
-| File | Purpose |
-|---|---|
-| `backend/src/crypto.ts` | AES-GCM encrypt/decrypt |
-| `backend/src/__tests__/crypto.test.ts` | Crypto unit tests |
-| `backend/src/__tests__/settings.test.ts` | Settings unit tests |
-| `backend/src/__tests__/locations.test.ts` | Locations unit tests |
-| `backend/src/__tests__/stores.test.ts` | Stores unit tests |
-| `backend/src/__tests__/usage.test.ts` | AI usage unit tests |
-| `backend/src/__tests__/ai.test.ts` | AI test endpoint unit tests |
-| `backend/migrations/0002_add_language.sql` | Add language column |
-| `automation/tests/local/api/features/settings.feature` | Integration BDD |
-| `automation/tests/local/api/features/locations.feature` | Integration BDD |
-| `automation/tests/local/api/features/stores.feature` | Integration BDD |
-| `automation/tests/local/api/features/ai-usage.feature` | Integration BDD |
+| File                                                    | Purpose                     |
+| ------------------------------------------------------- | --------------------------- |
+| `backend/src/crypto.ts`                                 | AES-GCM encrypt/decrypt     |
+| `backend/src/__tests__/crypto.test.ts`                  | Crypto unit tests           |
+| `backend/src/__tests__/settings.test.ts`                | Settings unit tests         |
+| `backend/src/__tests__/locations.test.ts`               | Locations unit tests        |
+| `backend/src/__tests__/stores.test.ts`                  | Stores unit tests           |
+| `backend/src/__tests__/usage.test.ts`                   | AI usage unit tests         |
+| `backend/src/__tests__/ai.test.ts`                      | AI test endpoint unit tests |
+| `backend/migrations/0002_add_language.sql`              | Add language column         |
+| `automation/tests/local/api/features/settings.feature`  | Integration BDD             |
+| `automation/tests/local/api/features/locations.feature` | Integration BDD             |
+| `automation/tests/local/api/features/stores.feature`    | Integration BDD             |
+| `automation/tests/local/api/features/ai-usage.feature`  | Integration BDD             |
 
 ### Modify
 
-| File | Changes |
-|---|---|
-| `backend/src/index.ts` | Add settings, locations, stores, ai/usage, ai/test routes |
-| `backend/src/auth.ts` | Set default `language = 'en'` on user_settings insert |
-| `frontend/src/lib/api.js` | Add all new API client functions |
-| `frontend/src/lib/api.test.js` | Test new API functions |
-| `frontend/src/pages/Settings.jsx` | Wire to real endpoints, add store CRUD |
-| `frontend/src/pages/Settings.test.jsx` | Update for async API behavior |
-| `frontend/src/context/PersonaContext.jsx` | Accept backend seed data |
-| `frontend/src/i18n/index.js` | Sync language with backend |
-| `automation/tests/local/api/steps/helpers.js` | Add settings/locations/stores/usage matchers |
-| `automation/tests/fixtures/seed.sql` | Add language=id to user_settings seed |
-| `docs/PROJECT_PLAN.md` | Mark PR 2 items Done |
-| `docs/API.md` | Add language field, ai/test endpoint |
+| File                                          | Changes                                                   |
+| --------------------------------------------- | --------------------------------------------------------- |
+| `backend/src/index.ts`                        | Add settings, locations, stores, ai/usage, ai/test routes |
+| `backend/src/auth.ts`                         | Set default `language = 'en'` on user_settings insert     |
+| `frontend/src/lib/api.js`                     | Add all new API client functions                          |
+| `frontend/src/lib/api.test.js`                | Test new API functions                                    |
+| `frontend/src/pages/Settings.jsx`             | Wire to real endpoints, add store CRUD                    |
+| `frontend/src/pages/Settings.test.jsx`        | Update for async API behavior                             |
+| `frontend/src/context/PersonaContext.jsx`     | Accept backend seed data                                  |
+| `frontend/src/i18n/index.js`                  | Sync language with backend                                |
+| `automation/tests/local/api/steps/helpers.js` | Add settings/locations/stores/usage matchers              |
+| `automation/tests/fixtures/seed.sql`          | Add language=id to user_settings seed                     |
+| `docs/PROJECT_PLAN.md`                        | Mark PR 2 items Done                                      |
+| `docs/API.md`                                 | Add language field, ai/test endpoint                      |

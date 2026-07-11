@@ -38,7 +38,20 @@ describe('locale files', () => {
   })
 
   it('en contains all required top-level namespaces', () => {
-    const expected = ['nav', 'home', 'inventory', 'addReceipt', 'plan', 'history', 'settings', 'assistant', 'ui', 'common', 'data', 'persona']
+    const expected = [
+      'nav',
+      'home',
+      'inventory',
+      'addReceipt',
+      'plan',
+      'history',
+      'settings',
+      'assistant',
+      'ui',
+      'common',
+      'data',
+      'persona',
+    ]
     for (const ns of expected) {
       expect(en).toHaveProperty(ns)
     }
@@ -63,16 +76,16 @@ describe('locale files', () => {
 describe('i18n initialisation', () => {
   it('can dynamically import and initialise i18n', async () => {
     const mod = await import('../index.js')
-    expect(mod.default).toBeDefined()
-    expect(mod.default.language).toBe('en')
+    expect(mod.i18n).toBeDefined()
+    expect(mod.i18n.language).toBe('en')
   })
 
   it('switches language and updates html lang attribute', async () => {
     const mod = await import('../index.js')
-    mod.default.changeLanguage('id')
+    mod.i18n.changeLanguage('id')
     await new Promise((r) => setTimeout(r, 50))
     expect(document.documentElement.lang).toBe('id')
-    mod.default.changeLanguage('en')
+    mod.i18n.changeLanguage('en')
     await new Promise((r) => setTimeout(r, 50))
     expect(document.documentElement.lang).toBe('en')
   })
@@ -80,16 +93,18 @@ describe('i18n initialisation', () => {
   it('saves language preference to localStorage', async () => {
     localStorage.removeItem('rumaq:lang')
     const mod = await import('../index.js')
-    expect(mod.default.language).toBe('en')
-    mod.default.changeLanguage('id')
+    expect(mod.i18n.language).toBe('en')
+    mod.i18n.changeLanguage('id')
     await new Promise((r) => setTimeout(r, 50))
     expect(localStorage.getItem('rumaq:lang')).toBe('id')
-    mod.default.changeLanguage('en')
+    mod.i18n.changeLanguage('en')
   })
 
   it('loadLang falls back to en when localStorage throws', async () => {
     const origGetItem = Storage.prototype.getItem
-    Storage.prototype.getItem = () => { throw new Error('denied') }
+    Storage.prototype.getItem = () => {
+      throw new Error('denied')
+    }
     const mod = await import('../index.js')
     const lang = mod.loadLang()
     expect(lang).toBe('en')
@@ -98,9 +113,11 @@ describe('i18n initialisation', () => {
 
   it('saveLang falls back silently when localStorage.setItem throws', async () => {
     const origSetItem = Storage.prototype.setItem
-    Storage.prototype.setItem = () => { throw new Error('denied') }
+    Storage.prototype.setItem = () => {
+      throw new Error('denied')
+    }
     const mod = await import('../index.js')
-    expect(() => mod.default.changeLanguage('id')).not.toThrow()
+    expect(() => mod.i18n.changeLanguage('id')).not.toThrow()
     Storage.prototype.setItem = origSetItem
   })
 })

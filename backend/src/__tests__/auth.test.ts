@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
 import {
-  verifyJwt, signJwt, base64UrlEncode, base64UrlDecode, randomState,
-  hashPassword, verifyPassword,
+  verifyJwt,
+  signJwt,
+  base64UrlEncode,
+  base64UrlDecode,
+  randomState,
+  hashPassword,
+  verifyPassword,
 } from '../auth.js'
 import { authApp } from '../apps/auth.js'
 
@@ -129,7 +134,9 @@ describe('hashPassword / verifyPassword', () => {
 
   it('verifyPassword rejects a malformed hash', async () => {
     expect(await verifyPassword('password123', 'not-a-valid-hash')).toBe(false)
-    expect(await verifyPassword('password123', 'sha256$100000$abc$def')).toBe(false)
+    expect(await verifyPassword('password123', 'sha256$100000$abc$def')).toBe(
+      false
+    )
   })
 
   it('produces different hashes for the same password (random salt)', async () => {
@@ -139,7 +146,8 @@ describe('hashPassword / verifyPassword', () => {
   })
 
   it('verifies a pre-seeded test user hash', async () => {
-    const seedHash = 'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s'
+    const seedHash =
+      'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s'
     expect(await verifyPassword('password123', seedHash)).toBe(true)
     expect(await verifyPassword('wrong', seedHash)).toBe(false)
   })
@@ -152,7 +160,9 @@ describe('authApp Hono routes', () => {
   })
 
   it('/logout returns ok', async () => {
-    const res = await authApp.request('/logout', { method: 'POST' }, { PAGES_ORIGIN: 'http://localhost:5173' } as any)
+    const res = await authApp.request('/logout', { method: 'POST' }, {
+      PAGES_ORIGIN: 'http://localhost:5173',
+    } as any)
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toEqual({ ok: true })
@@ -175,7 +185,9 @@ describe('authApp Hono routes', () => {
   })
 
   it('/callback returns 400 for missing state', async () => {
-    const res = await authApp.request('/callback?code=abc', {}, { PAGES_ORIGIN: 'http://localhost:5173' } as any)
+    const res = await authApp.request('/callback?code=abc', {}, {
+      PAGES_ORIGIN: 'http://localhost:5173',
+    } as any)
     expect(res.status).toBe(400)
   })
 
@@ -188,9 +200,13 @@ describe('authApp Hono routes', () => {
       DB: {},
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await authApp.request('/callback?code=abc&state=wrong', {
-      headers: { Cookie: 'rumaq_oauth_state=expected:verifier' },
-    }, env as any)
+    const res = await authApp.request(
+      '/callback?code=abc&state=wrong',
+      {
+        headers: { Cookie: 'rumaq_oauth_state=expected:verifier' },
+      },
+      env as any
+    )
     expect(res.status).toBe(400)
   })
 
@@ -204,9 +220,13 @@ describe('authApp Hono routes', () => {
       DB: {},
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await authApp.request('/callback?code=abc&state=test-state', {
-      headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
-    }, env as any)
+    const res = await authApp.request(
+      '/callback?code=abc&state=test-state',
+      {
+        headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
+      },
+      env as any
+    )
     expect(res.status).toBe(400)
   })
 
@@ -214,7 +234,10 @@ describe('authApp Hono routes', () => {
     let callCount = 0
     globalThis.fetch = async () => {
       callCount++
-      if (callCount === 1) return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 }) as any
+      if (callCount === 1)
+        return new Response(JSON.stringify({ access_token: 'tok' }), {
+          status: 200,
+        }) as any
       return new Response('{}', { status: 400 }) as any
     }
     const env = {
@@ -225,9 +248,13 @@ describe('authApp Hono routes', () => {
       DB: {},
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await authApp.request('/callback?code=abc&state=test-state', {
-      headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
-    }, env as any)
+    const res = await authApp.request(
+      '/callback?code=abc&state=test-state',
+      {
+        headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
+      },
+      env as any
+    )
     expect(res.status).toBe(400)
   })
 
@@ -236,8 +263,14 @@ describe('authApp Hono routes', () => {
     const sqlStatements: string[] = []
     globalThis.fetch = async () => {
       callCount++
-      if (callCount === 1) return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 }) as any
-      return new Response(JSON.stringify({ sub: 'g123', email: 'a@b.com', name: 'Alice' }), { status: 200 }) as any
+      if (callCount === 1)
+        return new Response(JSON.stringify({ access_token: 'tok' }), {
+          status: 200,
+        }) as any
+      return new Response(
+        JSON.stringify({ sub: 'g123', email: 'a@b.com', name: 'Alice' }),
+        { status: 200 }
+      ) as any
     }
     const mockDb = {
       prepare: (sql: string) => {
@@ -269,12 +302,20 @@ describe('authApp Hono routes', () => {
       DB: mockDb,
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await authApp.request('/callback?code=abc&state=test-state', {
-      headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
-    }, env as any)
+    const res = await authApp.request(
+      '/callback?code=abc&state=test-state',
+      {
+        headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
+      },
+      env as any
+    )
     expect(res.status).toBe(302)
-    const insertLocations = sqlStatements.filter((s) => s.includes('INSERT INTO locations'))
-    const insertStores = sqlStatements.filter((s) => s.includes('INSERT INTO stores'))
+    const insertLocations = sqlStatements.filter((s) =>
+      s.includes('INSERT INTO locations')
+    )
+    const insertStores = sqlStatements.filter((s) =>
+      s.includes('INSERT INTO stores')
+    )
     expect(insertLocations).toHaveLength(4)
     expect(insertStores).toHaveLength(3)
   })
@@ -283,8 +324,13 @@ describe('authApp Hono routes', () => {
     let callCount = 0
     globalThis.fetch = async () => {
       callCount++
-      if (callCount === 1) return new Response(JSON.stringify({ access_token: 'tok' }), { status: 200 }) as any
-      return new Response(JSON.stringify({ sub: 'g456', email: 'b@b.com' }), { status: 200 }) as any
+      if (callCount === 1)
+        return new Response(JSON.stringify({ access_token: 'tok' }), {
+          status: 200,
+        }) as any
+      return new Response(JSON.stringify({ sub: 'g456', email: 'b@b.com' }), {
+        status: 200,
+      }) as any
     }
     const mockDb = {
       prepare: () => mockDb,
@@ -301,9 +347,13 @@ describe('authApp Hono routes', () => {
       DB: mockDb,
       PAGES_ORIGIN: 'http://localhost:5173',
     }
-    const res = await authApp.request('/callback?code=abc&state=test-state', {
-      headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
-    }, env as any)
+    const res = await authApp.request(
+      '/callback?code=abc&state=test-state',
+      {
+        headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
+      },
+      env as any
+    )
     expect(res.status).toBe(302)
   })
 
@@ -317,11 +367,18 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'false',
     }
-    const res = await authApp.request('/email-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }),
-    }, env as any)
+    const res = await authApp.request(
+      '/email-login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'test@rumaq.dev',
+          password: 'password123',
+        }),
+      },
+      env as any
+    )
     expect(res.status).toBe(403)
   })
 
@@ -335,11 +392,15 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'true',
     }
-    const res = await authApp.request('/email-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'test@rumaq.dev' }),
-    }, env as any)
+    const res = await authApp.request(
+      '/email-login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: 'test@rumaq.dev' }),
+      },
+      env as any
+    )
     expect(res.status).toBe(400)
   })
 
@@ -360,11 +421,18 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'true',
     }
-    const res = await authApp.request('/email-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'nobody@rumaq.dev', password: 'password123' }),
-    }, env as any)
+    const res = await authApp.request(
+      '/email-login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'nobody@rumaq.dev',
+          password: 'password123',
+        }),
+      },
+      env as any
+    )
     expect(res.status).toBe(401)
   })
 
@@ -376,7 +444,8 @@ describe('authApp Hono routes', () => {
         id: 'u1',
         email: 'test@rumaq.dev',
         name: 'Test User One',
-        password_hash: 'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s',
+        password_hash:
+          'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s',
       }),
       all: async () => ({ results: [] }),
       batch: async () => [],
@@ -390,11 +459,18 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'true',
     }
-    const res = await authApp.request('/email-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'test@rumaq.dev', password: 'wrong-password' }),
-    }, env as any)
+    const res = await authApp.request(
+      '/email-login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'test@rumaq.dev',
+          password: 'wrong-password',
+        }),
+      },
+      env as any
+    )
     expect(res.status).toBe(401)
   })
 
@@ -406,7 +482,8 @@ describe('authApp Hono routes', () => {
         id: 'u1',
         email: 'test@rumaq.dev',
         name: 'Test User One',
-        password_hash: 'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s',
+        password_hash:
+          'pbkdf2_sha256$100000$pGW_FQUWkZ4LWR5SAXwDbg$eavlQExxmqixP0sIhu9HM8OIZqaxNm5ngKDMQd7Ge3s',
       }),
       all: async () => ({ results: [] }),
       batch: async () => [],
@@ -420,11 +497,18 @@ describe('authApp Hono routes', () => {
       PAGES_ORIGIN: 'http://localhost:5173',
       EMAIL_AUTH_ENABLED: 'true',
     }
-    const res = await authApp.request('/email-login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }),
-    }, env as any)
+    const res = await authApp.request(
+      '/email-login',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'test@rumaq.dev',
+          password: 'password123',
+        }),
+      },
+      env as any
+    )
     expect(res.status).toBe(200)
     const body = await res.json()
     expect(body).toEqual({ ok: true })

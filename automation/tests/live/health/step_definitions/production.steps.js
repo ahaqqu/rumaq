@@ -33,7 +33,8 @@ When(/^I GET (\S+)$/, async (path) => {
   if (ctx.cookie) {
     opts.headers = { cookie: `rumaq_session=${ctx.cookie}` }
   }
-  const origin = path.startsWith('/api/') && ctx.apiBase ? ctx.apiBase : ctx.base
+  const origin =
+    path.startsWith('/api/') && ctx.apiBase ? ctx.apiBase : ctx.base
   ctx.response = await fetch(`${origin}${path}`, opts)
   try {
     ctx.body = await ctx.response.json()
@@ -55,5 +56,8 @@ Then(/^the body should contain a user object$/, () => {
 })
 
 Then(/^the body should contain a stock array$/, () => {
-  assert.ok(Array.isArray(ctx.body?.stock), 'Missing stock array in /api/stock response')
+  assert.ok(
+    Array.isArray(ctx.body?.stock),
+    'Missing stock array in /api/stock response'
+  )
 })

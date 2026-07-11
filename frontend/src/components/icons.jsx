@@ -47,12 +47,34 @@ export {
 
 export function BrandMark({ size = 32 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      aria-hidden="true"
+    >
       <rect width="32" height="32" rx="9" fill="url(#rmq-g)" />
-      <path d="M16 7 7 14.2V24a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V14.2L16 7z" fill="none" stroke="#fff" strokeWidth="1.8" strokeLinejoin="round" />
-      <path d="M16 15l1.2 2.8 2.8 1.2-2.8 1.2L16 23l-1.2-2.8L12 19l2.8-1.2z" fill="#fff" />
+      <path
+        d="M16 7 7 14.2V24a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V14.2L16 7z"
+        fill="none"
+        stroke="#fff"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M16 15l1.2 2.8 2.8 1.2-2.8 1.2L16 23l-1.2-2.8L12 19l2.8-1.2z"
+        fill="#fff"
+      />
       <defs>
-        <linearGradient id="rmq-g" x1="7" y1="4" x2="25" y2="28" gradientUnits="userSpaceOnUse">
+        <linearGradient
+          id="rmq-g"
+          x1="7"
+          y1="4"
+          x2="25"
+          y2="28"
+          gradientUnits="userSpaceOnUse"
+        >
           <stop stopColor="oklch(0.62 0.13 230)" />
           <stop offset="1" stopColor="oklch(0.45 0.14 230)" />
         </linearGradient>

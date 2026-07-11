@@ -29,56 +29,56 @@ MODE="${1:-run}"
 MODE="${MODE#--}"
 
 require_cmd() {
-  if ! command -v "$1" &>/dev/null; then
+  if ! command -v "$1" &> /dev/null; then
     echo "Error: $1 is not installed. $2"
     exit 1
   fi
 }
 
-info()  { echo -e "==> $1"; }
-ok()    { echo -e "  ✓  $1"; }
-fail()  { echo -e "  ✗  $1"; }
+info() { echo -e "==> $1"; }
+ok() { echo -e "  ✓  $1"; }
+fail() { echo -e "  ✗  $1"; }
 
 install_docker() {
   info "Docker not found. Attempting auto-install..."
-  if command -v curl &>/dev/null; then
+  if command -v curl &> /dev/null; then
     curl -fsSL https://get.docker.com | sh
-  elif command -v wget &>/dev/null; then
+  elif command -v wget &> /dev/null; then
     wget -qO- https://get.docker.com | sh
-  elif command -v apt &>/dev/null; then
+  elif command -v apt &> /dev/null; then
     sudo apt update && sudo apt install -y docker.io docker-compose-v2
-  elif command -v dnf &>/dev/null; then
+  elif command -v dnf &> /dev/null; then
     sudo dnf install -y docker docker-compose
-  elif command -v yum &>/dev/null; then
+  elif command -v yum &> /dev/null; then
     sudo yum install -y docker docker-compose-plugin
-  elif command -v pacman &>/dev/null; then
+  elif command -v pacman &> /dev/null; then
     sudo pacman -S --noconfirm docker docker-compose
-  elif command -v zypper &>/dev/null; then
+  elif command -v zypper &> /dev/null; then
     sudo zypper install -y docker docker-compose
-  elif command -v apk &>/dev/null; then
+  elif command -v apk &> /dev/null; then
     sudo apk add docker docker-compose
   else
     fail "Could not auto-install Docker. Install manually: https://docs.docker.com/get-docker/"
     exit 1
   fi
-  sudo systemctl enable --now docker 2>/dev/null || sudo rc-update add docker boot 2>/dev/null || true
-  if ! groups "$USER" 2>/dev/null | grep -q docker; then
+  sudo systemctl enable --now docker 2> /dev/null || sudo rc-update add docker boot 2> /dev/null || true
+  if ! groups "$USER" 2> /dev/null | grep -q docker; then
     sudo usermod -aG docker "$USER"
     info "Added $USER to docker group. Log out and back in, or run 'newgrp docker'."
   fi
   ok "Docker installed."
 }
 
-if ! command -v docker &>/dev/null; then
+if ! command -v docker &> /dev/null; then
   install_docker
 fi
 
 # ------------------------------------------------------------------
 # Check Docker group membership (permission fix)
 # ------------------------------------------------------------------
-if ! docker info &>/dev/null; then
+if ! docker info &> /dev/null; then
   docker_err="$(docker info 2>&1)"
-  if echo "$docker_err" | grep -qi "permission denied" 2>/dev/null; then
+  if echo "$docker_err" | grep -qi "permission denied" 2> /dev/null; then
     info "Adding $USER to the docker group..."
     sudo usermod -aG docker "$USER"
     ok "User added to docker group. Log out and back in, or run 'newgrp docker'."
@@ -92,13 +92,13 @@ cd "$ROOT_DIR"
 # ------------------------------------------------------------------
 # Check Docker is running
 # ------------------------------------------------------------------
-if ! docker info &>/dev/null; then
+if ! docker info &> /dev/null; then
   info "Docker is not running. Attempting to start it..."
-  if command -v systemctl &>/dev/null; then
+  if command -v systemctl &> /dev/null; then
     sudo systemctl start docker
-  elif command -v service &>/dev/null; then
+  elif command -v service &> /dev/null; then
     sudo service docker start
-  elif command -v rc-service &>/dev/null; then
+  elif command -v rc-service &> /dev/null; then
     sudo rc-service docker start
   else
     fail "Could not start Docker automatically. Start Docker manually and try again."
@@ -106,13 +106,13 @@ if ! docker info &>/dev/null; then
   fi
   # Wait for Docker to be ready
   for i in $(seq 1 10); do
-    if docker info &>/dev/null; then
+    if docker info &> /dev/null; then
       ok "Docker is now running."
       break
     fi
     sleep 1
   done
-  if ! docker info &>/dev/null; then
+  if ! docker info &> /dev/null; then
     fail "Docker still not running after 10s. Check 'sudo journalctl -u docker' for errors."
     exit 1
   fi
@@ -129,8 +129,8 @@ case "$MODE" in
 
     # Generate HTML report from vitest JSON (mounted volume)
     if [ -f "$ROOT_DIR/automation/test-results/vitest/api-results.json" ]; then
-      node "$ROOT_DIR/automation/scripts/generate-test-report.js" 2>/dev/null && \
-        ok "HTML report: automation/test-results/test-report.html" || true
+      node "$ROOT_DIR/automation/scripts/generate-test-report.js" 2> /dev/null \
+        && ok "HTML report: automation/test-results/test-report.html" || true
     fi
 
     if [[ $EXIT_CODE -eq 0 ]]; then
