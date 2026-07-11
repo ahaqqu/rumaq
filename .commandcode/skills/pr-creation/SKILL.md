@@ -28,12 +28,10 @@ The PR description is the body shown in GitHub. Write it in Markdown with the fo
 
 ## Context
 
-```
 As <role>
 Given <current situation>
 When <change is applied>
 Then <expected outcome>
-```
 
 ## Summary
 
