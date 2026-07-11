@@ -29,8 +29,11 @@ Runs every 6 hours via `.github/workflows/smoke.yml`. Two base URLs: `rumaq.page
 
 ## Acceptance criteria
 
-- Meet unit tests coverages criteria
-- New API endpoint → add scenario in `automation/tests/local/api/`
-- New UI flow → add scenario in `automation/tests/local/e2e/`
-- Must pass `./scripts/test.sh automation-local`
-- API doc drift check: after adding or modifying backend routes, run `./scripts/docs.sh` and ensure `docs/API.md` is up to date. The CI `docs` job fails if `git diff --exit-code docs/API.md` is non-zero.
+- [ ] Frontend unit test coverage thresholds met (90/75/85/90) — `./scripts/test.sh unit frontend --coverage`
+- [ ] Backend unit test coverage thresholds met (90/80/85/90) — `./scripts/test.sh unit backend --coverage`
+- [ ] New API endpoint has automation test scenario — `automation/tests/local/api/`
+- [ ] New UI flow has automation test scenario — `automation/tests/local/e2e/`
+- [ ] Local automation tests pass — `./scripts/test.sh automation-local`
+- [ ] API docs match current routes — `./scripts/docs.sh` + `git diff --exit-code docs/API.md`
+- [ ] All unit tests pass — `./scripts/test.sh unit`
+- [ ] Code style and lint pass — `./scripts/style.sh --check`
