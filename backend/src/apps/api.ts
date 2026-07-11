@@ -1,7 +1,8 @@
 import { Hono } from 'hono'
 import { logger } from 'hono/logger'
 import { z } from 'zod'
-import { zValidator } from '@hono/zod-validator'
+
+import { openAPIRouteHandler, describeRoute, validator } from 'hono-openapi'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { propsAuthMiddleware } from '../auth.js'
@@ -22,64 +23,175 @@ apiApp.onError((err, c) => {
   return c.json({ error: err.message || 'Internal server error' }, 500)
 })
 
-apiApp.get('/api/health', (c) => {
-  c.res.headers.set(
-    'Cache-Control',
-    'public, max-age=60, stale-while-revalidate=300'
-  )
-  return c.json({ ok: true })
-})
+apiApp.get(
+  '/api/openapi.json',
+  openAPIRouteHandler(apiApp, {
+    documentation: {
+      info: { title: 'RumaQ API', version: '0.1.0' },
+      components: {
+        securitySchemes: {
+          cookieAuth: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: 'rumaq_session',
+          },
+        },
+      },
+    },
+  })
+)
 
-apiApp.get('/api/auth/email-status', (c) => {
-  c.res.headers.set(
-    'Cache-Control',
-    'public, max-age=60, stale-while-revalidate=300'
-  )
-  return c.json({ enabled: c.env.EMAIL_AUTH_ENABLED === 'true' })
-})
+apiApp.get(
+  '/api/health',
+  describeRoute({
+    description: 'Public health check.',
+    responses: {
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: { type: 'object', properties: { ok: { type: 'boolean' } } },
+          },
+        },
+      },
+    },
+  }),
+  (c) => {
+    c.res.headers.set(
+      'Cache-Control',
+      'public, max-age=60, stale-while-revalidate=300'
+    )
+    return c.json({ ok: true })
+  }
+)
+
+apiApp.get(
+  '/api/auth/email-status',
+  describeRoute({
+    description: 'Reports whether email/password auth is enabled.',
+    responses: {
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: { enabled: { type: 'boolean' } },
+            },
+          },
+        },
+      },
+    },
+  }),
+  (c) => {
+    c.res.headers.set(
+      'Cache-Control',
+      'public, max-age=60, stale-while-revalidate=300'
+    )
+    return c.json({ enabled: c.env.EMAIL_AUTH_ENABLED === 'true' })
+  }
+)
 
 apiApp.use('/api/me', propsAuthMiddleware)
 apiApp.use('/api/stock', propsAuthMiddleware)
 
-apiApp.get('/api/me', async (c) => {
-  const user = await c.env.DB.prepare(
-    'SELECT id, email, name, picture FROM users WHERE id = ?'
-  )
-    .bind(c.get('userId'))
-    .first()
-  const res = c.json({ user })
-  res.headers.set('Cache-Control', 'private, no-cache')
-  return res
-})
-
-apiApp.get('/api/stock', zValidator('query', stockQuery), async (c) => {
-  const { location, q } = c.req.valid('query')
-
-  let sql = `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
-     FROM stock s
-     JOIN items i ON i.id = s.item_id
-     LEFT JOIN locations l ON l.id = s.location_id
-     WHERE s.household_id = ?`
-  const params: unknown[] = [c.get('householdId')]
-
-  if (location) {
-    sql += ' AND l.id = ?'
-    params.push(location)
+apiApp.get(
+  '/api/me',
+  describeRoute({
+    description: 'Returns the current authenticated user.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                user: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    email: { type: 'string' },
+                    name: { type: 'string', nullable: true },
+                    picture: { type: 'string', nullable: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  async (c) => {
+    const user = await c.env.DB.prepare(
+      'SELECT id, email, name, picture FROM users WHERE id = ?'
+    )
+      .bind(c.get('userId'))
+      .first()
+    const res = c.json({ user })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
   }
-  if (q) {
-    sql += ' AND i.name LIKE ?'
-    params.push(`%${q}%`)
+)
+
+apiApp.get(
+  '/api/stock',
+  describeRoute({
+    description: 'Current inventory for the active household.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: {
+        description: 'OK',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                stock: {
+                  type: 'array',
+                  items: { type: 'object' },
+                },
+              },
+            },
+          },
+        },
+      },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  validator('query', stockQuery),
+  async (c) => {
+    const { location, q } = c.req.valid('query')
+
+    let sql = `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
+       FROM stock s
+       JOIN items i ON i.id = s.item_id
+       LEFT JOIN locations l ON l.id = s.location_id
+       WHERE s.household_id = ?`
+    const params: unknown[] = [c.get('householdId')]
+
+    if (location) {
+      sql += ' AND l.id = ?'
+      params.push(location)
+    }
+    if (q) {
+      sql += ' AND i.name LIKE ?'
+      params.push(`%${q}%`)
+    }
+
+    sql += ' ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date'
+
+    const { results } = await c.env.DB.prepare(sql)
+      .bind(...params)
+      .all()
+    const res = c.json({ stock: results })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
   }
-
-  sql += ' ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date'
-
-  const { results } = await c.env.DB.prepare(sql)
-    .bind(...params)
-    .all()
-  const res = c.json({ stock: results })
-  res.headers.set('Cache-Control', 'private, no-cache')
-  return res
-})
+)
 
 apiApp.notFound(async (c) => {
   if (c.env.ASSETS) {

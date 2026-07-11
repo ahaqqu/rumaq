@@ -33,3 +33,4 @@ Runs every 6 hours via `.github/workflows/smoke.yml`. Two base URLs: `rumaq.page
 - New API endpoint → add scenario in `automation/tests/local/api/`
 - New UI flow → add scenario in `automation/tests/local/e2e/`
 - Must pass `./scripts/test-automation-local.sh`
+- API doc drift check: after adding or modifying backend routes, run `./scripts/docs-api.sh` and ensure `docs/API.md` is up to date. The CI `docs` job fails if `git diff --exit-code docs/API.md` is non-zero.

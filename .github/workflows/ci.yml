@@ -28,6 +28,23 @@ jobs:
       - name: Ensure no uncommitted changes
         run: git diff --exit-code
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: bash ./scripts/docs-api.sh
+
+      - name: Fail if API docs drifted
+        run: git diff --exit-code docs/API.md
+
   test-frontend:
     runs-on: ubuntu-latest
     steps:
