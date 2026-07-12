@@ -61,13 +61,24 @@ rumaq/
 │   ├── wrangler.test.toml  # Test config
 │   └── wrangler.toml.example # Template
 ├── scripts/                # Setup, deployment, and smoke-trigger scripts
-│   ├── deploy.sh           # Full-stack deployment
-│   ├── deploy-cf.js        # Cloudflare deploy helper: d1-setup, r2-ensure, put-secrets, pages-bindings
-│   ├── setup-db.js         # D1 database setup
-│   ├── test-unit.sh        # Unit test entrypoint
-│   ├── test-automation-local.sh  # Local integration + E2E test entrypoint
-│   ├── test-automation-live.sh   # Live production smoke test entrypoint
-│   └── trigger-smoke.sh    # Triggers production smoke workflow remotely
+│   ├── build.sh            # Worker + frontend build
+│   ├── deploy/             # Deploy helper scripts
+│   │   ├── deploy-cf.js    # Cloudflare deploy helper: d1-setup, r2-ensure, put-secrets, pages-bindings
+│   │   └── setup-db.js     # D1 database setup
+│   ├── deploy.sh           # Single entrypoint for all deployments
+│   ├── docs.sh             # API documentation generator
+│   ├── github/             # CI helper scripts (not for local use)
+│   │   ├── ci.sh
+│   │   ├── cleanup-branch.sh
+│   │   ├── smoke.sh
+│   │   ├── test-automation.sh
+│   │   └── trigger-smoke.sh
+│   ├── style.sh            # Code formatting
+│   ├── test/               # Test runner scripts
+│   │   ├── automation-live.sh
+│   │   ├── automation-local.sh
+│   │   └── unit.sh
+│   └── test.sh             # Single entrypoint for all tests
 ├── automation/             # All test automation
 │   ├── tests/              # Feature files, step definitions, fixtures
 │   │   ├── local/          # Local stack tests (API + E2E)
@@ -86,22 +97,27 @@ rumaq/
 │   ├── playwright.config.js
 │   └── vitest.config.integration.mjs
 ├── .github/
-│   ├── dependabot.yml      # Daily dependency version bumps
+│   ├── dependabot.yml                # Daily dependency version bumps
 │   └── workflows/
-│       ├── ci.yml          # Unit tests + lint + audit
-│       ├── test-automation.yml  # Integration + E2E via Docker
-│       ├── smoke.yml       # Scheduled production smoke
-│       └── audit.yml       # Daily vulnerability scan + auto PR
+│       ├── audit.yml                 # Daily vulnerability scan + auto PR
+│       ├── auto-merge-dependabot.yml  # Auto-merge safe dependabot PRs
+│       ├── ci.yml                    # Unit tests + lint + audit
+│       ├── cleanup-branch.yml        # Deletes branch Worker on PR close
+│       ├── smoke.yml                 # Scheduled production smoke
+│       └── test-automation.yml       # Integration + E2E via Docker
 └── docs/
-    ├── ARCHITECTURE.md     # this file
     ├── API.md              # REST API contract
-    ├── PROJECT_PLAN.md     # work items and PR plan
-    ├── TEST_STRATEGY.md    # testing approach and acceptance criteria
+    ├── ARCHITECTURE.md     # this file
+    ├── BACKEND_CONVENTIONS.md  # Backend coding conventions
+    ├── FRONTEND_CONVENTIONS.md # Frontend coding conventions
+    ├── PROJECT_PLAN.md     # Work items and PR plan
+    ├── TEST_STRATEGY.md    # Testing approach and acceptance criteria
     ├── features/           # Feature deep-dives
     │   ├── internationalisation.md
     │   └── persona.md
     └── plans/              # ADRs and implementation plans
         ├── frontend-refactor-plan.md
+        ├── phase-01-settings-and-preferences.md
         ├── pr-2-settings-plan.md
         └── workers-cache-plan.md
 ```
@@ -112,9 +128,9 @@ rumaq/
 User browser
     │
     ▼
-Cloudflare Pages (rumaq.pages.dev) — static SPA assets only
+Cloudflare Pages (rumaq.pages.dev or {branch}.rumaq.pages.dev) — static SPA assets only
     │
-    └── API calls ──► Cloudflare Worker (api.rumaq.workers.dev)
+    └── API calls ──► Cloudflare Worker (api.rumaq.workers.dev or rumaq-api-{branch}.rumaq.workers.dev)
                             │
                             ▼
                     [default entrypoint — gateway]
@@ -238,6 +254,12 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 - A Google Cloud project with OAuth 2.0 credentials
 - Wrangler CLI authenticated (`wrangler login` or `export CLOUDFLARE_API_TOKEN=...`)
 
+### Branch deployments
+
+When not on `main`, `./scripts/deploy.sh cloudflare` deploys to a branch-specific Worker (`rumaq-api-{sanitized-branch}`) and Pages preview environment. Production is never touched.
+
+Branch Workers are cleaned up automatically via `.github/workflows/cleanup-branch.yml` when the PR is closed.
+
 ### One-time setup
 
 1. Create the D1 database:
@@ -290,7 +312,7 @@ If usage grows, the first upgrade is Workers Paid ($5/mo) for higher request and
 ## 10. Security checklist
 
 - [x] Session JWT is `HttpOnly`, `Secure`, `SameSite=Lax`, and signed.
-- [ ] AI API keys are encrypted at rest and only decrypted in the Worker.
+- [x] AI API keys are encrypted at rest (AES-GCM) and only decrypted in the Worker.
 - [x] Google OAuth `state` and PKCE verifier prevent CSRF/replay.
 - [ ] R2 objects are private; frontend receives time-limited signed URLs.
 - [x] D1 queries are parameterized; no string concatenation.
