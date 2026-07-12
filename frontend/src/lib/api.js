@@ -18,6 +18,7 @@ async function request(path, options = {}) {
     const body = await res.json().catch(() => ({ error: res.statusText }))
     throw new Error(body.error || `Request failed: ${res.status}`)
   }
+  if (res.status === 204) return null
   return res.json()
 }
 
@@ -116,4 +117,11 @@ export function deleteStore(id) {
 
 export function getAiUsage() {
   return request('/api/ai/usage')
+}
+
+export function testAiKey(provider, key) {
+  return request('/api/ai-key/test', {
+    method: 'POST',
+    body: JSON.stringify({ provider, key }),
+  })
 }

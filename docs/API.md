@@ -18,6 +18,7 @@ Errors use `{ "error": "..." }`.
 
 | Method | Path                   | Auth | Query | Body | Description                                                                      |
 | ------ | ---------------------- | ---- | ----- | ---- | -------------------------------------------------------------------------------- |
+| POST   | /api/ai-key/test       | Yes  | —     | —    | Validates an AI provider API key.                                                |
 | GET    | /api/ai/usage          | Yes  | —     | —    | Returns today AI usage for the current user.                                     |
 | GET    | /api/auth/callback     | —    | —     | —    | Google OAuth callback. Sets rumaq_session and redirects to /.                    |
 | POST   | /api/auth/email-login  | —    | —     | —    | Validates credentials and sets rumaq_session.                                    |

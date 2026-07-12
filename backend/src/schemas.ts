@@ -31,3 +31,8 @@ export const locationSchema = object({
 export const storeSchema = object({
   label: pipe(string(), minLength(1), maxLength(100)),
 })
+
+export const aiKeyTestSchema = object({
+  provider: picklist(['opencode', 'openai', 'anthropic', 'gemini']),
+  key: optional(pipe(string(), minLength(1))),
+})

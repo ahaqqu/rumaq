@@ -7,8 +7,13 @@ import { object, string, optional } from 'valibot'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { propsAuthMiddleware } from '../auth.js'
-import { encryptAiKey } from '../lib/crypto.js'
-import { settingsPatchSchema, locationSchema, storeSchema } from '../schemas.js'
+import { encryptAiKey, decryptAiKey } from '../lib/crypto.js'
+import {
+  settingsPatchSchema,
+  locationSchema,
+  storeSchema,
+  aiKeyTestSchema,
+} from '../schemas.js'
 
 const stockQuery = object({
   location: optional(string()),
@@ -346,6 +351,82 @@ apiApp.patch(
     })
     res.headers.set('Cache-Control', 'private, no-cache')
     return res
+  }
+)
+
+apiApp.post(
+  '/api/ai-key/test',
+  describeRoute({
+    description: 'Validates an AI provider API key.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'OK - key is valid' },
+      400: { description: 'Validation error' },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  sValidator('json', aiKeyTestSchema),
+  async (c) => {
+    const { provider, key } = c.req.valid('json')
+    let apiKey = key
+
+    if (!apiKey) {
+      const settings = await c.env.DB.prepare(
+        'SELECT encrypted_ai_key FROM user_settings WHERE user_id = ?'
+      )
+        .bind(c.get('userId'))
+        .first<{ encrypted_ai_key: string | null }>()
+
+      if (!settings?.encrypted_ai_key) {
+        return c.json({ error: 'No API key saved' }, 400)
+      }
+
+      apiKey = await decryptAiKey(
+        settings.encrypted_ai_key,
+        c.env.WORKER_ENCRYPTION_KEY
+      )
+    }
+
+    try {
+      switch (provider) {
+        case 'gemini': {
+          const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`
+          )
+          if (!res.ok) throw new Error()
+          break
+        }
+        case 'anthropic': {
+          const res = await fetch('https://api.anthropic.com/v1/models', {
+            headers: {
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+            },
+          })
+          if (!res.ok) throw new Error()
+          break
+        }
+        case 'openai': {
+          const res = await fetch('https://api.openai.com/v1/models', {
+            headers: { Authorization: `Bearer ${apiKey}` },
+          })
+          if (!res.ok) throw new Error()
+          break
+        }
+        case 'opencode':
+        default: {
+          const res = await fetch('https://api.opencode.ai/v1/models', {
+            headers: { Authorization: `Bearer ${apiKey}` },
+          })
+          if (!res.ok) throw new Error()
+          break
+        }
+      }
+
+      return c.json({ ok: true })
+    } catch {
+      return c.json({ error: 'Invalid API key' }, 400)
+    }
   }
 )
 

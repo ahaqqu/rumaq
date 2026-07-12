@@ -22,6 +22,7 @@ import {
   useDeleteStore,
   useUsage,
 } from '../lib/queries/index.js'
+import { testAiKey } from '../lib/api.js'
 
 const MOTION_OPTS = [
   { id: 'none', key: 'settings.motionOpts.none' },
@@ -141,13 +142,17 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
     await saveSettings(payload)
   }
 
-  const test = () => {
+  const test = async () => {
     setTesting(true)
     setTestOk(null)
-    setTimeout(() => {
-      setTesting(false)
+    try {
+      await testAiKey(provider, draft || undefined)
       setTestOk(true)
-    }, 1200)
+    } catch {
+      setTestOk(false)
+    } finally {
+      setTesting(false)
+    }
   }
 
   const addLoc = async () => {
@@ -260,7 +265,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                   </button>
                 </div>
               </div>
-              {testOk && (
+              {testOk === true && (
                 <div
                   className="setting"
                   style={{ background: 'var(--ok-soft)' }}
@@ -274,6 +279,27 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                     </div>
                     <div className="setting__desc">
                       {t('settings.connectionSuccessDesc')}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {testOk === false && (
+                <div
+                  className="setting"
+                  style={{ background: 'var(--warn-soft)' }}
+                >
+                  <div className="setting__main">
+                    <div
+                      className="setting__title"
+                      style={{ color: 'var(--warn)' }}
+                    >
+                      {t('settings.connectionFailed', 'Connection failed')}
+                    </div>
+                    <div className="setting__desc">
+                      {t(
+                        'settings.connectionFailedDesc',
+                        'Check your API key and try again.'
+                      )}
                     </div>
                   </div>
                 </div>

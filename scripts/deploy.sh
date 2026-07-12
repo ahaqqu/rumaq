@@ -25,7 +25,6 @@ fi
 
 DB_NAME="${D1_DATABASE_NAME:-rumaq}"
 PAGES_PROJECT="${PAGES_PROJECT_NAME:-rumaq}"
-WORKER_URL="${WORKER_URL:-https://api.rumaq.workers.dev}"
 
 cd "$ROOT_DIR"
 
@@ -39,7 +38,7 @@ require_cmd() {
   fi
 }
 
-info() { echo -e "==> $1"; }
+log() { echo -e "==> $1"; }
 ok() { echo -e "  ok  $1"; }
 warn() { echo -e "  warn $1"; }
 
@@ -50,6 +49,23 @@ wrangler_cmd() {
   shift
   wrangler d1 migrations apply "$db" --config "$config" "$@"
 }
+
+# Detect branch for branch-specific deployments
+BRANCH_NAME="${BRANCH_NAME:-$(git rev-parse --abbrev-ref HEAD 2> /dev/null || echo 'main')}"
+SANITIZED_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9-]/-/g')
+
+if [[ "$BRANCH_NAME" == "main" || "$BRANCH_NAME" == "master" || "$BRANCH_NAME" == "HEAD" ]]; then
+  WORKER_NAME="${WORKER_NAME:-api}"
+  PAGES_ORIGIN="${PAGES_ORIGIN:-https://rumaq.pages.dev}"
+  WORKER_URL="${WORKER_URL:-https://api.rumaq.workers.dev}"
+  PAGES_BRANCH="main"
+else
+  WORKER_NAME="${WORKER_NAME:-rumaq-api-${SANITIZED_BRANCH}}"
+  PAGES_ORIGIN="${PAGES_ORIGIN:-https://${SANITIZED_BRANCH}.rumaq.pages.dev}"
+  WORKER_URL="${WORKER_URL:-https://${WORKER_NAME}.rumaq.workers.dev}"
+  PAGES_BRANCH="$BRANCH_NAME"
+  log "Branch: ${BRANCH_NAME} -> Worker: ${WORKER_NAME}, Frontend preview: ${PAGES_BRANCH}"
+fi
 
 # ------------------------------------------------------------------
 # Prerequisites
@@ -77,7 +93,7 @@ ensure_wrangler_toml() {
       return
     fi
 
-    info "Creating backend/wrangler.local.toml from example..."
+    log "Creating backend/wrangler.local.toml from example..."
     cp "$BACKEND_DIR/wrangler.toml.example" "$BACKEND_DIR/wrangler.local.toml"
     sed -i \
       -e 's/YOUR_ACCOUNT_ID/LOCAL/' \
@@ -92,7 +108,7 @@ ensure_wrangler_toml() {
       return
     fi
 
-    info "Creating backend/wrangler.cloudflare.toml from example..."
+    log "Creating backend/wrangler.cloudflare.toml from example..."
 
     cp "$BACKEND_DIR/wrangler.toml.example" "$config_file"
 
@@ -114,7 +130,7 @@ ensure_dev_vars() {
     return
   fi
 
-  info "backend/.dev.vars not found – creating template."
+  log "backend/.dev.vars not found – creating template."
 
   cat > "$BACKEND_DIR/.dev.vars" <<- EOF
 # Local-only secrets for \`wrangler dev\`.
@@ -135,7 +151,7 @@ EOF
 # Dependencies
 # ------------------------------------------------------------------
 install_deps() {
-  info "Installing workspace dependencies..."
+  log "Installing workspace dependencies..."
   npm install --no-fund
 }
 
@@ -143,7 +159,7 @@ install_deps() {
 # Database – local (via Miniflare / --local)
 # ------------------------------------------------------------------
 setup_database_local() {
-  info "Setting up local D1 database (${DB_NAME})..."
+  log "Setting up local D1 database (${DB_NAME})..."
 
   cd "$BACKEND_DIR"
   wrangler_cmd "wrangler.local.toml" "$DB_NAME" --local
@@ -156,7 +172,7 @@ setup_database_local() {
 # Database – remote (Cloudflare D1)
 # ------------------------------------------------------------------
 setup_database_remote() {
-  info "Setting up remote D1 database (${DB_NAME})..."
+  log "Setting up remote D1 database (${DB_NAME})..."
 
   local config_file="wrangler.cloudflare.toml"
   cd "$BACKEND_DIR"
@@ -184,7 +200,7 @@ setup_database_remote() {
 # ------------------------------------------------------------------
 ensure_r2_bucket() {
   local bucket_name="${R2_BUCKET_NAME:-rumaq-receipts}"
-  info "Ensuring R2 bucket \"${bucket_name}\"..."
+  log "Ensuring R2 bucket \"${bucket_name}\"..."
   cd "$BACKEND_DIR"
   result=$(node --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" r2-ensure)
   if [[ $result == "EXISTS" ]]; then
@@ -199,7 +215,7 @@ ensure_r2_bucket() {
 # Deploy Worker to Cloudflare
 # ------------------------------------------------------------------
 deploy_worker() {
-  info "Deploying Worker..."
+  log "Deploying Worker (name: ${WORKER_NAME})..."
 
   if [[ ! -f $BACKEND_DIR/wrangler.cloudflare.toml ]]; then
     echo "Error: backend/wrangler.cloudflare.toml not found."
@@ -207,7 +223,10 @@ deploy_worker() {
     exit 1
   fi
 
-  npm run deploy -w backend
+  npx wrangler deploy \
+    --config "$BACKEND_DIR/wrangler.cloudflare.toml" \
+    --name "$WORKER_NAME" \
+    --var PAGES_ORIGIN:"$PAGES_ORIGIN"
   ok "Worker deployed to ${WORKER_URL}."
 }
 
@@ -215,13 +234,12 @@ deploy_worker() {
 # Put secrets on the Worker (standalone Worker, not Pages)
 # ------------------------------------------------------------------
 put_worker_secrets() {
-  info "Setting Worker secrets..."
-  local config="$BACKEND_DIR/wrangler.cloudflare.toml"
+  log "Setting Worker secrets for ${WORKER_NAME}..."
 
   for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
     val="${!key:-}"
     if [ -n "$val" ]; then
-      printf '%s' "$val" | npx wrangler secret put "$key" --config "$config" > /dev/null 2>&1 || true
+      printf '%s' "$val" | npx wrangler secret put "$key" --name "$WORKER_NAME" > /dev/null 2>&1 || true
       echo "  ✓  $key"
     else
       echo "  -  $key (skipped — not set)"
@@ -235,20 +253,23 @@ put_worker_secrets() {
 # Build & deploy frontend to Cloudflare Pages (static only)
 # ------------------------------------------------------------------
 deploy_frontend() {
-  info "Building frontend with Worker URL: ${WORKER_URL}..."
+  log "Building frontend with Worker URL: ${WORKER_URL}..."
   npm install --no-fund
   VITE_API_BASE="$WORKER_URL" npm run build -w frontend
 
-  info "Deploying static assets to Cloudflare Pages (project: ${PAGES_PROJECT})..."
-  wrangler pages deploy frontend/dist --project-name "$PAGES_PROJECT" --no-bundle
-  ok "Frontend deployed."
+  log "Deploying static assets to Cloudflare Pages (project: ${PAGES_PROJECT}, branch: ${PAGES_BRANCH})..."
+  wrangler pages deploy frontend/dist \
+    --project-name "$PAGES_PROJECT" \
+    --branch "$PAGES_BRANCH" \
+    --no-bundle
+  ok "Frontend deployed to ${PAGES_ORIGIN}."
 }
 
 # ------------------------------------------------------------------
 # Build frontend (no deploy)
 # ------------------------------------------------------------------
 build_frontend() {
-  info "Building frontend (dry-run)..."
+  log "Building frontend (dry-run)..."
   npm install --no-fund
   npm run build -w frontend
   ok "Frontend build succeeded (no deployment was made)."
@@ -296,7 +317,7 @@ summary_cloudflare() {
   echo "============================================"
   echo ""
   echo "  API Worker: ${WORKER_URL}"
-  echo "  Frontend:   https://${PAGES_PROJECT}.pages.dev"
+  echo "  Frontend:   ${PAGES_ORIGIN}"
   echo ""
   echo "  Verify health: curl -I ${WORKER_URL}/api/health"
   echo "============================================"
@@ -341,17 +362,17 @@ do_local() {
 
   cleanup() {
     echo ""
-    info "Shutting down dev servers..."
+    log "Shutting down dev servers..."
     kill $FRONTEND_PID $BACKEND_PID 2> /dev/null || true
     wait $FRONTEND_PID $BACKEND_PID 2> /dev/null || true
   }
   trap cleanup EXIT INT TERM
 
-  info "Starting frontend (Vite) on http://localhost:5173..."
+  log "Starting frontend (Vite) on http://localhost:5173..."
   npm run dev -w frontend &
   FRONTEND_PID=$!
 
-  info "Starting backend (Worker) on http://localhost:8787..."
+  log "Starting backend (Worker) on http://localhost:8787..."
   npm run dev -w backend &
   BACKEND_PID=$!
 

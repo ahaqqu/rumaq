@@ -3,6 +3,8 @@
 - Never ask user to run CLI commands, except shell scripts under `scripts/`.
 - Do not read or display the contents of `.env` files.
 - `scripts/deploy.sh` is the single entrypoint for all deployments. Deploy to Cloudflare via `./scripts/deploy.sh cloudflare`.
+  - When on a non-main branch, it deploys a branch-specific Worker (`rumaq-api-{branch}`) and Pages preview — production is never touched.
+  - Branch Workers are cleaned up automatically via `scripts/github/cleanup-branch.sh` when the PR is closed.
 - `scripts/test.sh` is the single entrypoint for all tests (unit, automation-local, automation-live). Run `./scripts/test.sh unit frontend` etc.
 - `scripts/docs.sh` generates API documentation.
 - `scripts/github/` contains scripts used only by GitHub Actions, not for local developer use.
