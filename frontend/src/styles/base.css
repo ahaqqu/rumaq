@@ -103,7 +103,7 @@ select:focus {
 }
 
 ::selection {
-  background: oklch(0.62 0.11 230 / 0.18);
+  background: color-mix(in oklch, var(--accent) 18%, transparent);
 }
 
 ul,
