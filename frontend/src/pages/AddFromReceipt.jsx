@@ -4,7 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { formatRp } from '../data/mock.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
-import { scanReceipt, createPurchase, getStores } from '../lib/api.js'
+import { scanReceipt, createPurchase, getStores, getItems } from '../lib/api.js'
 import {
   IconCamera,
   IconUpload,
@@ -32,6 +32,8 @@ export function AddFromReceipt({ onDone }) {
   const [selectedStore, setSelectedStore] = useState(null)
   const [stores, setStores] = useState([])
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
+  const [itemCatalog, setItemCatalog] = useState([])
+  const [selectedItemIds, setSelectedItemIds] = useState({})
   const [imageKey, setImageKey] = useState(null)
   const [imageUrl, setImageUrl] = useState(null)
   const [creating, setCreating] = useState(false)
@@ -93,10 +95,15 @@ export function AddFromReceipt({ onDone }) {
       }
 
       try {
-        const storesData = await getStores()
+        const [storesData, itemsData] = await Promise.all([
+          getStores(),
+          getItems(),
+        ])
         setStores(storesData.stores || [])
+        setItemCatalog(itemsData.items || [])
       } catch {
         setStores([])
+        setItemCatalog([])
       }
 
       setPhase('review')
@@ -110,6 +117,22 @@ export function AddFromReceipt({ onDone }) {
     setItems((prev) =>
       prev.map((it) => (it._id === id ? { ...it, [field]: value } : it))
     )
+  }
+
+  function selectItemMatch(id, catalogItemId) {
+    setSelectedItemIds((prev) => ({ ...prev, [id]: catalogItemId }))
+    if (catalogItemId) {
+      const match = itemCatalog.find((c) => c.id === catalogItemId)
+      if (match) {
+        setItems((prev) =>
+          prev.map((it) =>
+            it._id === id
+              ? { ...it, name: match.name, unit: match.unit || it.unit }
+              : it
+          )
+        )
+      }
+    }
   }
 
   async function handleConfirm() {
@@ -126,6 +149,7 @@ export function AddFromReceipt({ onDone }) {
           qty: Number(it.qty) || 1,
           unit: it.unit || 'pcs',
           price: Math.round(Number(it.price)) || 0,
+          item_id: selectedItemIds[it._id] || undefined,
         })),
       }
 
@@ -385,12 +409,46 @@ export function AddFromReceipt({ onDone }) {
             </div>
             <div className="panel__body">
               {items.map((it) => (
-                <div className="parsed-row" key={it._id}>
-                  <input
-                    value={it.name}
-                    onChange={(e) => updateItem(it._id, 'name', e.target.value)}
-                    aria-label={t('history.item')}
-                  />
+                <div
+                  className="parsed-row"
+                  key={it._id}
+                  style={{ flexWrap: 'wrap', gap: 'var(--sp-2)' }}
+                >
+                  <div
+                    style={{
+                      flex: '1 1 100%',
+                      display: 'flex',
+                      gap: 'var(--sp-2)',
+                      alignItems: 'center',
+                    }}
+                  >
+                    <select
+                      value={selectedItemIds[it._id] || ''}
+                      onChange={(e) =>
+                        selectItemMatch(it._id, e.target.value || null)
+                      }
+                      style={{ flex: 1, minWidth: 120 }}
+                      aria-label="Match to existing item"
+                    >
+                      <option value="">
+                        {t('addReceipt.keepNew') || '— New item —'}
+                      </option>
+                      {itemCatalog.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      value={it.name}
+                      onChange={(e) =>
+                        updateItem(it._id, 'name', e.target.value)
+                      }
+                      aria-label={t('history.item')}
+                      style={{ flex: 2, minWidth: 120 }}
+                      placeholder={t('addReceipt.itemName') || 'Item name'}
+                    />
+                  </div>
                   <input
                     type="number"
                     step="any"
