@@ -28,19 +28,6 @@ The receipt-scan feature lets users take or upload a photo of a shopping receipt
 | GET    | `/api/items`                      | Yes  | List items for item-matching dropdown |
 | POST   | `/api/__test/direct-sql`         | Yes* | Admin endpoint for test data setup   |
 
-## Authentication
-
-All receipt-scan endpoints (except `POST /api/__test/direct-sql`) require authentication via the **`rumaq_session`** cookie — a signed JWT set after Google OAuth or email login.
-
-The `propsAuthMiddleware` (`backend/src/auth.ts:128`) resolves the user and household before each request:
-
-1. Reads `rumaq_session` cookie from the request
-2. Verifies the JWT signature using `WORKER_JWT_SECRET`
-3. Looks up the user's active household from `user_settings` (or falls back to their first household membership)
-4. Stores `userId` and `householdId` on the request context for downstream handlers
-
-Scan and purchase creation are scoped to the authenticated household — parsed items, stock updates, and history entries are all tied to the household resolved by the middleware.
-
 ## Source
 
 - `backend/src/apps/api.ts` — scan, purchase creation, items listing
