@@ -21,6 +21,7 @@ import {
   Trash as IconTrash,
   ArrowsClockwise as IconRefresh,
   Plus as IconPlus,
+  Minus as IconMinus,
   Warning as IconWarning,
 } from '@phosphor-icons/react'
 
@@ -46,6 +47,7 @@ export {
   IconTrash,
   IconRefresh,
   IconPlus,
+  IconMinus,
   IconWarning,
 }
 

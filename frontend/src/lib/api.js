@@ -125,3 +125,14 @@ export function testAiKey(provider, key) {
     body: JSON.stringify({ provider, key }),
   })
 }
+
+export function patchStock(id, payload) {
+  return request(`/api/stock/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function getHome() {
+  return request('/api/home')
+}

@@ -1,26 +1,65 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import { STOCK, relUpdated } from '../data/mock.js'
-import { LocChip, TimeSignal, EmptyState } from '../components/ui.jsx'
+import {
+  LocChip,
+  TimeSignal,
+  EmptyState,
+  SkeletonRows,
+} from '../components/ui.jsx'
+import { useStock, useUpdateStock, useLocations } from '../lib/queries/index.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
-import { IconSearch, IconBox, IconRefresh } from '../components/icons.jsx'
+import {
+  IconSearch,
+  IconBox,
+  IconPlus,
+  IconMinus,
+} from '../components/icons.jsx'
+
+function getDaysUntil(expiryDate) {
+  if (!expiryDate) return null
+  const now = new Date()
+  const expiry = new Date(expiryDate + 'T00:00:00')
+  return Math.round((expiry - now) / 86400000)
+}
 
 export function Inventory() {
   const { t } = useTranslation()
   const { persona } = usePersona()
   const [q, setQ] = useState('')
   const [loc, setLoc] = useState('all')
+  const searchTimer = useRef(null)
+  const [debouncedQ, setDebouncedQ] = useState('')
 
-  const rows = useMemo(() => {
-    return STOCK.filter((s) => (loc === 'all' ? true : s.location === loc))
-      .filter((s) => s.name.toLowerCase().includes(q.toLowerCase()))
-      .sort((a, b) => a.runOut - b.runOut)
-  }, [q, loc])
+  const { data: stockData, isLoading } = useStock({
+    location: loc === 'all' ? undefined : loc,
+    q: debouncedQ || undefined,
+  })
+  const { data: locationsData } = useLocations()
+  const updateStock = useUpdateStock()
 
+  const rows = stockData?.stock ?? []
   const locations = useMemo(
-    () => [...new Set(STOCK.map((s) => s.location))],
-    []
+    () => locationsData?.locations ?? [],
+    [locationsData]
+  )
+
+  const handleSearch = useCallback((value) => {
+    setQ(value)
+    if (searchTimer.current) clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => {
+      setDebouncedQ(value)
+    }, 300)
+  }, [])
+
+  const handleQtyUpdate = useCallback(
+    (id, delta) => {
+      const item = rows.find((r) => r.id === id)
+      if (!item) return
+      const newQty = Math.max(0, item.qty + delta)
+      updateStock.mutate({ id, payload: { qty: newQty } })
+    },
+    [rows, updateStock]
   )
 
   return (
@@ -49,7 +88,7 @@ export function Inventory() {
           />
           <input
             value={q}
-            onChange={(e) => setQ(e.target.value)}
+            onChange={(e) => handleSearch(e.target.value)}
             placeholder={t('inventory.searchPlaceholder')}
             aria-label={t('inventory.searchAriaLabel')}
             style={{ paddingLeft: 40 }}
@@ -72,20 +111,22 @@ export function Inventory() {
         >
           {t('inventory.all')}
         </button>
-        {locations.map((locId) => (
+        {locations.map((locItem) => (
           <button
-            key={locId}
+            key={locItem.id}
             className="chip chip--filter"
-            aria-pressed={loc === locId}
-            onClick={() => setLoc(locId)}
+            aria-pressed={loc === locItem.id}
+            onClick={() => setLoc(locItem.id)}
           >
-            {locId}
+            {locItem.label}
           </button>
         ))}
       </div>
 
       <div className="panel">
-        {rows.length === 0 ? (
+        {isLoading ? (
+          <SkeletonRows n={5} />
+        ) : rows.length === 0 ? (
           <EmptyState
             icon={IconBox}
             title={t('inventory.noMatch')}
@@ -101,19 +142,32 @@ export function Inventory() {
                   </div>
                   <div className="row__meta">
                     <TimeSignal
-                      expiryDays={s.expiryDays}
-                      runOut={s.runOut}
+                      expiryDays={getDaysUntil(s.expiry_date)}
+                      runOut={s.run_out_days}
                       basis={s.basis}
                     />
                   </div>
                 </div>
                 <div className="row__side">
-                  <div className="row__qty">
-                    {s.qty} {s.unit}
-                  </div>
-                  <div className="row__updated">
-                    <IconRefresh size={12} /> {t('common.updated')}{' '}
-                    {relUpdated(s.updated, t)}
+                  <div className="row__qty row__qty--editable">
+                    <button
+                      className="btn btn--icon btn--sm"
+                      onClick={() => handleQtyUpdate(s.id, -1)}
+                      disabled={s.qty <= 0}
+                      aria-label={t('inventory.decreaseQty')}
+                    >
+                      <IconMinus size={14} />
+                    </button>
+                    <span className="row__qty-value">
+                      {s.qty} {s.unit}
+                    </span>
+                    <button
+                      className="btn btn--icon btn--sm"
+                      onClick={() => handleQtyUpdate(s.id, 1)}
+                      aria-label={t('inventory.increaseQty')}
+                    >
+                      <IconPlus size={14} />
+                    </button>
                   </div>
                 </div>
               </div>

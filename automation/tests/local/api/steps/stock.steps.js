@@ -151,6 +151,117 @@ defineFeature(feature, (test) => {
     })
   })
 
+  test('PATCH stock updates quantity and recalculates run-out', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    when(
+      /I send a (PATCH) request to (\S+) with body/,
+      async (method, path, body) => {
+        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+      }
+    )
+
+    then('the response status should be 200', () => {
+      ctx.expectStatus(200)
+    })
+
+    and('the stock item should have qty 1', () => {
+      ctx.expectStockUpdatedQty(1)
+    })
+
+    and('the stock item should have run_out_days computed', () => {
+      ctx.expectStockRunOutComputed()
+    })
+  })
+
+  test('PATCH stock with another household stock returns 404', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    when(
+      /I send a (PATCH) request to (\S+) with body/,
+      async (method, path, body) => {
+        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+      }
+    )
+
+    then('the response status should be 404', () => {
+      ctx.expectStatus(404)
+    })
+  })
+
+  test('PATCH stock validates schema rejects negative qty', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    when(
+      /I send a (PATCH) request to (\S+) with body/,
+      async (method, path, body) => {
+        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+      }
+    )
+
+    then('the response status should be 400', () => {
+      ctx.expectStatus(400)
+    })
+  })
+
+  test('PATCH stock with invalid location returns 400', ({
+    given,
+    when,
+    then,
+  }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    when(
+      /I send a (PATCH) request to (\S+) with body/,
+      async (method, path, body) => {
+        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+      }
+    )
+
+    then('the response status should be 400', () => {
+      ctx.expectStatus(400)
+    })
+  })
+
   test('Authenticated stock response has per-user cache headers', ({
     given,
     when,

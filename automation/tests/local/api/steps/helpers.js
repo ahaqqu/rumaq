@@ -179,4 +179,53 @@ export class ApiContext {
     expect(this.responseBody.used).toBe(0)
     expect(this.responseBody.daily_limit).toBe(20)
   }
+
+  expectStockUpdatedQty(qty) {
+    expect(this.responseBody.stock).toBeDefined()
+    expect(this.responseBody.stock.qty).toBe(qty)
+  }
+
+  expectStockRunOutComputed() {
+    expect(this.responseBody.stock).toBeDefined()
+    expect(this.responseBody.stock).toHaveProperty('run_out_days')
+    expect(this.responseBody.stock).toHaveProperty('basis')
+  }
+
+  expectHomeShape() {
+    expect(this.responseBody).toHaveProperty('total_items')
+    expect(this.responseBody).toHaveProperty('expiring_7d')
+    expect(this.responseBody).toHaveProperty('running_out_7d')
+    expect(this.responseBody).toHaveProperty('low_stock')
+    expect(this.responseBody).toHaveProperty('next_trip')
+  }
+
+  expectHomeTotalItems(n) {
+    expect(this.responseBody.total_items).toBe(n)
+  }
+
+  expectHomeExpiring7d(n) {
+    expect(this.responseBody.expiring_7d).toBe(n)
+  }
+
+  expectHomeRunningOutItems() {
+    expect(this.responseBody.running_out_7d).toBeGreaterThan(0)
+  }
+
+  expectLowStockArray() {
+    expect(Array.isArray(this.responseBody.low_stock)).toBe(true)
+  }
+
+  expectLowStockLength(n) {
+    expect(this.responseBody.low_stock.length).toBeGreaterThanOrEqual(n)
+  }
+
+  expectLowStockItemShape() {
+    for (const item of this.responseBody.low_stock) {
+      expect(item).toHaveProperty('id')
+      expect(item).toHaveProperty('name')
+      expect(item).toHaveProperty('qty')
+      expect(item).toHaveProperty('unit')
+      expect(item).toHaveProperty('location')
+    }
+  }
 }

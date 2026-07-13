@@ -26,6 +26,7 @@ Errors use `{ "error": "..." }`.
 | GET    | /api/auth/login        | —    | —     | —    | Redirects to Google OAuth 2.0 login.                                             |
 | GET    | /api/auth/logout       | —    | —     | —    | Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}. |
 | GET    | /api/health            | —    | —     | —    | Public health check.                                                             |
+| GET    | /api/home              | Yes  | —     | —    | Home dashboard stats for the active household.                                   |
 | GET    | /api/locations         | Yes  | —     | —    | Lists locations for the active household.                                        |
 | POST   | /api/locations         | Yes  | —     | —    | Creates a new location for the active household.                                 |
 | DELETE | /api/locations/{id}    | Yes  | `id`  | —    | Deletes a location if not referenced by stock.                                   |
@@ -33,6 +34,7 @@ Errors use `{ "error": "..." }`.
 | GET    | /api/settings          | Yes  | —     | —    | Returns the current authenticated user settings.                                 |
 | PATCH  | /api/settings          | Yes  | —     | —    | Updates the current user settings.                                               |
 | GET    | /api/stock             | Yes  | —     | —    | Current inventory for the active household.                                      |
+| PATCH  | /api/stock/{id}        | Yes  | `id`  | —    | Updates a stock item.                                                            |
 | GET    | /api/stores            | Yes  | —     | —    | Lists stores for the active household.                                           |
 | POST   | /api/stores            | Yes  | —     | —    | Creates a new store for the active household.                                    |
 | DELETE | /api/stores/{id}       | Yes  | `id`  | —    | Deletes a store if not referenced by purchases or plans.                         |
