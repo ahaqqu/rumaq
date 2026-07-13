@@ -233,14 +233,6 @@
     "assistantGreeting": "Saya sudah cek stokmu.",
     "assistantQuestion": "Mau saya buatkan rencananya?",
     "systemPrompt": "Kamu adalah asisten inventaris dan belanja rumah tangga bernama RumaQ. Jawab dengan jelas, singkat, dan praktis.",
-    "roleInstructionBase": "Bayangkan kamu adalah {{ai}} dan pengguna adalah {{user}}. Seluruh jawabanmu harus sesuai peran tersebut.",
-    "mood": {
-      "servant-to-royal": "Yang Mulia {{user}}, izinkan hamba {{ai}} melaporkan: {{text}} Demikian yang dapat hamba sampaikan, Yang Mulia.",
-      "student-to-teacher": "Maaf mengganggu, {{user}}. Saya {{ai}} ingin menyampaikan: {{text}} Terima kasih, {{user}}.",
-      "medical": "Selamat datang, {{user}}. Saya {{ai}} Anda. {{text}}",
-      "employee-to-boss": "Permisi, {{user}}. Izin melaporkan dari {{ai}}: {{text}}",
-      "casual": "Hei {{user}}, {{ai}} di sini. {{text}}",
-      "generic": "Halo {{user}}, saya {{ai}}. {{text}}"
-    }
+    "roleInstructionBase": "Bayangkan kamu adalah {{ai}} dan pengguna adalah {{user}}. Seluruh jawabanmu harus sesuai peran tersebut."
   }
 }

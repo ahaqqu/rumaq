@@ -13,16 +13,6 @@ import {
 } from './persona.js'
 
 const ID_TEMPLATES = {
-  'persona.mood.servant-to-royal':
-    'Yang Mulia {{user}}, izinkan hamba {{ai}} melaporkan: {{text}} Demikian yang dapat hamba sampaikan, Yang Mulia.',
-  'persona.mood.student-to-teacher':
-    'Maaf mengganggu, {{user}}. Saya {{ai}} ingin menyampaikan: {{text}} Terima kasih, {{user}}.',
-  'persona.mood.medical':
-    'Selamat datang, {{user}}. Saya {{ai}} Anda. {{text}}',
-  'persona.mood.employee-to-boss':
-    'Permisi, {{user}}. Izin melaporkan dari {{ai}}: {{text}}',
-  'persona.mood.casual': 'Hei {{user}}, {{ai}} di sini. {{text}}',
-  'persona.mood.generic': 'Halo {{user}}, saya {{ai}}. {{text}}',
   'persona.homeLead':
     'Stok terpantau otomatis dari struk belanja. Sisa dihitung dari kebiasaanmu, bukan diisi manual.',
   'persona.systemPrompt':
@@ -93,54 +83,15 @@ describe('deriveHue', () => {
 })
 
 describe('speak', () => {
-  it('returns base text when persona is not enabled', () => {
-    expect(speak('hello', { ...DEFAULT_PERSONA }, idT)).toBe('hello')
-  })
-
-  it('returns base text when roles are empty', () => {
+  it('returns text as-is regardless of persona', () => {
+    expect(speak('hello', DEFAULT_PERSONA, idT)).toBe('hello')
     expect(
-      speak('hello', { enabled: true, userRole: '', aiRole: '' }, idT)
+      speak(
+        'hello',
+        { enabled: true, userRole: 'raja', aiRole: 'prajurit' },
+        idT
+      )
     ).toBe('hello')
-  })
-
-  it('servant-to-royal mood', () => {
-    const p = { enabled: true, userRole: 'raja', aiRole: 'prajurit' }
-    const result = speak('stok aman.', p, idT)
-    expect(result).toContain('Yang Mulia')
-    expect(result).toContain('prajurit')
-    expect(result).toContain('stok aman.')
-  })
-
-  it('student-to-teacher mood', () => {
-    const p = { enabled: true, userRole: 'guru', aiRole: 'murid' }
-    const result = speak('tugas selesai.', p, idT)
-    expect(result).toContain('Maaf mengganggu')
-    expect(result).toContain('guru')
-  })
-
-  it('medical mood', () => {
-    const p = { enabled: true, userRole: 'dokter', aiRole: 'pasien' }
-    const result = speak('obat sudah diminum.', p, idT)
-    expect(result).toContain('Selamat datang')
-  })
-
-  it('employee-to-boss mood', () => {
-    const p = { enabled: true, userRole: 'bos', aiRole: 'pegawai' }
-    const result = speak('laporan siap.', p, idT)
-    expect(result).toContain('Izin melaporkan')
-  })
-
-  it('casual mood (teman)', () => {
-    const p = { enabled: true, userRole: 'Andi', aiRole: 'teman' }
-    const result = speak('gimana kabar?', p, idT)
-    expect(result).toContain('Hei')
-  })
-
-  it('generic fallback mood', () => {
-    const p = { enabled: true, userRole: 'tamu', aiRole: 'host' }
-    const result = speak('selamat datang.', p, idT)
-    expect(result).toContain('Halo')
-    expect(result).toContain('tamu')
   })
 })
 
@@ -162,7 +113,7 @@ describe('personaText', () => {
     expect(personaText('homeLead', p, idT)).toBe('AI version')
   })
 
-  it('falls back to speak() when no AI copy', () => {
+  it('falls back to base text when no AI copy', () => {
     const p = {
       enabled: true,
       userRole: 'raja',
@@ -171,8 +122,7 @@ describe('personaText', () => {
       generatedCopy: null,
     }
     const result = personaText('homeLead', p, idT)
-    expect(result).toContain('Yang Mulia')
-    expect(result).toContain(ID_TEMPLATES['persona.homeLead'])
+    expect(result).toBe(ID_TEMPLATES['persona.homeLead'])
   })
 })
 

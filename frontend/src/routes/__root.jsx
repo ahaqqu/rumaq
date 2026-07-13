@@ -7,6 +7,7 @@ import { AppShell } from '../components/AppShell.jsx'
 import { Login } from '../pages/Login.jsx'
 import { PwaUpdatePrompt } from '../components/PwaUpdatePrompt.jsx'
 import { useMe } from '../lib/queries/me.js'
+import { useSettings } from '../lib/queries/settings.js'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -14,8 +15,9 @@ const queryClient = new QueryClient({
   },
 })
 
-function AuthGate({ children }) {
+function AuthGate() {
   const { data: me, isLoading } = useMe()
+  const { data: settings } = useSettings()
 
   if (isLoading) return null
 
@@ -27,20 +29,28 @@ function AuthGate({ children }) {
     )
   }
 
-  return children
+  const initialPersona = settings
+    ? {
+        userRole: settings.persona_user_role || '',
+        aiRole: settings.persona_ai_role || '',
+        enabled: settings.persona_enabled,
+      }
+    : undefined
+
+  return (
+    <PersonaProvider initialPersona={initialPersona}>
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    </PersonaProvider>
+  )
 }
 
 function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AppProvider>
-        <AuthGate>
-          <PersonaProvider>
-            <AppShell>
-              <Outlet />
-            </AppShell>
-          </PersonaProvider>
-        </AuthGate>
+        <AuthGate />
       </AppProvider>
       <ReactQueryDevtools initialIsOpen={false} />
       <PwaUpdatePrompt />

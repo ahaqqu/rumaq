@@ -233,14 +233,6 @@
     "assistantGreeting": "I've checked your stock.",
     "assistantQuestion": "Shall I make a plan?",
     "systemPrompt": "You are RumaQ, a household inventory and shopping assistant. Answer clearly, concisely, and practically.",
-    "roleInstructionBase": "Imagine you are {{ai}} and the user is {{user}}. Your entire response must match that role.",
-    "mood": {
-      "servant-to-royal": "Your Majesty {{user}}, your servant {{ai}} reports: {{text}} That is all this servant has to report, Your Majesty.",
-      "student-to-teacher": "Excuse me, {{user}}. I ({{ai}}) would like to share: {{text}} Thank you, {{user}}.",
-      "medical": "Welcome, {{user}}. I am your {{ai}}. {{text}}",
-      "employee-to-boss": "Excuse me, {{user}}. Reporting from {{ai}}: {{text}}",
-      "casual": "Hey {{user}}, {{ai}} here. {{text}}",
-      "generic": "Hello {{user}}, I am {{ai}}. {{text}}"
-    }
+    "roleInstructionBase": "Imagine you are {{ai}} and the user is {{user}}. Your entire response must match that role."
   }
 }
