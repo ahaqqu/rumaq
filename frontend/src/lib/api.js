@@ -98,6 +98,10 @@ export function deleteLocation(id) {
   })
 }
 
+export function getItems() {
+  return request('/api/items')
+}
+
 export function getStores() {
   return request('/api/stores')
 }

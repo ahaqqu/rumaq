@@ -119,6 +119,7 @@ apiApp.use('/api/settings', propsAuthMiddleware)
 apiApp.use('/api/ai/usage', propsAuthMiddleware)
 apiApp.use('/api/locations', propsAuthMiddleware)
 apiApp.use('/api/locations/:id', propsAuthMiddleware)
+apiApp.use('/api/items', propsAuthMiddleware)
 apiApp.use('/api/stores', propsAuthMiddleware)
 apiApp.use('/api/stores/:id', propsAuthMiddleware)
 apiApp.use('/api/purchases', propsAuthMiddleware)
@@ -1201,6 +1202,28 @@ apiApp.delete(
       .run()
 
     return c.newResponse(null, 204)
+  }
+)
+
+apiApp.get(
+  '/api/items',
+  describeRoute({
+    description: 'Lists items for the active household.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'OK' },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  async (c) => {
+    const { results } = await c.env.DB.prepare(
+      'SELECT id, name, default_unit AS unit, category FROM items WHERE household_id = ? ORDER BY name'
+    )
+      .bind(c.get('householdId'))
+      .all()
+    const res = c.json({ items: results })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
   }
 )
 
