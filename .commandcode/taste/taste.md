@@ -12,6 +12,6 @@
 - When scripts lack execute permission, run them with `bash ./script.sh` instead of `./script.sh`. Confidence: 0.70
 
 # pr-creation
-- Creating a PR while the style/test gate is red is acceptable; only merging requires green gates. PR readiness should be based on acceptance criteria in docs/TEST_STRATEGY.md. Confidence: 0.80
+- Creating a PR while the CI gate (scripts/github/ci.sh) is red is acceptable; only merging requires green gates. PR readiness should be based on acceptance criteria in docs/TEST_STRATEGY.md. Confidence: 0.80
 - PR body/description must not be empty; include a meaningful description explaining the change. Confidence: 0.70
 

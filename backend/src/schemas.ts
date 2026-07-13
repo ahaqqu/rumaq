@@ -10,6 +10,8 @@ import {
   minLength,
   maxLength,
   minValue,
+  array,
+  integer,
 } from 'valibot'
 
 export const settingsPatchSchema = strictObject({
@@ -44,4 +46,19 @@ export const stockPatchSchema = strictObject({
   location_id: optional(string()),
   expiry_date: optional(string()),
   name: optional(string()),
+})
+
+export const purchaseItemSchema = object({
+  name: pipe(string(), minLength(1)),
+  qty: pipe(number(), minValue(0)),
+  unit: string(),
+  price: pipe(number(), integer(), minValue(0)),
+  item_id: optional(string()),
+})
+
+export const purchaseCreateSchema = strictObject({
+  store_id: optional(string()),
+  date: pipe(string(), minLength(1)),
+  receipt_image_key: optional(string()),
+  items: pipe(array(purchaseItemSchema), minLength(1)),
 })

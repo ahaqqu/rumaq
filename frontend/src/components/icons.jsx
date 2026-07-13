@@ -23,6 +23,8 @@ import {
   Plus as IconPlus,
   Minus as IconMinus,
   Warning as IconWarning,
+  ArrowLeft as IconArrowLeft,
+  CalendarBlank as IconCalendarBlank,
 } from '@phosphor-icons/react'
 
 export {
@@ -49,6 +51,8 @@ export {
   IconPlus,
   IconMinus,
   IconWarning,
+  IconArrowLeft,
+  IconCalendarBlank,
 }
 
 export function BrandMark({ size = 32 }) {
