@@ -10,11 +10,20 @@ import { propsAuthMiddleware } from '../auth.js'
 import { encryptAiKey, decryptAiKey } from '../lib/crypto.js'
 import { computeRunOutDays } from '../lib/stock.js'
 import {
+  validateImage,
+  buildKey,
+  uploadReceipt,
+  getSignedUrl,
+  extFromType,
+} from '../lib/receipts.js'
+import { extractReceiptItems } from '../lib/ai.js'
+import {
   settingsPatchSchema,
   locationSchema,
   storeSchema,
   aiKeyTestSchema,
   stockPatchSchema,
+  purchaseCreateSchema,
 } from '../schemas.js'
 
 const stockQuery = object({
@@ -112,6 +121,9 @@ apiApp.use('/api/locations', propsAuthMiddleware)
 apiApp.use('/api/locations/:id', propsAuthMiddleware)
 apiApp.use('/api/stores', propsAuthMiddleware)
 apiApp.use('/api/stores/:id', propsAuthMiddleware)
+apiApp.use('/api/purchases', propsAuthMiddleware)
+apiApp.use('/api/purchases/scan', propsAuthMiddleware)
+apiApp.use('/api/purchases/:id/receipt', propsAuthMiddleware)
 
 apiApp.get(
   '/api/me',
@@ -683,6 +695,394 @@ apiApp.get(
     })
     res.headers.set('Cache-Control', 'private, no-cache')
     return res
+  }
+)
+
+apiApp.post(
+  '/api/purchases/scan',
+  describeRoute({
+    description:
+      'Upload a receipt image, scan with AI OCR, return parsed items.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'Scan complete' },
+      400: { description: 'Invalid input' },
+      401: { description: 'Unauthorized' },
+      402: { description: 'AI key not configured' },
+      429: { description: 'AI usage limit exceeded' },
+    },
+  }),
+  async (c) => {
+    const userId = c.get('userId')
+    const householdId = c.get('householdId')
+
+    const contentType = c.req.header('Content-Type') || ''
+    if (!contentType.includes('multipart/form-data')) {
+      return c.json({ error: 'Expected multipart/form-data' }, 400)
+    }
+
+    let file: { name: string; data: ArrayBuffer; type: string } | undefined
+    try {
+      const formData = await c.req.parseBody()
+      const uploaded = formData['image']
+      if (
+        uploaded &&
+        typeof uploaded !== 'string' &&
+        'arrayBuffer' in uploaded
+      ) {
+        file = {
+          name: uploaded.name,
+          data: await uploaded.arrayBuffer(),
+          type: uploaded.type,
+        }
+      }
+    } catch {
+      return c.json({ error: 'Failed to parse upload' }, 400)
+    }
+
+    if (!file) {
+      return c.json(
+        { error: 'No image file provided. Use field name "image".' },
+        400
+      )
+    }
+
+    const fileObj = { type: file.type, size: file.data.byteLength }
+    const validationError = validateImage(fileObj)
+    if (validationError) {
+      return c.json({ error: validationError }, 400)
+    }
+
+    const settings = await c.env.DB.prepare(
+      `SELECT ai_provider, encrypted_ai_key FROM user_settings WHERE user_id = ?`
+    )
+      .bind(userId)
+      .first<{ ai_provider: string | null; encrypted_ai_key: string | null }>()
+
+    if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
+      return c.json(
+        {
+          error:
+            'AI provider not configured. Go to Settings to set up your AI key.',
+        },
+        402
+      )
+    }
+
+    const aiKey = await decryptAiKey(
+      settings.encrypted_ai_key,
+      c.env.WORKER_ENCRYPTION_KEY
+    )
+
+    const today = new Date().toISOString().slice(0, 10)
+    let usageRow = await c.env.DB.prepare(
+      'SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?'
+    )
+      .bind(userId, today)
+      .first<{ id: string; used: number; daily_limit: number }>()
+
+    if (!usageRow) {
+      const id = crypto.randomUUID()
+      await c.env.DB.prepare(
+        'INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)'
+      )
+        .bind(id, userId, today, settings.ai_provider)
+        .run()
+      usageRow = { id, used: 0, daily_limit: 20 }
+    }
+
+    if (usageRow.used >= usageRow.daily_limit) {
+      return c.json(
+        {
+          error:
+            'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+        },
+        429
+      )
+    }
+
+    const ext = extFromType(file.type)
+    const key = buildKey(householdId, userId, ext)
+
+    try {
+      await uploadReceipt(c.env.RECEIPTS, file.data, key, file.type)
+    } catch {
+      return c.json({ error: 'Failed to upload receipt image' }, 500)
+    }
+
+    let scanResult
+    try {
+      scanResult = await extractReceiptItems(
+        file.data,
+        file.type,
+        settings.ai_provider,
+        aiKey
+      )
+    } catch (err) {
+      return c.json(
+        {
+          error: `AI scan failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          imageKey: key,
+        },
+        502
+      )
+    }
+
+    await c.env.DB.prepare('UPDATE ai_usage SET used = used + 1 WHERE id = ?')
+      .bind(usageRow.id)
+      .run()
+
+    const imageUrl: string | null = getSignedUrl()
+
+    let storeGuess: { id: string; label: string } | null = null
+    if (scanResult.store_name) {
+      const match = await c.env.DB.prepare(
+        'SELECT id, label FROM stores WHERE household_id = ? AND LOWER(label) = LOWER(?)'
+      )
+        .bind(householdId, scanResult.store_name)
+        .first<{ id: string; label: string }>()
+      if (match) {
+        storeGuess = match
+      }
+    }
+
+    const res = c.json({
+      items: scanResult.items,
+      imageKey: key,
+      imageUrl,
+      storeGuess,
+      dateGuess: scanResult.date || null,
+    })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.post(
+  '/api/purchases',
+  describeRoute({
+    description:
+      'Create a purchase with items, updating stock and purchase history.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      201: { description: 'Purchase created' },
+      400: { description: 'Validation error' },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  sValidator('json', purchaseCreateSchema),
+  async (c) => {
+    const userId = c.get('userId')
+    const householdId = c.get('householdId')
+    const body = c.req.valid('json')
+
+    if (body.store_id) {
+      const store = await c.env.DB.prepare(
+        'SELECT id FROM stores WHERE id = ? AND household_id = ?'
+      )
+        .bind(body.store_id, householdId)
+        .first()
+      if (!store) {
+        return c.json({ error: 'Store not found in this household' }, 400)
+      }
+    }
+
+    const defaultLocation = await c.env.DB.prepare(
+      'SELECT id FROM locations WHERE household_id = ? ORDER BY sort_order LIMIT 1'
+    )
+      .bind(householdId)
+      .first<{ id: string }>()
+
+    const purchaseId = crypto.randomUUID()
+    const now = new Date().toISOString()
+
+    const statements: D1PreparedStatement[] = []
+
+    statements.push(
+      c.env.DB.prepare(
+        'INSERT INTO purchases (id, household_id, store_id, date, receipt_image_key, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+      ).bind(
+        purchaseId,
+        householdId,
+        body.store_id || null,
+        body.date,
+        body.receipt_image_key || null,
+        now
+      )
+    )
+
+    const itemIds: string[] = []
+
+    for (const item of body.items) {
+      let itemId = item.item_id || null
+
+      if (!itemId) {
+        const trimmed = item.name.trim().toLowerCase()
+        const existing = await c.env.DB.prepare(
+          'SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
+        )
+          .bind(householdId, trimmed)
+          .first<{ id: string }>()
+
+        if (existing) {
+          itemId = existing.id
+        } else {
+          itemId = crypto.randomUUID()
+          statements.push(
+            c.env.DB.prepare(
+              'INSERT INTO items (id, household_id, name, default_unit) VALUES (?, ?, ?, ?)'
+            ).bind(itemId, householdId, item.name.trim(), item.unit)
+          )
+        }
+      }
+
+      itemIds.push(itemId)
+
+      const purchaseItemId = crypto.randomUUID()
+      statements.push(
+        c.env.DB.prepare(
+          'INSERT INTO purchase_items (id, purchase_id, item_id, qty, unit, price, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
+        ).bind(
+          purchaseItemId,
+          purchaseId,
+          itemId,
+          item.qty,
+          item.unit,
+          item.price,
+          now
+        )
+      )
+
+      const existingStock = await c.env.DB.prepare(
+        'SELECT id, qty FROM stock WHERE household_id = ? AND item_id = ?'
+      )
+        .bind(householdId, itemId)
+        .first<{ id: string; qty: number }>()
+
+      if (existingStock) {
+        const newQty = existingStock.qty + item.qty
+        const runOut = await computeRunOutDays(
+          householdId,
+          itemId,
+          newQty,
+          c.env.DB
+        )
+        statements.push(
+          c.env.DB.prepare(
+            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`
+          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id)
+        )
+      } else {
+        const stockId = crypto.randomUUID()
+        const locationId = defaultLocation?.id || null
+        statements.push(
+          c.env.DB.prepare(
+            'INSERT INTO stock (id, household_id, item_id, location_id, qty, unit, run_out_days, basis, updated_at) VALUES (?, ?, ?, ?, ?, ?, 30, ?, ?)'
+          ).bind(
+            stockId,
+            householdId,
+            itemId,
+            locationId,
+            item.qty,
+            item.unit,
+            'default',
+            now
+          )
+        )
+      }
+    }
+
+    try {
+      await c.env.DB.batch(statements)
+    } catch (err) {
+      return c.json(
+        {
+          error: `Failed to create purchase: ${err instanceof Error ? err.message : 'Unknown'}`,
+        },
+        500
+      )
+    }
+
+    const purchase = await c.env.DB.prepare(
+      `SELECT p.id, p.store_id, s.label AS store_label, p.date, p.total, p.receipt_image_key, p.created_at
+       FROM purchases p
+       LEFT JOIN stores s ON s.id = p.store_id
+       WHERE p.id = ?`
+    )
+      .bind(purchaseId)
+      .first()
+
+    const purchaseItems = await c.env.DB.prepare(
+      `SELECT pi.id, pi.item_id, i.name, pi.qty, pi.unit, pi.price
+       FROM purchase_items pi
+       JOIN items i ON i.id = pi.item_id
+       WHERE pi.purchase_id = ?`
+    )
+      .bind(purchaseId)
+      .all()
+
+    const updatedStock = await c.env.DB.prepare(
+      `SELECT s.id, i.name, s.qty, s.unit, s.run_out_days, s.basis, l.label AS location
+       FROM stock s
+       JOIN items i ON i.id = s.item_id
+       LEFT JOIN locations l ON l.id = s.location_id
+       WHERE s.item_id IN (${itemIds.map(() => '?').join(',')}) AND s.household_id = ?`
+    )
+      .bind(...itemIds, householdId)
+      .all()
+
+    const res = c.json(
+      {
+        purchase,
+        items: purchaseItems.results,
+        stock: updatedStock.results,
+      },
+      201
+    )
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.get(
+  '/api/purchases/:id/receipt',
+  describeRoute({
+    description: 'Stream a receipt image from R2.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'Image stream' },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Not found' },
+    },
+  }),
+  async (c) => {
+    const purchaseId = c.req.param('id')
+    const householdId = c.get('householdId')
+
+    const purchase = await c.env.DB.prepare(
+      'SELECT receipt_image_key FROM purchases WHERE id = ? AND household_id = ?'
+    )
+      .bind(purchaseId, householdId)
+      .first<{ receipt_image_key: string | null }>()
+
+    if (!purchase || !purchase.receipt_image_key) {
+      return c.json({ error: 'Receipt not found' }, 404)
+    }
+
+    const object = await c.env.RECEIPTS.get(purchase.receipt_image_key)
+    if (!object) {
+      return c.json({ error: 'Receipt image not found in storage' }, 404)
+    }
+
+    const headers = new Headers()
+    headers.set(
+      'Content-Type',
+      object.httpMetadata?.contentType || 'image/jpeg'
+    )
+    headers.set('Cache-Control', 'private, no-cache')
+
+    const body = await object.blob()
+    return new Response(body, { headers })
   }
 )
 

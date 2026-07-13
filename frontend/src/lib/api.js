@@ -136,3 +136,30 @@ export function patchStock(id, payload) {
 export function getHome() {
   return request('/api/home')
 }
+
+export function scanReceipt(file) {
+  const formData = new FormData()
+  formData.append('image', file)
+  return fetch(`${BASE}/api/purchases/scan`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText }))
+      throw new Error(body.error || `Scan failed: ${res.status}`)
+    }
+    return res.json()
+  })
+}
+
+export function createPurchase(payload) {
+  return request('/api/purchases', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
+export function getReceiptUrl(purchaseId) {
+  return `${BASE}/api/purchases/${purchaseId}/receipt`
+}
