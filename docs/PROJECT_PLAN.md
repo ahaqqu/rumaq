@@ -64,15 +64,15 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | `GET /api/stock` endpoint                     | Done        | P0       | Query with location/q filters, ordered by run-out + expiry                 |
 | Stock CRUD endpoints (`PATCH /api/stock/:id`) | Not started | P0       |                                                                            |
 | Household endpoints                           | Not started | P0       | Create/list households, set active                                         |
-| Location endpoints                            | Not started | P0       | `GET/POST/DELETE /api/locations`                                           |
-| Store endpoints                               | Not started | P0       | `GET/POST/DELETE /api/stores`                                              |
+| Location endpoints                            | Done        | P0       | `GET/POST/DELETE /api/locations`                                           |
+| Store endpoints                               | Done        | P0       | `GET/POST/DELETE /api/stores`                                              |
 | Purchase endpoints                            | Not started | P0       | `GET/POST /api/purchases`                                                  |
 | Receipt upload to R2                          | Not started | P0       | `POST /api/purchases/scan`                                                 |
 | Plan endpoints                                | Not started | P0       | `GET/POST /api/plans`, `POST /api/plans/generate`                          |
-| Settings endpoints                            | Not started | P0       | `GET/PATCH /api/settings`                                                  |
+| Settings endpoints                            | Done        | P0       | `GET/PATCH /api/settings`                                                  |
 | AI chat endpoint                              | Not started | P0       | `POST /api/ai/chat` with streaming                                         |
-| AI usage endpoint                             | Not started | P0       | `GET /api/ai/usage`                                                        |
-| Input validation with Zod                     | Not started | P0       | Add to all routes                                                          |
+| AI usage endpoint                             | Done        | P0       | `GET /api/ai/usage`                                                        |
+| Input validation with Valibot                 | Done        | P0       | Add to all routes                                                          |
 | Centralized error handling                    | Done        | P1       | `app.onError` catches all unhandled errors; middleware returns JSON errors |
 | Rate limiting                                 | Not started | P1       | Per-user AI and API limits                                                 |
 | Request logging / observability               | Not started | P2       | Structured logs, optional analytics                                        |
@@ -95,11 +95,11 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | ------------------------------- | ----------- | -------- | ------------------------------------------------------------------- |
 | Google OAuth 2.0 integration    | Partial     | P0       | Code complete; needs secrets and live test                          |
 | Session JWT signing             | Partial     | P0       | `backend/src/auth.ts`; verify key rotation story                    |
-| Secure AI key encryption        | Not started | P0       | AES-GCM with `WORKER_ENCRYPTION_KEY`                                |
+| Secure AI key encryption        | Done        | P0       | AES-GCM with `WORKER_ENCRYPTION_KEY`                                |
 | R2 signed URLs for receipts     | Not started | P0       | Don't expose bucket directly                                        |
 | AI prompt data isolation        | Not started | P0       | System prompt + context must never include another household's data |
 | HTTPS-only cookies              | Partial     | P0       | Set `Secure`; verify on deployed domain                             |
-| CORS restricted to Pages origin | Partial     | P0       | Configured; verify in production                                    |
+| CORS restricted to Pages origin | Done        | P0       | Allows Pages origin + `*.rumaq.pages.dev` preview subdomains        |
 | CSRF protection via OAuth state | Done        | P0       | `state` + PKCE in `backend/src/auth.ts`                             |
 | Row-level security review       | Not started | P1       | Ensure every query filters by household                             |
 
@@ -111,7 +111,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Receipt OCR → parsed items        | Not started | P0       | Backend prompt + image proxy                 |
 | Shopping plan generation          | Not started | P0       | Low-stock + expiry + history → grouped plan  |
 | Assistant chat with system prompt | Not started | P0       | Include persona setting in prompt            |
-| Daily AI usage meter              | Partial     | P0       | UI exists; backend counter pending           |
+| Daily AI usage meter              | Done        | P0       | Backend counter + UsageMeter wired           |
 | Use-it-up expiry recipe nudge     | Not started | P1       | Suggest recipes for near-expiry items        |
 | Cheapest-store recommendation     | Not started | P1       | From price history; Haqita integration later |
 | Consumption calibration           | Not started | P1       | Detect actual vs estimated depletion         |
@@ -129,7 +129,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | R2 bucket creation guide            | Not started | P0       | Add to README or script                                  |
 | GitHub Actions CI                   | Done        | P1       | Unit tests + build on push/PR to main                    |
 | Test automation CI                  | Done        | P1       | Docker-based integration/E2E tests on push/PR to main    |
-| Preview deployments for PRs         | Not started | P1       | Cloudflare Pages preview branches                        |
+| Preview deployments for PRs         | Done        | P1       | Branch-specific Worker + Pages preview; auto-cleanup     |
 | Secrets management documentation    | Partial     | P0       | Listed in `docs/ARCHITECTURE.md`; add step-by-step       |
 | Environment-specific configs        | Not started | P1       | `.dev.vars` for local, secrets for prod                  |
 
@@ -151,7 +151,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 ## P0 Implementation Plan — Pull Request Basis
 
-This plan translates the remaining P0 work into a sequence of user-impact-focused Pull Requests. Each PR delivers a complete, testable piece of functionality and builds on the previous one. Zod validation, centralized error handling, and multi-household isolation are established in PR 1 and extended per PR.
+This plan translates the remaining P0 work into a sequence of user-impact-focused Pull Requests. Each PR delivers a complete, testable piece of functionality and builds on the previous one. Valibot validation, centralized error handling, and multi-household isolation are established in PR 1 and extended per PR.
 
 Dependency order:
 

@@ -1,6 +1,6 @@
 # Phase 01 — Settings & Preferences
 
-**Status:** Not started  
+**Status:** Done (PR #48 — phase-01-settings-and-preferences)  
 **Priority:** P0 (MVP blocker)  
 **Source PR:** PR 2 — Settings & Preferences (from `docs/PROJECT_PLAN.md`)  
 **Estimated effort:** Medium (mostly CRUD + encryption wiring)
@@ -23,9 +23,9 @@ This phase delivers the first fully functional settings backend and removes the 
 4. `GET/POST/DELETE /api/locations` and `GET/POST/DELETE /api/stores` are implemented, household-scoped, and enforce `owner`/`member` role checks (or at least household membership; see Open Questions).
 5. `GET /api/ai/usage` returns today's request count and daily limit for the current user.
 6. The Settings page reads real locations and stores from the API, allows adding/removing them, persists AI provider/key via the API, and shows the real `UsageMeter` from `GET /api/ai/usage`.
-7. All new endpoints use Zod validation and return consistent JSON errors through the existing `app.onError` handler.
+7. All new endpoints use Valibot validation and return consistent JSON errors through the existing `app.onError` handler.
 8. API integration tests cover settings CRUD, encryption round-trip, location/store CRUD, and AI usage counter.
-9. Unit tests cover the encryption helpers and Zod schemas.
+9. Unit tests cover the encryption helpers and Valibot schemas.
 10. `npm test` and `npx tsc --noEmit` pass before the PR is opened.
 
 ---
@@ -50,7 +50,7 @@ This phase delivers the first fully functional settings backend and removes the 
    - Use `crypto.subtle.importKey` with raw key material, derive an AES-GCM key, generate a 96-bit IV, and tag length 128.
    - Format suggestion: `base64url(iv:ciphertext)` or `base64url(iv)|base64url(ciphertext)`. Keep it simple and versioned so future key rotation is possible (e.g., prefix with `v1:`).
 
-2. **Zod schemas** (`backend/src/schemas.ts` or inline in `apps/api.ts`):
+2. **Valibot schemas** (`backend/src/schemas.ts` or inline in `apps/api.ts`):
    - `settingsPatchSchema` for `PATCH /api/settings`.
    - `locationSchema` for `POST /api/locations`.
    - `storeSchema` for `POST /api/stores`.
@@ -111,7 +111,7 @@ This phase delivers the first fully functional settings backend and removes the 
 ## Out of Scope
 
 - Household creation/switching UI (covered in Phase 02/Inventory or a separate Households phase; see Phase 02).
-- AI key testing/validation call to the actual provider (the Settings page currently fakes this; leave it mocked or implement a minimal `POST /api/ai/validate` later).
+- ~~AI key testing/validation call to the actual provider~~ — implemented as `POST /api/ai-key/test` (server validates key against provider API, decrypts saved key if none provided).
 - Full persona copy generation backend (the UI calls `regenerateCopy` locally; keep it client-side for now unless AI key encryption is ready).
 - Rate limiting (covered in Phase 06).
 - Row-level security audit (covered in Phase 06).
@@ -185,18 +185,18 @@ Add to `automation/tests/local/api/`:
 | Encryption helper format changes and old keys break                                             | Medium | Prefix ciphertext with `v1:` and write a version-aware decrypt function.                                                                                          |
 | Deleting a location/store referenced by stock/purchases leaves orphan data or fails confusingly | Medium | Return 409 with a message like "Cannot delete location because it is used by X items". Offer to reassign in the UI later.                                         |
 | Frontend and backend language state diverge                                                     | Low    | Either persist language in `user_settings` or keep it in `localStorage` only. Document the decision.                                                              |
-| Zod validation errors leak internal details                                                     | Low    | Use a centralized error formatter that returns only `path` and a generic message.                                                                                 |
+| Valibot validation errors leak internal details                                                 | Low    | Use a centralized error formatter that returns only `path` and a generic message.                                                                                 |
 
 ---
 
-## Open Questions
+## Open Questions (Resolved)
 
-1. **Should `language` be persisted in `user_settings` or stay in `localStorage`?** Persisting it gives a consistent cross-device experience; `localStorage` is simpler and avoids an extra API call. Recommendation: persist it for cross-device consistency, but default to `localStorage` if the API is unavailable.
-2. **Should the AI key be returned to the frontend for editing?** Most apps require re-entry on edit. Returning it defeats encryption. Recommendation: never return the plain key; show masked dots and require re-entry to change.
-3. **Should locations have a default that cannot be deleted?** The seeded locations are household data and can be deleted. Is that okay? Recommendation: allow deletion, but warn if stock references it.
-4. **Should store/location endpoints require `owner` role?** The schema has `role` in `household_members`. Recommendation: MVP allows any member to edit; add owner-only restrictions later if needed.
-5. **Should `PATCH /api/settings` allow partial updates?** Yes, only update fields present in the request body.
-6. **What is the AI usage daily limit?** Default to 20. Should it be configurable per user? For MVP, hard-code 20; add a setting later.
+1. **Should `language` be persisted in `user_settings` or stay in `localStorage`?** Resolved: persisted in both. Backend stores it in `user_settings.language`; frontend also keeps it in `localStorage` as fallback. Cross-device consistency is the primary path.
+2. **Should the AI key be returned to the frontend for editing?** Resolved: never returned. The UI shows `has_ai_key: true/false`; changing requires re-entry.
+3. **Should locations have a default that cannot be deleted?** Resolved: deletion is allowed but returns 409 if stock rows reference the location.
+4. **Should store/location endpoints require `owner` role?** Resolved: any household member can edit for MVP; owner-only restrictions deferred.
+5. **Should `PATCH /api/settings` allow partial updates?** Resolved: yes, only fields present in the body are updated.
+6. **What is the AI usage daily limit?** Resolved: hard-coded at 20/day; configurable via a future setting.
 
 ---
 
@@ -212,7 +212,7 @@ Add to `automation/tests/local/api/`:
 ## Implementation Notes for a Future Session
 
 1. Start with the crypto helpers and unit tests. They are pure and safe to write without touching the UI.
-2. Then implement the backend endpoints with Zod validation and integration tests.
+2. Then implement the backend endpoints with Valibot validation and integration tests.
 3. Then wire the frontend Settings page to the new endpoints.
 4. Finally, run the full test suite (`npm test`, `./scripts/test.sh unit frontend`, `./scripts/test.sh automation-local`) and open the PR.
 

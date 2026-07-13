@@ -203,7 +203,9 @@ describe('authApp Hono routes', () => {
     const res = await authApp.request(
       '/callback?code=abc&state=wrong',
       {
-        headers: { Cookie: 'rumaq_oauth_state=expected:verifier' },
+        headers: {
+          Cookie: 'rumaq_oauth_state=expected:verifier:http://localhost:5173',
+        },
       },
       env as any
     )
@@ -223,7 +225,9 @@ describe('authApp Hono routes', () => {
     const res = await authApp.request(
       '/callback?code=abc&state=test-state',
       {
-        headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
+        headers: {
+          Cookie: 'rumaq_oauth_state=test-state:verifier:http://localhost:5173',
+        },
       },
       env as any
     )
@@ -251,7 +255,9 @@ describe('authApp Hono routes', () => {
     const res = await authApp.request(
       '/callback?code=abc&state=test-state',
       {
-        headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
+        headers: {
+          Cookie: 'rumaq_oauth_state=test-state:verifier:http://localhost:5173',
+        },
       },
       env as any
     )
@@ -305,7 +311,9 @@ describe('authApp Hono routes', () => {
     const res = await authApp.request(
       '/callback?code=abc&state=test-state',
       {
-        headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
+        headers: {
+          Cookie: 'rumaq_oauth_state=test-state:verifier:http://localhost:5173',
+        },
       },
       env as any
     )
@@ -350,7 +358,9 @@ describe('authApp Hono routes', () => {
     const res = await authApp.request(
       '/callback?code=abc&state=test-state',
       {
-        headers: { Cookie: 'rumaq_oauth_state=test-state:verifier' },
+        headers: {
+          Cookie: 'rumaq_oauth_state=test-state:verifier:http://localhost:5173',
+        },
       },
       env as any
     )

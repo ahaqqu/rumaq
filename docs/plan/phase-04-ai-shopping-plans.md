@@ -23,7 +23,7 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
 4. `PATCH /api/plans/:id/items/:itemId` marks a plan item as `bought` or `skipped`.
 5. The Plan page shows per-store trip cards, check-off toggles, regenerate, all-bought state, and key-missing state.
 6. AI prompts only include data from the current household.
-7. All endpoints use Zod validation and household-scoped queries.
+7. All endpoints use Valibot validation and household-scoped queries.
 8. API integration tests cover plan CRUD, generate endpoint, and check-off flow.
 9. Frontend tests cover the plan UI and state changes.
 10. `npm test` and `npx tsc --noEmit` pass.
@@ -54,7 +54,7 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
    - Ask the AI to return JSON: `{ items: [{ name, qty, unit, store_id?, price_estimate?, why }] }`.
    - Group items by store if possible; if a store is not known, leave `store_id` null.
    - Why field explains why the item is suggested (e.g., "running out in 3 days", "expires in 2 days", "not bought in 30 days").
-   - Validate the AI response with Zod.
+   - Validate the AI response with Valibot.
    - Cap the plan at a reasonable number of items (e.g., 50) to keep prompts and responses small.
 
 2. **Generate endpoint** (`POST /api/plans/generate` in `backend/src/apps/api.ts`):
@@ -67,7 +67,7 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
    - Enforce daily AI usage limit.
 
 3. **Save plan endpoint** (`POST /api/plans`):
-   - Zod schema: accepts the generated draft items (from the frontend).
+   - Valibot schema: accepts the generated draft items (from the frontend).
    - Create a new `plans` row with `status = 'active'`.
    - If another active plan exists for the household, mark it as `archived` or `completed` first (design choice; see Open Questions).
    - Insert `plan_items` rows, linking to `item_id` where matched, otherwise `item_id = NULL` with a suggested name.
@@ -80,7 +80,7 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
    - Order by `created_at DESC`.
 
 5. **Update plan item endpoint** (`PATCH /api/plans/:id/items/:itemId`):
-   - Zod schema: `status` in `['bought', 'skipped']`.
+   - Valibot schema: `status` in `['bought', 'skipped']`.
    - Verify plan and item belong to the household.
    - Update status.
    - If status is `bought`, update the corresponding `stock` row (increase qty by `plan_items.qty`) or create stock if missing. Recalculate `run_out_days`.
@@ -194,14 +194,14 @@ Add to `automation/tests/local/api/`:
 
 ## Risks & Mitigations
 
-| Risk                                           | Impact | Mitigation                                                                                       |
-| ---------------------------------------------- | ------ | ------------------------------------------------------------------------------------------------ |
-| AI generates poor or nonsensical plans         | High   | Use a strongly typed prompt and Zod validation; allow user to regenerate and edit before saving. |
-| Plan is too large or slow to generate          | Medium | Cap items at 50; only include low/expiring stock; limit history to 30 days.                      |
-| Another household's plan is visible            | High   | Filter every query by `household_id`; add integration tests.                                     |
-| Buying an item does not update stock correctly | High   | Reuse the stock update logic from Phase 02/03; add tests.                                        |
-| AI usage limit not enforced                    | Medium | Increment usage and check limit before calling AI in both scan and plan endpoints.               |
-| Race condition when replacing active plan      | Low    | D1 batch is atomic for a single batch; mark old plan archived and insert new plan in one batch.  |
+| Risk                                           | Impact | Mitigation                                                                                           |
+| ---------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| AI generates poor or nonsensical plans         | High   | Use a strongly typed prompt and Valibot validation; allow user to regenerate and edit before saving. |
+| Plan is too large or slow to generate          | Medium | Cap items at 50; only include low/expiring stock; limit history to 30 days.                          |
+| Another household's plan is visible            | High   | Filter every query by `household_id`; add integration tests.                                         |
+| Buying an item does not update stock correctly | High   | Reuse the stock update logic from Phase 02/03; add tests.                                            |
+| AI usage limit not enforced                    | Medium | Increment usage and check limit before calling AI in both scan and plan endpoints.                   |
+| Race condition when replacing active plan      | Low    | D1 batch is atomic for a single batch; mark old plan archived and insert new plan in one batch.      |
 
 ---
 

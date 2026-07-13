@@ -1,6 +1,32 @@
-// TODO: Backend endpoint /api/locations not yet implemented
-// Stub hook — replace with real API call when backend is ready
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getLocations, createLocation, deleteLocation } from '../api.js'
 
 export function useLocations() {
-  throw new Error('useLocations: /api/locations endpoint not yet implemented')
+  return useQuery({
+    queryKey: ['locations'],
+    queryFn: getLocations,
+    staleTime: 1000 * 60 * 5,
+  })
+}
+
+export function useCreateLocation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: createLocation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['locations'] })
+    },
+  })
+}
+
+export function useDeleteLocation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deleteLocation,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['locations'] })
+    },
+  })
 }

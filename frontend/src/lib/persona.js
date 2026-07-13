@@ -284,6 +284,40 @@ async function callAI(prompt, aiKey, provider) {
   }
 }
 
+export async function testAiKey(provider, aiKey) {
+  switch (provider) {
+    case 'gemini': {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1/models?key=${aiKey}`
+      )
+      if (!res.ok) throw new Error('Invalid API key')
+      return true
+    }
+    case 'anthropic': {
+      const res = await fetch('https://api.anthropic.com/v1/models', {
+        headers: { 'x-api-key': aiKey, 'anthropic-version': '2023-06-01' },
+      })
+      if (!res.ok) throw new Error('Invalid API key')
+      return true
+    }
+    case 'openai': {
+      const res = await fetch('https://api.openai.com/v1/models', {
+        headers: { Authorization: `Bearer ${aiKey}` },
+      })
+      if (!res.ok) throw new Error('Invalid API key')
+      return true
+    }
+    case 'opencode':
+    default: {
+      const res = await fetch('https://api.opencode.ai/v1/models', {
+        headers: { Authorization: `Bearer ${aiKey}` },
+      })
+      if (!res.ok) throw new Error('Invalid API key')
+      return true
+    }
+  }
+}
+
 function oklch(l, c, h) {
   return `oklch(${l} ${c} ${h})`
 }

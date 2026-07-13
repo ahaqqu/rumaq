@@ -109,9 +109,12 @@
     "apiKey": "API Key",
     "apiKeyDesc": "Stored on your device, used only to call your chosen AI.",
     "apiKeyPlaceholder": "sk-… / paste your key here",
+    "apiKeyChangePlaceholder": "New key (leave blank to keep existing)",
     "test": "Test",
     "connectionSuccess": "Connection successful",
     "connectionSuccessDesc": "AI can create plans and read receipts.",
+    "connectionFailed": "Connection failed",
+    "connectionFailedDesc": "Check your API key and try again.",
     "status": "Status",
     "active": "Assistant active.",
     "inactive": "Not connected. Without a key, AI features are disabled but inventory still works.",
@@ -134,7 +137,10 @@
     "storageLocations": "Storage Locations",
     "addLocation": "Add location",
     "addLocationHint": "e.g. Small fridge, Pantry, Spice rack.",
+    "addStore": "Add store",
+    "addStoreHint": "e.g. Super Indo, Hypermart.",
     "locationName": "Location name",
+    "storeName": "Store name",
     "add": "Add",
     "recordedStores": "Recorded Stores",
     "display": "Display",
@@ -142,24 +148,19 @@
     "motionDesc": "Choose animation preference.",
     "language": "Language",
     "languageDesc": "Choose app language.",
-    "currency": "Currency",
-    "currencyDesc": "Used across all plans and history.",
     "motionOpts": {
       "none": "None",
       "reduced": "Reduced",
       "standard": "Standard"
     },
-    "currencyOpts": {
-      "idr": "Rp (IDR)",
-      "usd": "$ (USD)"
-    },
     "aria": {
       "provider": "AI provider",
       "deleteLocation": "Delete {{name}}",
       "newLocation": "New location name",
+      "deleteStore": "Delete {{name}}",
+      "newStore": "New store name",
       "myRole": "I am",
       "aiRole": "You are",
-      "currency": "Currency",
       "motion": "Motion preference"
     }
   },
@@ -234,10 +235,10 @@
     "systemPrompt": "You are RumaQ, a household inventory and shopping assistant. Answer clearly, concisely, and practically.",
     "roleInstructionBase": "Imagine you are {{ai}} and the user is {{user}}. Your entire response must match that role.",
     "mood": {
-      "servantToRoyal": "Your Majesty {{user}}, your servant {{ai}} reports: {{text}} That is all this servant has to report, Your Majesty.",
-      "studentToTeacher": "Excuse me, {{user}}. I ({{ai}}) would like to share: {{text}} Thank you, {{user}}.",
+      "servant-to-royal": "Your Majesty {{user}}, your servant {{ai}} reports: {{text}} That is all this servant has to report, Your Majesty.",
+      "student-to-teacher": "Excuse me, {{user}}. I ({{ai}}) would like to share: {{text}} Thank you, {{user}}.",
       "medical": "Welcome, {{user}}. I am your {{ai}}. {{text}}",
-      "employeeToBoss": "Excuse me, {{user}}. Reporting from {{ai}}: {{text}}",
+      "employee-to-boss": "Excuse me, {{user}}. Reporting from {{ai}}: {{text}}",
       "casual": "Hey {{user}}, {{ai}} here. {{text}}",
       "generic": "Hello {{user}}, I am {{ai}}. {{text}}"
     }

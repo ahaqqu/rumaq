@@ -1,12 +1,5 @@
 import { i18n } from '../i18n/index.js'
 
-export const LOCATIONS = [
-  { id: 'kulkas', labelKey: 'data.locations.kulkas' },
-  { id: 'freezer', labelKey: 'data.locations.freezer' },
-  { id: 'lemari', labelKey: 'data.locations.lemari' },
-  { id: 'rak', labelKey: 'data.locations.rak' },
-]
-
 export const STORES = [
   { id: 'indomaret', labelKey: 'data.stores.indomaret' },
   { id: 'alfamart', labelKey: 'data.stores.alfamart' },
@@ -378,11 +371,6 @@ export const formatRp = (n) => {
     currency,
     minimumFractionDigits: 0,
   }).format(n)
-}
-
-export const locLabel = (id) => {
-  const loc = LOCATIONS.find((l) => l.id === id)
-  return loc ? i18n.t(loc.labelKey) : id
 }
 
 export const storeLabel = (id) => {

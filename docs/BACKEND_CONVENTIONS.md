@@ -10,7 +10,7 @@ High-level objectives and defaults for backend work. Prefer these over one-off c
 
 ## Validation
 
-- Use Zod for all request inputs: params, query, and body.
+- Use Valibot for all request inputs: params, query, and body.
 - Return consistent validation error shapes.
 - Validate environment variables at startup to fail fast on missing configuration.
 

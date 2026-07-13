@@ -14,6 +14,9 @@ export {
   propsAuthMiddleware,
 } from './auth.js'
 
+export { encryptAiKey, decryptAiKey } from './lib/crypto.js'
+export { settingsPatchSchema, locationSchema, storeSchema } from './schemas.js'
+
 import { gateway } from './gateway.js'
 
 export default gateway

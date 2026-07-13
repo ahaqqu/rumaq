@@ -20,6 +20,8 @@ import {
   Key as IconKey,
   Trash as IconTrash,
   ArrowsClockwise as IconRefresh,
+  Plus as IconPlus,
+  Warning as IconWarning,
 } from '@phosphor-icons/react'
 
 export {
@@ -43,6 +45,8 @@ export {
   IconKey,
   IconTrash,
   IconRefresh,
+  IconPlus,
+  IconWarning,
 }
 
 export function BrandMark({ size = 32 }) {

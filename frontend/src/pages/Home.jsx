@@ -1,12 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  STOCK,
-  PLAN,
-  locLabel,
-  storeLabel,
-  formatRp,
-  relUpdated,
-} from '../data/mock.js'
+import { STOCK, PLAN, storeLabel, formatRp, relUpdated } from '../data/mock.js'
 import { LocChip, TimeSignal } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
@@ -88,7 +81,7 @@ export function Home({ setView, askAssistant }) {
                 <div className="row" key={s.id}>
                   <div className="row__main">
                     <div className="row__name">
-                      {s.name} <LocChip loc={locLabel(s.location)} />
+                      {s.name} <LocChip loc={s.location} />
                     </div>
                     <div className="row__meta">
                       <TimeSignal

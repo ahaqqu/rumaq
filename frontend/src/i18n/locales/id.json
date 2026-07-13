@@ -109,9 +109,12 @@
     "apiKey": "Kunci API",
     "apiKeyDesc": "Disimpan di perangkatmu, hanya dipakai untuk memanggil AI pilihanmu.",
     "apiKeyPlaceholder": "sk-… / tempel kunci di sini",
+    "apiKeyChangePlaceholder": "Kunci baru (kosongkan jika ingin mempertahankan yang ada)",
     "test": "Tes",
     "connectionSuccess": "Koneksi berhasil",
     "connectionSuccessDesc": "AI bisa menyusun rencana dan membaca struk.",
+    "connectionFailed": "Koneksi gagal",
+    "connectionFailedDesc": "Periksa kunci API dan coba lagi.",
     "status": "Status",
     "active": "Asisten aktif.",
     "inactive": "Belum terhubung. Tanpa kunci, fitur AI nonaktif tapi inventaris tetap jalan.",
@@ -134,7 +137,10 @@
     "storageLocations": "Lokasi penyimpanan",
     "addLocation": "Tambah lokasi",
     "addLocationHint": "Mis. Kulkas kecil, Gudang, Rak rempah.",
+    "addStore": "Tambah toko",
+    "addStoreHint": "Mis. Super Indo, Hypermart.",
     "locationName": "Nama lokasi",
+    "storeName": "Nama toko",
     "add": "Tambah",
     "recordedStores": "Toko tercatat",
     "display": "Tampilan",
@@ -142,24 +148,19 @@
     "motionDesc": "Pilih kenyamanan animasi.",
     "language": "Bahasa",
     "languageDesc": "Pilih bahasa aplikasi.",
-    "currency": "Mata uang",
-    "currencyDesc": "Dipakai di seluruh rencana dan riwayat.",
     "motionOpts": {
       "none": "Tanpa",
       "reduced": "Ringan",
       "standard": "Standar"
     },
-    "currencyOpts": {
-      "idr": "Rp (IDR)",
-      "usd": "$ (USD)"
-    },
     "aria": {
       "provider": "Penyedia AI",
       "deleteLocation": "Hapus {{name}}",
       "newLocation": "Nama lokasi baru",
+      "deleteStore": "Hapus {{name}}",
+      "newStore": "Nama toko baru",
       "myRole": "Saya adalah",
       "aiRole": "Kamu adalah",
-      "currency": "Mata uang",
       "motion": "Preferensi gerakan"
     }
   },
@@ -234,10 +235,10 @@
     "systemPrompt": "Kamu adalah asisten inventaris dan belanja rumah tangga bernama RumaQ. Jawab dengan jelas, singkat, dan praktis.",
     "roleInstructionBase": "Bayangkan kamu adalah {{ai}} dan pengguna adalah {{user}}. Seluruh jawabanmu harus sesuai peran tersebut.",
     "mood": {
-      "servantToRoyal": "Yang Mulia {{user}}, izinkan hamba {{ai}} melaporkan: {{text}} Demikian yang dapat hamba sampaikan, Yang Mulia.",
-      "studentToTeacher": "Maaf mengganggu, {{user}}. Saya {{ai}} ingin menyampaikan: {{text}} Terima kasih, {{user}}.",
+      "servant-to-royal": "Yang Mulia {{user}}, izinkan hamba {{ai}} melaporkan: {{text}} Demikian yang dapat hamba sampaikan, Yang Mulia.",
+      "student-to-teacher": "Maaf mengganggu, {{user}}. Saya {{ai}} ingin menyampaikan: {{text}} Terima kasih, {{user}}.",
       "medical": "Selamat datang, {{user}}. Saya {{ai}} Anda. {{text}}",
-      "employeeToBoss": "Permisi, {{user}}. Izin melaporkan dari {{ai}}: {{text}}",
+      "employee-to-boss": "Permisi, {{user}}. Izin melaporkan dari {{ai}}: {{text}}",
       "casual": "Hei {{user}}, {{ai}} di sini. {{text}}",
       "generic": "Halo {{user}}, saya {{ai}}. {{text}}"
     }

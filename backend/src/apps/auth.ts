@@ -40,14 +40,15 @@ authApp.get(
   async (c) => {
     const state = randomState()
     const verifier = randomState()
-    const redirectUri = `${new URL(c.req.url).origin}/api/auth/callback`
+    const origin = new URL(c.req.url).origin
+    const redirectUri = `${origin}/api/auth/callback`
     const sha256 = await crypto.subtle.digest(
       'SHA-256',
       new TextEncoder().encode(verifier)
     )
     const challenge = base64UrlEncode(sha256)
 
-    setCookie(c, 'rumaq_oauth_state', `${state}:${verifier}`, {
+    setCookie(c, 'rumaq_oauth_state', `${state}:${verifier}:${origin}`, {
       path: '/',
       httpOnly: true,
       secure: true,
@@ -83,13 +84,13 @@ authApp.get(
     const { code, state } = c.req.query()
     const cookie = getCookie(c, 'rumaq_oauth_state') || ''
     deleteCookie(c, 'rumaq_oauth_state')
-    const [expectedState, verifier] = cookie.split(':')
+    const [expectedState, verifier, origin] = cookie.split(':')
 
     if (!code || !state || state !== expectedState) {
       return c.json({ error: 'Invalid OAuth state' }, 400)
     }
 
-    const redirectUri = `${new URL(c.req.url).origin}/api/auth/callback`
+    const redirectUri = `${origin}/api/auth/callback`
     const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -242,7 +243,7 @@ authApp.all(
       maxAge: 0,
     })
     if (c.req.method === 'GET') {
-      return c.redirect(c.env.PAGES_ORIGIN || '/')
+      return c.redirect(origin || c.env.PAGES_ORIGIN || '/')
     }
     return c.json({ ok: true })
   }
