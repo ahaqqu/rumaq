@@ -83,6 +83,18 @@ const server = createServer(async (req, res) => {
         res.end(JSON.stringify({ ok: true }))
         return
       }
+      if (url.pathname === '/api/__test/direct-sql' && req.method === 'POST') {
+        const chunks = []
+        for await (const chunk of req) chunks.push(chunk)
+        const body = JSON.parse(Buffer.concat(chunks).toString())
+        const { sql } = body
+        if (sql) {
+          await db.exec(sql)
+        }
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ ok: true }))
+        return
+      }
     }
 
     // Forward to Miniflare worker

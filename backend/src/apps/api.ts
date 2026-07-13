@@ -811,21 +811,33 @@ apiApp.post(
     }
 
     let scanResult
-    try {
-      scanResult = await extractReceiptItems(
-        file.data,
-        file.type,
-        settings.ai_provider,
-        aiKey
-      )
-    } catch (err) {
-      return c.json(
-        {
-          error: `AI scan failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
-          imageKey: key,
-        },
-        502
-      )
+    if (c.env.TEST_MODE === 'true') {
+      scanResult = {
+        store_name: 'Indomaret',
+        date: new Date().toISOString().slice(0, 10),
+        items: [
+          { name: 'Susu cair 1L', qty: 1, unit: 'L', price: 18500 },
+          { name: 'Roti tawar', qty: 1, unit: 'pack', price: 15000 },
+          { name: 'Telur 10pcs', qty: 1, unit: 'pkg', price: 32000 },
+        ],
+      }
+    } else {
+      try {
+        scanResult = await extractReceiptItems(
+          file.data,
+          file.type,
+          settings.ai_provider,
+          aiKey
+        )
+      } catch (err) {
+        return c.json(
+          {
+            error: `AI scan failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+            imageKey: key,
+          },
+          502
+        )
+      }
     }
 
     await c.env.DB.prepare('UPDATE ai_usage SET used = used + 1 WHERE id = ?')

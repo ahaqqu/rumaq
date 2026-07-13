@@ -228,4 +228,61 @@ export class ApiContext {
       expect(item).toHaveProperty('location')
     }
   }
+
+  async sendMultipart(
+    method,
+    path,
+    fieldName,
+    fileContent,
+    fileName,
+    fileType
+  ) {
+    const formData = new FormData()
+    const blob = new Blob([fileContent], { type: fileType })
+    formData.append(fieldName, blob, fileName)
+    const opts = { method, body: formData }
+    if (this.headers) opts.headers = { ...this.headers }
+    this.response = await fetch(`${BASE_URL}${path}`, opts)
+    try {
+      this.responseBody = await this.response.json()
+    } catch {
+      this.responseBody = null
+    }
+  }
+
+  expectScanItems() {
+    expect(this.responseBody).toHaveProperty('items')
+    expect(Array.isArray(this.responseBody.items)).toBe(true)
+    expect(this.responseBody.items.length).toBeGreaterThan(0)
+  }
+
+  expectImageKey() {
+    expect(this.responseBody).toHaveProperty('imageKey')
+    expect(this.responseBody.imageKey).toBeTruthy()
+  }
+
+  expectStoreGuess(label) {
+    expect(this.responseBody).toHaveProperty('storeGuess')
+    expect(this.responseBody.storeGuess).toBeTruthy()
+    expect(this.responseBody.storeGuess.label).toBe(label)
+  }
+
+  expectPurchaseShape() {
+    expect(this.responseBody).toHaveProperty('purchase')
+    expect(this.responseBody.purchase).toHaveProperty('id')
+    expect(this.responseBody.purchase).toHaveProperty('date')
+  }
+
+  expectItemsArray() {
+    expect(this.responseBody).toHaveProperty('items')
+    expect(Array.isArray(this.responseBody.items)).toBe(true)
+  }
+
+  expectStockForItem(name, qty) {
+    const item = this.responseBody.stock.find(
+      (s) => s.name.toLowerCase() === name.toLowerCase()
+    )
+    expect(item).toBeDefined()
+    expect(item.qty).toBe(qty)
+  }
 }

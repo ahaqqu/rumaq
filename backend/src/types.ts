@@ -14,6 +14,7 @@ export type Env = {
     PAGES_ORIGIN: string
     EMAIL_AUTH_ENABLED: string
     ASSETS: Fetcher
+    TEST_MODE?: string
     props?: AuthProps
   }
   Variables: {
