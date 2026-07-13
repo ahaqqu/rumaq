@@ -30,11 +30,7 @@
   width: 32px;
   height: 32px;
   border-radius: var(--r-md);
-  background: linear-gradient(
-    150deg,
-    var(--accent),
-    var(--accent-hover)
-  );
+  background: linear-gradient(150deg, var(--accent), var(--accent-hover));
   display: grid;
   place-items: center;
   color: var(--on-accent);
@@ -633,11 +629,7 @@
   width: 36px;
   height: 36px;
   border-radius: var(--r-md);
-  background: linear-gradient(
-    150deg,
-    var(--accent),
-    var(--accent-hover)
-  );
+  background: linear-gradient(150deg, var(--accent), var(--accent-hover));
   display: grid;
   place-items: center;
   color: var(--on-accent);
