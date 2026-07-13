@@ -11,15 +11,15 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@cloudflare/kumo": "^2.6.0",
+    "@cloudflare/kumo": "^2.7.0",
     "@phosphor-icons/react": "^2.1.10",
     "@tanstack/react-query": "^5.101.2",
     "@tanstack/react-query-devtools": "^5.101.2",
     "@tanstack/react-router": "^1.170.17",
-    "i18next": "^26.3.4",
+    "i18next": "^26.3.6",
     "react": "^19.2.7",
     "react-dom": "^19.2.7",
-    "react-i18next": "^17.0.8"
+    "react-i18next": "^17.0.9"
   },
   "devDependencies": {
     "@cucumber/pretty-formatter": "^4.0.0",
