@@ -27,6 +27,7 @@ Errors use `{ "error": "..." }`.
 | GET    | /api/auth/logout            | —    | —     | —    | Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}. |
 | GET    | /api/health                 | —    | —     | —    | Public health check.                                                             |
 | GET    | /api/home                   | Yes  | —     | —    | Home dashboard stats for the active household.                                   |
+| GET    | /api/items                  | Yes  | —     | —    | Lists items for the active household.                                            |
 | GET    | /api/locations              | Yes  | —     | —    | Lists locations for the active household.                                        |
 | POST   | /api/locations              | Yes  | —     | —    | Creates a new location for the active household.                                 |
 | DELETE | /api/locations/{id}         | Yes  | `id`  | —    | Deletes a location if not referenced by stock.                                   |
