@@ -32,8 +32,8 @@
   border-radius: var(--r-md);
   background: linear-gradient(
     150deg,
-    oklch(0.6 0.13 230),
-    oklch(0.45 0.14 230)
+    var(--accent),
+    var(--accent-hover)
   );
   display: grid;
   place-items: center;
@@ -129,7 +129,7 @@
   align-items: center;
   gap: var(--sp-4);
   padding: var(--sp-4) var(--sp-6);
-  background: oklch(0.945 0.028 230 / 0.82);
+  background: color-mix(in oklch, var(--surface) 82%, transparent);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid var(--border);
 }
@@ -562,18 +562,18 @@
   height: 9px;
   border-radius: 50%;
   background: var(--on-accent);
-  box-shadow: 0 0 0 0 oklch(0.99 0.008 230 / 0.6);
+  box-shadow: 0 0 0 0 color-mix(in oklch, var(--on-accent) 60%, transparent);
   animation: pulse 2.4s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
 }
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 oklch(0.99 0.008 230 / 0.5);
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--on-accent) 50%, transparent);
   }
   70% {
-    box-shadow: 0 0 0 10px oklch(0.99 0.008 230 / 0);
+    box-shadow: 0 0 0 10px transparent;
   }
   100% {
-    box-shadow: 0 0 0 0 oklch(0.99 0.008 230 / 0);
+    box-shadow: 0 0 0 0 transparent;
   }
 }
 
@@ -581,7 +581,7 @@
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: oklch(0.2 0.02 230 / 0.32);
+  background: color-mix(in oklch, var(--text) 32%, transparent);
   backdrop-filter: blur(2px);
   animation: fade 0.2s ease;
 }
@@ -635,8 +635,8 @@
   border-radius: var(--r-md);
   background: linear-gradient(
     150deg,
-    oklch(0.6 0.13 230),
-    oklch(0.45 0.14 230)
+    var(--accent),
+    var(--accent-hover)
   );
   display: grid;
   place-items: center;
@@ -1005,7 +1005,7 @@
   background: linear-gradient(
     90deg,
     transparent,
-    oklch(0.99 0.008 230 / 0.6),
+    color-mix(in oklch, var(--surface-raised) 60%, transparent),
     transparent
   );
   animation: shimmer 1.4s infinite;
@@ -1074,7 +1074,7 @@
     left: 0;
     right: 0;
     z-index: 30;
-    background: oklch(0.975 0.018 230 / 0.92);
+    background: color-mix(in oklch, var(--surface-raised) 92%, transparent);
     backdrop-filter: blur(12px);
     border-top: 1px solid var(--border);
     padding: var(--sp-2) var(--sp-2)

@@ -334,6 +334,7 @@ export function applyTheme(persona, element = document.documentElement) {
     element.style.removeProperty('--accent-soft-border')
     element.style.removeProperty('--surface')
     element.style.removeProperty('--surface-raised')
+    element.style.removeProperty('--surface-sunken')
     element.dataset.persona = ''
     return
   }
@@ -346,5 +347,6 @@ export function applyTheme(persona, element = document.documentElement) {
   element.style.setProperty('--accent-soft-border', oklch(0.78, 0.07, h))
   element.style.setProperty('--surface', oklch(0.945, 0.028, h))
   element.style.setProperty('--surface-raised', oklch(0.975, 0.018, h))
+  element.style.setProperty('--surface-sunken', oklch(0.915, 0.032, h))
   element.dataset.persona = `${persona.userRole}|${persona.aiRole}`
 }
