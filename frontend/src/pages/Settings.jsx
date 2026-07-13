@@ -75,15 +75,24 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
   }, [])
 
   useEffect(() => {
-    if (settingsData?.ai_provider) {
+    if (!settingsData) return
+    if (settingsData.ai_provider) {
       setProvider(settingsData.ai_provider)
     }
-    if (settingsData?.has_ai_key) {
+    if (settingsData.has_ai_key) {
       setDraft('')
     }
-    if (settingsData?.motion_preference) {
+    if (settingsData.motion_preference) {
       setMotion(settingsData.motion_preference)
     }
+    if (settingsData.language) {
+      i18n.changeLanguage(settingsData.language)
+    }
+    setPersonaDraft((prev) => ({
+      userRole: settingsData.persona_user_role ?? prev.userRole,
+      aiRole: settingsData.persona_ai_role ?? prev.aiRole,
+      enabled: settingsData.persona_enabled ?? prev.enabled,
+    }))
   }, [settingsData, setMotion])
 
   const saveSettings = useCallback(

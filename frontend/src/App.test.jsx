@@ -7,6 +7,16 @@ const mockGetMe = vi.fn()
 
 vi.mock('./lib/api.js', () => ({
   getMe: (...args) => mockGetMe(...args),
+  getSettings: vi.fn().mockResolvedValue({
+    motion_preference: 'standard',
+    language: null,
+    ai_provider: null,
+    persona_user_role: null,
+    persona_ai_role: null,
+    persona_enabled: false,
+    has_ai_key: false,
+  }),
+  patchSettings: vi.fn().mockResolvedValue({}),
   logout: vi.fn().mockResolvedValue({ ok: true }),
   login: vi.fn(),
   isAuthenticated: vi.fn().mockResolvedValue(true),

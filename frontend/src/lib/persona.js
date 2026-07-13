@@ -34,7 +34,7 @@ export function personaText(key, persona, t) {
   if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole)
     return base
   if (persona.generatedCopy?.[key]) return persona.generatedCopy[key]
-  return speak(base, persona, t)
+  return base
 }
 
 export function deriveHue(userRole = '', aiRole = '') {
@@ -81,22 +81,8 @@ function detectMood(userRole, aiRole) {
   return 'generic'
 }
 
-export function speak(text, persona, t) {
-  if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole)
-    return text
-
-  const u = persona.userRole
-  const a = persona.aiRole
-  const mood = detectMood(u, a)
-  const key = `persona.mood.${mood}`
-
-  const template = t
-    ? t(key, { user: u, ai: a, text })
-    : i18n.t(key, { user: u, ai: a, text })
-
-  if (template === key) return text
-
-  return template
+export function speak(text, _persona, _t) {
+  return text
 }
 
 export function buildSystemPrompt(persona, t) {
@@ -169,14 +155,16 @@ export function generatePersonaCopy(persona, aiKey, provider, t) {
     .join('\n')
 
   const isId = lang === 'id'
+  const role = persona.aiRole
+  const target = persona.userRole
 
   const intro = isId
-    ? `Kamu sedang menyesuaikan bahasa aplikasi RumaQ (asisten inventaris rumah tangga) agar sesuai peran.\n\nPengguna menyatakan: "saya adalah ${persona.userRole}, kamu adalah ${persona.aiRole}".\nArtinya, seluruh teks aplikasi harus ditulis seolah-olah aplikasi/kamu (${persona.aiRole}) sedang berbicara kepada pengguna (${persona.userRole}).`
-    : `You are adapting the language of RumaQ (a household inventory assistant) to match roles.\n\nThe user declared: "I am ${persona.userRole}, you are ${persona.aiRole}".\nThis means all app text should be written as if the app/you (${persona.aiRole}) are speaking to the user (${persona.userRole}).`
+    ? `Kamu sedang menyesuaikan bahasa aplikasi RumaQ (asisten inventaris rumah tangga) agar sesuai peran.\n\nPengguna menyatakan: "saya adalah ${target}, kamu adalah ${role}".\nArtinya, seluruh teks aplikasi harus ditulis seolah-olah aplikasi/kamu (${role}) sedang berbicara kepada pengguna (${target}).`
+    : `You are adapting the language of RumaQ (a household inventory assistant) to match roles.\n\nThe user declared: "I am ${target}, you are ${role}".\nThis means all app text should be written as if the app/you (${role}) are speaking to the user (${target}).`
 
   const task = isId
-    ? `Tugas:\n1. Tulis ulang setiap teks di atas dengan gaya, pilihan kata, dan tingkat formalitas yang cocok untuk peran "${persona.aiRole}" berbicara kepada "${persona.userRole}".\n2. Jangan ubah makna atau informasi penting (misalnya tetap sebutkan struk, stok, rencana, dll).\n3. Jangan membuat teks terlalu panjang; tetap singkat dan nyaman dibaca di layar kecil.\n4. Kembalikan hasil dalam format JSON murni, kunci sama persis dengan daftar di atas, tanpa markdown atau penjelasan tambahan.`
-    : `Task:\n1. Rewrite each text above with style, word choice, and formality matching the role "${persona.aiRole}" speaking to "${persona.userRole}".\n2. Do not change the meaning or key information (e.g., still mention receipts, stock, plans, etc.).\n3. Keep text concise and comfortable to read on a small screen.\n4. Return the result in pure JSON format, exact same keys as listed above, no markdown or extra explanation.`
+    ? `Tugas:\n1. Tulis ulang setiap teks di atas dengan gaya, pilihan kata, dan tingkat formalitas yang cocok untuk peran "${role}" berbicara kepada "${target}".\n2. Jangan ubah makna atau informasi penting (misalnya tetap sebutkan struk, stok, rencana, dll).\n3. Jangan membuat teks terlalu panjang; tetap singkat dan nyaman dibaca di layar kecil.\n4. Kembalikan hasil dalam format JSON murni, kunci sama persis dengan daftar di atas, tanpa markdown atau penjelasan tambahan.`
+    : `Task:\n1. Rewrite each text above with style, word choice, and formality matching the role "${role}" speaking to "${target}".\n2. Do not change the meaning or key information (e.g., still mention receipts, stock, plans, etc.).\n3. Keep text concise and comfortable to read on a small screen.\n4. Return the result in pure JSON format, exact same keys as listed above, no markdown or extra explanation.`
 
   const example = isId
     ? 'Contoh output:\n{\n  "homeLead": "...",\n  "inventoryLead": "..."\n}'
