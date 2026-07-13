@@ -21,10 +21,10 @@ The inventory page shows the household's current stock, letting users browse, fi
 
 ## API endpoints
 
-| Method | Path               | Auth | Description                          |
-| ------ | ------------------ | ---- | ------------------------------------ |
-| GET    | `/api/stock`       | Yes  | List stock, optional `?location=&q=` |
-| PATCH  | `/api/stock/:id`   | Yes  | Update stock qty                     |
+| Method | Path             | Auth | Description                          |
+| ------ | ---------------- | ---- | ------------------------------------ |
+| GET    | `/api/stock`     | Yes  | List stock, optional `?location=&q=` |
+| PATCH  | `/api/stock/:id` | Yes  | Update stock qty                     |
 
 ## Source
 

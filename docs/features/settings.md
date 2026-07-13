@@ -25,17 +25,17 @@ The settings page manages AI provider configuration, persona personalisation, st
 
 ## API endpoints
 
-| Method | Path               | Auth | Description                          |
-| ------ | ------------------ | ---- | ------------------------------------ |
-| GET    | `/api/settings`    | Yes  | Fetch user settings                  |
-| PATCH  | `/api/settings`    | Yes  | Update user settings                 |
-| GET    | `/api/ai/usage`    | Yes  | AI usage stats                       |
-| GET    | `/api/locations`   | Yes  | List storage locations               |
-| POST   | `/api/locations`   | Yes  | Create a location                    |
-| DELETE | `/api/locations/:id` | Yes | Delete a location                    |
-| GET    | `/api/stores`      | Yes  | List stores                          |
-| POST   | `/api/stores`      | Yes  | Create a store                       |
-| DELETE | `/api/stores/:id`   | Yes | Delete a store                       |
+| Method | Path                 | Auth | Description            |
+| ------ | -------------------- | ---- | ---------------------- |
+| GET    | `/api/settings`      | Yes  | Fetch user settings    |
+| PATCH  | `/api/settings`      | Yes  | Update user settings   |
+| GET    | `/api/ai/usage`      | Yes  | AI usage stats         |
+| GET    | `/api/locations`     | Yes  | List storage locations |
+| POST   | `/api/locations`     | Yes  | Create a location      |
+| DELETE | `/api/locations/:id` | Yes  | Delete a location      |
+| GET    | `/api/stores`        | Yes  | List stores            |
+| POST   | `/api/stores`        | Yes  | Create a store         |
+| DELETE | `/api/stores/:id`    | Yes  | Delete a store         |
 
 ## Source
 

@@ -19,9 +19,9 @@ The history page displays past purchases grouped by month, giving users a record
 
 ## API endpoint
 
-| Method | Path               | Auth | Description                     |
-| ------ | ------------------ | ---- | ------------------------------- |
-| —      | —                  | —    | Fully frontend (mock data)      |
+| Method | Path | Auth | Description                |
+| ------ | ---- | ---- | -------------------------- |
+| —      | —    | —    | Fully frontend (mock data) |
 
 Purchase history is currently demo-only with mock data. Backend integration is planned.
 

@@ -37,9 +37,9 @@ The home page is the main landing after login, giving a snapshot of household st
 
 ## API endpoint
 
-| Method | Path         | Auth | Description                          |
-| ------ | ------------ | ---- | ------------------------------------ |
-| GET    | `/api/home`  | Yes  | Dashboard stats for active household |
+| Method | Path        | Auth | Description                          |
+| ------ | ----------- | ---- | ------------------------------------ |
+| GET    | `/api/home` | Yes  | Dashboard stats for active household |
 
 Response has `private, no-cache` Cache-Control.
 

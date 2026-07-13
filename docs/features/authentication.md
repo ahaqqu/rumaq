@@ -43,23 +43,23 @@ RumaQ uses **session-based authentication** with signed JWTs stored in an `httpO
 
 ## API endpoints
 
-| Method | Path                   | Auth | Description                                      |
-| ------ | ---------------------- | ---- | ------------------------------------------------ |
-| GET    | `/api/auth/login`      | —    | Redirects to Google OAuth consent screen          |
-| GET    | `/api/auth/callback`   | —    | Google OAuth callback, sets session cookie        |
-| POST   | `/api/auth/email-login`| —    | Email/password login, sets session cookie         |
-| GET    | `/api/auth/logout`     | —    | Clears session cookie and redirects               |
-| POST   | `/api/auth/logout`     | —    | Clears session cookie and returns `{ ok: true }`  |
+| Method | Path                    | Auth | Description                                      |
+| ------ | ----------------------- | ---- | ------------------------------------------------ |
+| GET    | `/api/auth/login`       | —    | Redirects to Google OAuth consent screen         |
+| GET    | `/api/auth/callback`    | —    | Google OAuth callback, sets session cookie       |
+| POST   | `/api/auth/email-login` | —    | Email/password login, sets session cookie        |
+| GET    | `/api/auth/logout`      | —    | Clears session cookie and redirects              |
+| POST   | `/api/auth/logout`      | —    | Clears session cookie and returns `{ ok: true }` |
 
 ## Configuration
 
-| Environment variable     | Required | Description                                    |
-| ------------------------ | -------- | ---------------------------------------------- |
-| `GOOGLE_CLIENT_ID`       | Yes*     | Google OAuth client ID                         |
-| `GOOGLE_CLIENT_SECRET`   | Yes*     | Google OAuth client secret                     |
-| `WORKER_JWT_SECRET`      | Yes      | Secret used to sign and verify JWTs            |
-| `EMAIL_AUTH_ENABLED`     | No       | Set to `true` to enable email/password login   |
-| `PAGES_ORIGIN`           | No       | Frontend origin for OAuth callback redirect    |
+| Environment variable   | Required | Description                                  |
+| ---------------------- | -------- | -------------------------------------------- |
+| `GOOGLE_CLIENT_ID`     | Yes\*    | Google OAuth client ID                       |
+| `GOOGLE_CLIENT_SECRET` | Yes\*    | Google OAuth client secret                   |
+| `WORKER_JWT_SECRET`    | Yes      | Secret used to sign and verify JWTs          |
+| `EMAIL_AUTH_ENABLED`   | No       | Set to `true` to enable email/password login |
+| `PAGES_ORIGIN`         | No       | Frontend origin for OAuth callback redirect  |
 
 \*Required only when Google OAuth is used.
 

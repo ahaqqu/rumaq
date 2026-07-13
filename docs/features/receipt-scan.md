@@ -20,13 +20,13 @@ The receipt-scan feature lets users take or upload a photo of a shopping receipt
 
 ## API endpoints
 
-| Method | Path                              | Auth | Description                          |
-| ------ | --------------------------------- | ---- | ------------------------------------ |
-| POST   | `/api/purchases/scan`             | Yes  | Upload receipt, returns parsed items |
-| GET    | `/api/purchases/{id}/receipt`     | Yes  | Get receipt image URL                |
-| POST   | `/api/purchases`                  | Yes  | Create purchase from parsed items    |
-| GET    | `/api/items`                      | Yes  | List items for item-matching dropdown |
-| POST   | `/api/__test/direct-sql`         | Yes* | Admin endpoint for test data setup   |
+| Method | Path                          | Auth  | Description                           |
+| ------ | ----------------------------- | ----- | ------------------------------------- |
+| POST   | `/api/purchases/scan`         | Yes   | Upload receipt, returns parsed items  |
+| GET    | `/api/purchases/{id}/receipt` | Yes   | Get receipt image URL                 |
+| POST   | `/api/purchases`              | Yes   | Create purchase from parsed items     |
+| GET    | `/api/items`                  | Yes   | List items for item-matching dropdown |
+| POST   | `/api/__test/direct-sql`      | Yes\* | Admin endpoint for test data setup    |
 
 ## Source
 

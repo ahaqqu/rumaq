@@ -21,9 +21,9 @@ The shopping-plan feature generates AI-powered shopping lists organised by store
 
 ## API endpoint
 
-| Method | Path         | Auth | Description                  |
-| ------ | ------------ | ---- | ---------------------------- |
-| —      | —            | —    | Fully frontend (mock data)   |
+| Method | Path | Auth | Description                |
+| ------ | ---- | ---- | -------------------------- |
+| —      | —    | —    | Fully frontend (mock data) |
 
 The shopping plan is currently demo-only with mock data. Real AI integration is planned for a future iteration.
 
