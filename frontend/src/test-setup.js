@@ -1,10 +1,20 @@
 import { vi } from 'vitest'
 import React from 'react'
 
+import en from './i18n/locales/en.json'
+
 vi.mock('react-i18next', () => {
   const t = (key, opts) => {
     if (opts && opts.returnObjects) return {}
     if (opts && opts.defaultValue) return opts.defaultValue
+    if (key.startsWith('persona.mood.')) {
+      const parts = key.split('.')
+      const moodKey = parts[parts.length - 1]
+      const template = en.persona?.mood?.[moodKey]
+      if (template && opts) {
+        return template.replace(/\{\{(\w+)\}\}/g, (_, name) => opts[name] ?? `{{${name}}}`)
+      }
+    }
     return key
   }
   return {

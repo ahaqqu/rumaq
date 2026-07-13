@@ -88,10 +88,13 @@ export function speak(text, persona, t) {
   const u = persona.userRole
   const a = persona.aiRole
   const mood = detectMood(u, a)
+  const key = `persona.mood.${mood}`
 
   const template = t
-    ? t(`persona.mood.${mood}`, { user: u, ai: a, text })
-    : i18n.t(`persona.mood.${mood}`, { user: u, ai: a, text })
+    ? t(key, { user: u, ai: a, text })
+    : i18n.t(key, { user: u, ai: a, text })
+
+  if (template === key) return text
 
   return template
 }
