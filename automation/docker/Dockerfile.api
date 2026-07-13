@@ -25,7 +25,14 @@ COPY backend/src/ ./backend/src/
 RUN cd backend && npx esbuild src/index.ts --bundle --platform=neutral --format=esm --external:cloudflare:workers --outfile=dist/index.mjs && \
   # Fix hono/logger dynamic import: Miniflare can't handle import(cfWorkers) with a variable specifier.
   # Replace the variable with a string literal so Miniflare recognizes the cloudflare: built-in.
-  sed -i 's/await import(cfWorkers)/await import("cloudflare:workers")/' dist/index.mjs
+  sed -i 's/await import(cfWorkers)/await import("cloudflare:workers")/' dist/index.mjs && \
+  # Neutralize unused adapter dynamic imports so Miniflare doesn't try to resolve them.
+  # @standard-community/standard-json bundles adapters for effect, sury, valibot, zod, etc.,
+  # all wrapped in try/catch — but Miniflare resolves bare imports at analysis time.
+  sed -i 's/await import("effect")/Promise.resolve({})/' dist/index.mjs && \
+  sed -i 's/await import("sury")/Promise.resolve({})/' dist/index.mjs && \
+  sed -i 's/await import("@valibot\/to-json-schema")/Promise.resolve({})/' dist/index.mjs && \
+  sed -i 's/await import("zod-to-json-schema")/Promise.resolve({})/' dist/index.mjs
 
 EXPOSE 8787
 
