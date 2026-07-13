@@ -9,6 +9,7 @@ import {
   pipe,
   minLength,
   maxLength,
+  minValue,
 } from 'valibot'
 
 export const settingsPatchSchema = strictObject({
@@ -35,4 +36,12 @@ export const storeSchema = object({
 export const aiKeyTestSchema = object({
   provider: picklist(['opencode', 'openai', 'anthropic', 'gemini']),
   key: optional(pipe(string(), minLength(1))),
+})
+
+export const stockPatchSchema = strictObject({
+  qty: optional(pipe(number(), minValue(0))),
+  unit: optional(string()),
+  location_id: optional(string()),
+  expiry_date: optional(string()),
+  name: optional(string()),
 })

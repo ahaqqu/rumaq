@@ -1,5 +1,6 @@
 export { useMe, useMeQueryOptions, useLogout } from './me.js'
-export { useStock } from './stock.js'
+export { useStock, useUpdateStock } from './stock.js'
+export { useHome } from './home.js'
 export { useSettings, useUpdateSettings } from './settings.js'
 export { useUsage } from './usage.js'
 export {

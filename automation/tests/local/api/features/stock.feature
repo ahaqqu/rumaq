@@ -48,3 +48,41 @@ Feature: Stock Management
     When I send a GET request to /api/stock
     Then the response status should be 200
     And the response should have authenticated cache headers
+
+  Scenario: PATCH stock updates quantity and recalculates run-out
+    Given the database has seed data
+    And I am authenticated as a test user
+    When I send a PATCH request to /api/stock/stock-rice with body
+      """
+      {"qty": 1.0, "unit": "kg"}
+      """
+    Then the response status should be 200
+    And the stock item should have qty 1
+    And the stock item should have run_out_days computed
+
+  Scenario: PATCH stock with another household stock returns 404
+    Given the database has seed data
+    And I am authenticated as a test user
+    When I send a PATCH request to /api/stock/nonexistent-stock with body
+      """
+      {"qty": 1.0}
+      """
+    Then the response status should be 404
+
+  Scenario: PATCH stock validates schema rejects negative qty
+    Given the database has seed data
+    And I am authenticated as a test user
+    When I send a PATCH request to /api/stock/stock-rice with body
+      """
+      {"qty": -1}
+      """
+    Then the response status should be 400
+
+  Scenario: PATCH stock with invalid location returns 400
+    Given the database has seed data
+    And I am authenticated as a test user
+    When I send a PATCH request to /api/stock/stock-rice with body
+      """
+      {"location_id": "nonexistent-location"}
+      """
+    Then the response status should be 400

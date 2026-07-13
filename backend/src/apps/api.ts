@@ -8,11 +8,13 @@ import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { propsAuthMiddleware } from '../auth.js'
 import { encryptAiKey, decryptAiKey } from '../lib/crypto.js'
+import { computeRunOutDays } from '../lib/stock.js'
 import {
   settingsPatchSchema,
   locationSchema,
   storeSchema,
   aiKeyTestSchema,
+  stockPatchSchema,
 } from '../schemas.js'
 
 const stockQuery = object({
@@ -102,6 +104,8 @@ apiApp.get(
 
 apiApp.use('/api/me', propsAuthMiddleware)
 apiApp.use('/api/stock', propsAuthMiddleware)
+apiApp.use('/api/stock/:id', propsAuthMiddleware)
+apiApp.use('/api/home', propsAuthMiddleware)
 apiApp.use('/api/settings', propsAuthMiddleware)
 apiApp.use('/api/ai/usage', propsAuthMiddleware)
 apiApp.use('/api/locations', propsAuthMiddleware)
@@ -202,6 +206,200 @@ apiApp.get(
       .bind(...params)
       .all()
     const res = c.json({ stock: results })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.patch(
+  '/api/stock/:id',
+  describeRoute({
+    description: 'Updates a stock item.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'OK' },
+      400: { description: 'Validation error' },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Not found' },
+    },
+  }),
+  sValidator('json', stockPatchSchema),
+  async (c) => {
+    const stockId = c.req.param('id')
+    const householdId = c.get('householdId')
+    const body = c.req.valid('json')
+
+    const stockRow = await c.env.DB.prepare(
+      'SELECT s.*, i.name AS item_name FROM stock s JOIN items i ON i.id = s.item_id WHERE s.id = ? AND s.household_id = ?'
+    )
+      .bind(stockId, householdId)
+      .first<{
+        id: string
+        item_id: string
+        qty: number
+        unit: string | null
+        location_id: string | null
+        expiry_date: string | null
+        item_name: string
+      }>()
+
+    if (!stockRow) {
+      return c.json({ error: 'Stock item not found' }, 404)
+    }
+
+    if (body.location_id !== undefined) {
+      const loc = await c.env.DB.prepare(
+        'SELECT id FROM locations WHERE id = ? AND household_id = ?'
+      )
+        .bind(body.location_id, householdId)
+        .first()
+      if (!loc) {
+        return c.json({ error: 'Location not found in this household' }, 400)
+      }
+    }
+
+    let itemId = stockRow.item_id
+    if (body.name !== undefined) {
+      const trimmed = body.name.trim()
+      if (trimmed.length > 0) {
+        const existing = await c.env.DB.prepare(
+          'SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
+        )
+          .bind(householdId, trimmed)
+          .first<{ id: string }>()
+
+        if (existing) {
+          itemId = existing.id
+        } else {
+          itemId = crypto.randomUUID()
+          await c.env.DB.prepare(
+            'INSERT INTO items (id, household_id, name) VALUES (?, ?, ?)'
+          )
+            .bind(itemId, householdId, trimmed)
+            .run()
+        }
+      }
+    }
+
+    const updates: string[] = []
+    const params: unknown[] = []
+
+    if (body.qty !== undefined) {
+      updates.push('qty = ?')
+      params.push(body.qty)
+    }
+    if (body.unit !== undefined) {
+      updates.push('unit = ?')
+      params.push(body.unit)
+    }
+    if (body.location_id !== undefined) {
+      updates.push('location_id = ?')
+      params.push(body.location_id)
+    }
+    if (body.expiry_date !== undefined) {
+      updates.push('expiry_date = ?')
+      params.push(body.expiry_date)
+    }
+    if (body.name !== undefined) {
+      updates.push('item_id = ?')
+      params.push(itemId)
+    }
+
+    const finalQty = body.qty ?? stockRow.qty
+    const runOut = await computeRunOutDays(
+      householdId,
+      itemId,
+      finalQty,
+      c.env.DB
+    )
+    updates.push('run_out_days = ?', 'basis = ?')
+    params.push(runOut.run_out_days, runOut.basis)
+
+    params.push(stockId)
+    await c.env.DB.prepare(
+      `UPDATE stock SET ${updates.join(', ')}, updated_at = datetime('now') WHERE id = ?`
+    )
+      .bind(...params)
+      .run()
+
+    const updated = await c.env.DB.prepare(
+      `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
+       FROM stock s
+       JOIN items i ON i.id = s.item_id
+       LEFT JOIN locations l ON l.id = s.location_id
+       WHERE s.id = ?`
+    )
+      .bind(stockId)
+      .first()
+
+    const res = c.json({ stock: updated })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.get(
+  '/api/home',
+  describeRoute({
+    description: 'Home dashboard stats for the active household.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'OK' },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  async (c) => {
+    const householdId = c.get('householdId')
+
+    const totalResult = await c.env.DB.prepare(
+      'SELECT COUNT(*) AS cnt FROM stock WHERE household_id = ? AND qty > 0'
+    )
+      .bind(householdId)
+      .first<{ cnt: number }>()
+    const totalItems = totalResult?.cnt ?? 0
+
+    const today = new Date().toISOString().slice(0, 10)
+
+    const expiringResult = await c.env.DB.prepare(
+      `SELECT COUNT(*) AS cnt FROM stock
+       WHERE household_id = ? AND qty > 0 AND expiry_date IS NOT NULL
+       AND expiry_date >= ? AND expiry_date <= date(?, '+7 days')`
+    )
+      .bind(householdId, today, today)
+      .first<{ cnt: number }>()
+    const expiring7d = expiringResult?.cnt ?? 0
+
+    const runningOutResult = await c.env.DB.prepare(
+      `SELECT COUNT(*) AS cnt FROM stock
+       WHERE household_id = ? AND qty > 0
+       AND COALESCE(run_out_days, 999) <= 7`
+    )
+      .bind(householdId)
+      .first<{ cnt: number }>()
+    const runningOut7d = runningOutResult?.cnt ?? 0
+
+    const lowStock = await c.env.DB.prepare(
+      `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
+       FROM stock s
+       JOIN items i ON i.id = s.item_id
+       LEFT JOIN locations l ON l.id = s.location_id
+       WHERE s.household_id = ? AND s.qty > 0
+       AND (COALESCE(s.run_out_days, 999) <= 7
+         OR (s.expiry_date IS NOT NULL AND s.expiry_date <= date(?, '+7 days')))
+       ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date
+       LIMIT 20`
+    )
+      .bind(householdId, today)
+      .all()
+
+    const res = c.json({
+      total_items: totalItems,
+      expiring_7d: expiring7d,
+      running_out_7d: runningOut7d,
+      low_stock: lowStock.results ?? [],
+      expiring_soon: [],
+      next_trip: null,
+    })
     res.headers.set('Cache-Control', 'private, no-cache')
     return res
   }

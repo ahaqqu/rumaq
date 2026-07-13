@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next'
-import { STOCK, PLAN, storeLabel, formatRp, relUpdated } from '../data/mock.js'
-import { LocChip, TimeSignal } from '../components/ui.jsx'
+import { TimeSignal, SkeletonRows } from '../components/ui.jsx'
+import { useHome } from '../lib/queries/index.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
 import {
@@ -8,22 +8,33 @@ import {
   IconSpark,
   IconLeaf,
   IconBox,
-  IconRefresh,
 } from '../components/icons.jsx'
+
+function getDaysUntil(expiryDate) {
+  if (!expiryDate) return null
+  const now = new Date()
+  const expiry = new Date(expiryDate + 'T00:00:00')
+  return Math.round((expiry - now) / 86400000)
+}
 
 export function Home({ setView, askAssistant }) {
   const { t } = useTranslation()
   const { persona } = usePersona()
-  const expiring = STOCK.filter(
-    (s) => s.expiryDays != null && s.expiryDays <= 2
-  )
-  const low = STOCK.filter((s) => s.runOut <= 3)
-  const needs = [
-    ...expiring,
-    ...low.filter((l) => !expiring.find((e) => e.id === l.id)),
-  ]
-  const stores = new Set(STOCK.map((s) => s.store))
-  const nextTrip = PLAN[0]
+  const { data, isLoading } = useHome()
+
+  if (isLoading) {
+    return (
+      <div className="panel">
+        <SkeletonRows n={4} />
+      </div>
+    )
+  }
+
+  const totalItems = data?.total_items ?? 0
+  const expiring7d = data?.expiring_7d ?? 0
+  const runningOut7d = data?.running_out_7d ?? 0
+  const needs = data?.low_stock ?? []
+  const nextTrip = data?.next_trip
 
   return (
     <>
@@ -39,19 +50,23 @@ export function Home({ setView, askAssistant }) {
       </div>
       <div className="stats">
         <div className="stat">
-          <div className="stat__num">{STOCK.length}</div>
+          <div className="stat__num">{totalItems}</div>
           <div className="stat__label">{t('home.itemsMonitored')}</div>
         </div>
         <div className="stat">
-          <div className="stat__num is-warn">{expiring.length}</div>
+          <div className={`stat__num${expiring7d > 0 ? ' is-warn' : ''}`}>
+            {expiring7d}
+          </div>
           <div className="stat__label">{t('home.expiring')}</div>
         </div>
         <div className="stat">
-          <div className="stat__num is-warn">{low.length}</div>
+          <div className={`stat__num${runningOut7d > 0 ? ' is-warn' : ''}`}>
+            {runningOut7d}
+          </div>
           <div className="stat__label">{t('home.nearlyOut')}</div>
         </div>
         <div className="stat">
-          <div className="stat__num">{stores.size}</div>
+          <div className="stat__num">&mdash;</div>
           <div className="stat__label">{t('home.storesRecorded')}</div>
         </div>
       </div>
@@ -80,13 +95,11 @@ export function Home({ setView, askAssistant }) {
               {needs.map((s) => (
                 <div className="row" key={s.id}>
                   <div className="row__main">
-                    <div className="row__name">
-                      {s.name} <LocChip loc={s.location} />
-                    </div>
+                    <div className="row__name">{s.name}</div>
                     <div className="row__meta">
                       <TimeSignal
-                        expiryDays={s.expiryDays}
-                        runOut={s.runOut}
+                        expiryDays={getDaysUntil(s.expiry_date)}
+                        runOut={s.run_out_days}
                         basis={s.basis}
                       />
                     </div>
@@ -94,10 +107,6 @@ export function Home({ setView, askAssistant }) {
                   <div className="row__side">
                     <div className="row__qty">
                       {s.qty} {s.unit}
-                    </div>
-                    <div className="row__updated">
-                      <IconRefresh size={12} /> {t('common.updated')}{' '}
-                      {relUpdated(s.updated, t)}
                     </div>
                   </div>
                 </div>
@@ -114,31 +123,46 @@ export function Home({ setView, askAssistant }) {
             <IconSpark size={15} /> {t('home.askPlan')}
           </button>
         </div>
-        <div className="tripcard">
-          <div>
-            <div className="tripcard__title">
-              {t('home.shopAt', { store: storeLabel(nextTrip.store) })}
+        {nextTrip ? (
+          <div className="tripcard">
+            <div>
+              <div className="tripcard__title">
+                {t('home.shopAt', { store: nextTrip.store })}
+              </div>
+              <div className="tripcard__sub">
+                {t('home.itemCount', { count: nextTrip.items?.length ?? 0 })}
+              </div>
+              <div className="tripcard__items">
+                {nextTrip.items?.map((it) => (
+                  <span className="chip" key={it.id}>
+                    {it.name}
+                  </span>
+                ))}
+              </div>
             </div>
-            <div className="tripcard__sub">
-              {t('home.itemCount', { count: nextTrip.items.length })} ·{' '}
-              {t('home.estimated', {
-                amount: formatRp(
-                  nextTrip.items.reduce((a, b) => a + b.price, 0)
-                ),
-              })}
-            </div>
-            <div className="tripcard__items">
-              {nextTrip.items.map((it) => (
-                <span className="chip" key={it.id}>
-                  {it.name}
-                </span>
-              ))}
+            <button
+              className="btn btn--primary"
+              onClick={() => setView('plan')}
+            >
+              {t('home.seePlan')}
+            </button>
+          </div>
+        ) : (
+          <div className="panel">
+            <div className="empty">
+              <div className="empty__icon">
+                <IconBox size={40} />
+              </div>
+              <div className="empty__title">
+                {t('home.noPlanYet') || 'No trip planned'}
+              </div>
+              <div className="empty__desc">
+                {t('home.noPlanYetDesc') ||
+                  'Ask the assistant to plan your next shopping trip.'}
+              </div>
             </div>
           </div>
-          <button className="btn btn--primary" onClick={() => setView('plan')}>
-            {t('home.seePlan')}
-          </button>
-        </div>
+        )}
       </section>
 
       <section className="section">
