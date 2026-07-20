@@ -12,7 +12,26 @@ export function useUpdateStock() {
   const queryClient = useQueryClient()
   return useMutation({
     mutationFn: ({ id, payload }) => patchStock(id, payload),
-    onSuccess: () => {
+    onMutate: async ({ id, payload }) => {
+      await queryClient.cancelQueries({ queryKey: ['stock'] })
+      const previous = queryClient.getQueriesData({ queryKey: ['stock'] })
+      queryClient.setQueriesData({ queryKey: ['stock'] }, (old) => {
+        if (!old?.stock) return old
+        return {
+          ...old,
+          stock: old.stock.map((item) =>
+            item.id === id ? { ...item, ...payload } : item
+          ),
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      context?.previous?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data)
+      })
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['stock'] })
       queryClient.invalidateQueries({ queryKey: ['home'] })
     },

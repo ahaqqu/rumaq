@@ -203,6 +203,9 @@
     "closeToLimitDesc": "Hampir mencapai batas harian. Sisa {{remaining}} permintaan.",
     "remainingRequests": "Sisa {{remaining}} permintaan hari ini."
   },
+  "offline": {
+    "banner": "Kamu sedang offline — perubahan akan disinkronkan saat kembali online"
+  },
   "common": {
     "today": "hari ini",
     "yesterday": "kemarin",

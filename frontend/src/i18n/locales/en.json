@@ -203,6 +203,9 @@
     "closeToLimitDesc": "Close to daily limit. {{remaining}} requests left.",
     "remainingRequests": "{{remaining}} requests left today."
   },
+  "offline": {
+    "banner": "You're offline — changes will sync when you reconnect"
+  },
   "common": {
     "today": "today",
     "yesterday": "yesterday",
