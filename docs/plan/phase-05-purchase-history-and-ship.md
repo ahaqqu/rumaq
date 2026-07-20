@@ -20,13 +20,14 @@ This is the final P0 phase. After it, the app is fully functional end-to-end and
 1. `GET /api/purchases` returns purchase history with date/store filters and month-grouped totals.
 2. The History page shows month-grouped purchases, line items, totals, and pattern detection (e.g., "you buy milk every 5 days").
 3. Run-out estimates are recalibrated using the full purchase history.
-4. Cloudflare Pages and Worker deployment configs are finalized and documented.
-5. R2 bucket setup is documented.
-6. Secrets management is documented step-by-step.
-7. The plan in `docs/PROJECT_PLAN.md` is updated to mark all P0 items as `Done`.
-8. End-to-end verification passes on the live URL.
-9. All tests pass (`npm test`, integration, E2E smoke).
-10. `npm test` and `npx tsc --noEmit` pass.
+4. `POST /api/ai/chat` answers Assistant messages with persona-aware, household-scoped responses, and the Assistant panel uses it instead of mocks.
+5. Cloudflare Pages and Worker deployment configs are finalized and documented.
+6. R2 bucket setup is documented.
+7. Secrets management is documented step-by-step.
+8. The plan in `docs/PROJECT_PLAN.md` is updated to mark all P0 items as `Done`.
+9. End-to-end verification passes on the live URL.
+10. All tests pass (`npm test`, integration, E2E smoke).
+11. `npm test` and `npx tsc --noEmit` pass.
 
 ---
 
@@ -65,7 +66,14 @@ This is the final P0 phase. After it, the app is fully functional end-to-end and
    - Return a summary like `{ item_id, avg_interval_days, avg_qty, last_purchase_date, pattern: 'every N days' }`.
    - Expose via `GET /api/purchases/patterns` or include in history response.
 
-5. **Deployment config finalization**:
+5. **AI chat endpoint** (`POST /api/ai/chat`):
+   - Valibot schema: `message` (string, required) and optional `history` (short array of recent messages for context, capped).
+   - Decrypt the user's AI key; return 402 if not configured. Enforce the daily `ai_usage` limit and increment per call (reuse the scan endpoint's pattern).
+   - Build the system prompt server-side from the user's persona settings (port the `buildSystemPrompt` logic from `frontend/src/lib/persona.js`) plus household-scoped context: low-stock items, expiring items, and the active plan summary.
+   - Use the generalized text-prompt provider layer from Phase 04; stream the response if the provider supports it, otherwise return a plain JSON reply.
+   - Never include another household's data in the prompt.
+
+6. **Deployment config finalization**:
    - Ensure `backend/wrangler.cloudflare.toml` has all bindings: `DB`, `RECEIPTS`, `KV` (if used for rate limiting later), routes, vars.
    - Ensure `frontend/.env` or build pipeline injects `VITE_API_BASE` correctly.
    - Update `scripts/deploy.sh` to run all necessary steps in order.
@@ -76,9 +84,13 @@ This is the final P0 phase. After it, the app is fully functional end-to-end and
 1. **API client additions** (`frontend/src/lib/api.js`):
    - `getPurchases({ store, from, to, q, cursor })` → `GET /api/purchases`
    - `getPurchasePatterns()` → `GET /api/purchases/patterns` (if separate endpoint is chosen)
+   - `sendChatMessage(message, history)` → `POST /api/ai/chat`
 
-2. **History page refactor** (`frontend/src/pages/History.jsx`):
-   - Fetch purchases on mount and on filter changes.
+2. **TanStack Query hooks**:
+   - Implement the `useHistory()` stub in `frontend/src/lib/queries/history.js` with key `['purchases', filters]`, following the established queries pattern.
+
+3. **History page refactor** (`frontend/src/pages/History.jsx`):
+   - Fetch purchases on mount and on filter changes via `useHistory()`.
    - Group by month by default.
    - Show each purchase with store, date, items, total, and receipt thumbnail.
    - Show month totals and average spend per month.
@@ -87,12 +99,18 @@ This is the final P0 phase. After it, the app is fully functional end-to-end and
    - Add loading and error states.
    - Use `personaText` for empty state and lead copy.
 
-3. **Receipt thumbnail**:
+4. **Assistant panel wiring** (`frontend/src/components/Assistant.jsx`):
+   - Replace the mocked replies with `sendChatMessage` calls.
+   - Keep the quick actions ("Plan this week", etc.) as predefined prompts.
+   - Handle loading/streaming state, key-missing state (402 → link to Settings), and usage-limit errors (429).
+   - "Apply to plan" navigates to the Plan page via TanStack Router.
+
+5. **Receipt thumbnail**:
    - Use the signed receipt URL or proxy endpoint.
    - Lazy load images.
    - Add a lightbox or full-size view on click.
 
-4. **Home page integration**:
+6. **Home page integration**:
    - Show a "last purchase" or "this month spending" summary if desired.
 
 ---
@@ -137,6 +155,11 @@ Add to `automation/tests/local/api/`:
    - Search by item name works.
    - Month-grouped totals are correct.
    - Another household cannot see purchases.
+2. `ai-chat.feature` — scenarios:
+   - POST /api/ai/chat returns a reply using the `TEST_MODE` AI mock.
+   - Missing AI key returns 402.
+   - AI usage limit reached returns 429.
+   - The prompt is built only from the current household's data.
 
 ### Frontend tests
 
@@ -225,7 +248,7 @@ Add to `automation/tests/local/api/`:
 2. Add pattern detection and tests.
 3. Refine run-out estimates using the full history.
 4. Wire the History page.
-5. Finalize deployment configs and documentation.
+5. Implement `POST /api/ai/chat` and wire the Assistant panel.
 6. Update `docs/PROJECT_PLAN.md` and run the full test suite.
 7. Deploy to Cloudflare and run live smoke tests.
 8. Open the final P0 PR.

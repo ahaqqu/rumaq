@@ -1,6 +1,6 @@
 # Phase 03 — Receipt Scan to Stock
 
-**Status:** Not started  
+**Status:** Done (PR #63 — receipt scan to stock with AI OCR, R2 upload, and purchase creation)  
 **Priority:** P0 (MVP blocker)  
 **Source PR:** PR 4 — Receipt Scan → Stock (from `docs/PROJECT_PLAN.md`)  
 **Estimated effort:** High (R2 + AI OCR + multi-table transaction)

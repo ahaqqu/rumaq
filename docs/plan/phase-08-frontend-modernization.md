@@ -1,6 +1,6 @@
 # Phase 08 — Frontend Modernization
 
-**Status:** Not started (frontend refactor, offline/optimistic, PWA, push, mobile wrappers)  
+**Status:** Partial (TanStack Router/Query + Tailwind v4 + Kumo + PWA done in PR #34; offline query persistence + optimistic mutations done in PR #76; remaining: push notifications, mobile native wrapper decision, global error boundaries)  
 **Priority:** P1/P2  
 **Source sections:** Section 2 of `docs/PROJECT_PLAN.md`  
 **Estimated effort:** High (large refactor + PWA + offline)
@@ -60,8 +60,8 @@ This phase is intentionally after P0. It is a large refactor that should not blo
 - Create query keys for each resource type: `['settings']`, `['stock']`, `['plans']`, `['purchases']`, `['locations']`, `['stores']`, `['usage']`.
 - Wrap API calls in `useQuery` and `useMutation` hooks.
 - Implement optimistic updates for:
-  - `patchStock` — update cached stock list immediately, roll back on error.
-  - `updatePlanItem` — update plan items immediately, roll back on error.
+  - `patchStock` — update cached stock list immediately, roll back on error. (Done in PR #76.)
+  - `updatePlanItem` — update plan items immediately, roll back on error. (Implemented with Phase 04, following the `queries/stock.js` pattern.)
   - `createLocation` / `deleteLocation` / `createStore` / `deleteStore` — update settings cache immediately.
 - Use `queryClient.invalidateQueries` for background refetch after mutations where optimistic updates are not enough.
 - Add global loading and error state handling via TanStack Query's `isFetching` and `isError`.

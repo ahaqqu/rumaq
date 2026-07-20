@@ -56,8 +56,6 @@ The following contracts are planned but not yet implemented:
 ### Purchases
 
 - `GET /purchases?store=&from=&to=` — purchase history grouped by month.
-- `POST /purchases` — record a confirmed purchase and update stock.
-- `POST /purchases/scan` — upload a receipt image, run AI OCR, return parsed line items.
 
 ### Plans
 
@@ -66,17 +64,6 @@ The following contracts are planned but not yet implemented:
 - `POST /plans` — save a generated plan as active.
 - `PATCH /plans/:id/items/:itemId` — mark a plan item as bought or skipped.
 
-### Locations & Stores
-
-- `GET /locations`, `POST /locations`, `DELETE /locations/:id`
-- `GET /stores`, `POST /stores`, `DELETE /stores/:id`
-
-### Settings
-
-- `GET /settings` — get current user settings.
-- `PATCH /settings` — update settings.
-
 ### AI Assistant
 
 - `POST /ai/chat` — send a message to the AI assistant.
-- `GET /ai/usage` — today's AI usage meter.

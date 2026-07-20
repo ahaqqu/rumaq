@@ -1,6 +1,6 @@
 # Phase 02 — Inventory Dashboard
 
-**Status:** Not started  
+**Status:** Done (PR #57 — inventory dashboard with run-out computation and real-time stock updates)  
 **Priority:** P0 (MVP blocker)  
 **Source PR:** PR 3 — Inventory Dashboard (from `docs/PROJECT_PLAN.md`)  
 **Estimated effort:** Medium-High (run-out estimation logic + UI wiring)

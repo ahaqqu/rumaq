@@ -1,6 +1,6 @@
 # Phase 07 — DevOps & Deployment
 
-**Status:** Partial (Pages and Worker configs are partial, R2 guide missing, preview deployments missing, env-specific configs missing)  
+**Status:** Partial (preview deployments done — branch-specific Workers + Pages previews with auto-cleanup; Pages/Worker configs partial, R2 guide missing, env-specific configs missing)  
 **Priority:** P0/P1  
 **Source sections:** Sections 3, 7 of `docs/PROJECT_PLAN.md`  
 **Estimated effort:** Medium

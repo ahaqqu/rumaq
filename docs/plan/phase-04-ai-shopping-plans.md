@@ -20,7 +20,7 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
 1. `GET /api/plans?status=active` returns the current household's active plan with grouped per-store items.
 2. `POST /api/plans/generate` asks the AI to build a plan from current stock, expiry, and history; returns a draft without persisting it.
 3. `POST /api/plans` saves a generated plan as active, replacing any previous active plan.
-4. `PATCH /api/plans/:id/items/:itemId` marks a plan item as `bought` or `skipped`.
+4. `PATCH /api/plans/:id/items/:itemId` marks a plan item as `bought` or `skipped`; `bought` also creates a purchase record and updates stock.
 5. The Plan page shows per-store trip cards, check-off toggles, regenerate, all-bought state, and key-missing state.
 6. AI prompts only include data from the current household.
 7. All endpoints use Valibot validation and household-scoped queries.
@@ -37,6 +37,7 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
 - Phase 03 (Receipt Scan) for purchase history, but the plan generator can work with manual purchases too.
 - D1 schema has `plans`, `plan_items`, `items`, `stock`, `stores`, `locations`.
 - Existing Plan page is mocked in `frontend/src/pages/Plan.jsx`.
+- Frontend uses TanStack Query (PR #34, #76): server state lives in `frontend/src/lib/queries/` hooks with optimistic updates. `queries/plans.js` is a stub to replace, and `queries/stock.js` is the reference pattern.
 
 ---
 
@@ -56,6 +57,7 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
    - Why field explains why the item is suggested (e.g., "running out in 3 days", "expires in 2 days", "not bought in 30 days").
    - Validate the AI response with Valibot.
    - Cap the plan at a reasonable number of items (e.g., 50) to keep prompts and responses small.
+   - Note: the provider functions in `backend/src/lib/ai.ts` (`callOpenAI`, `callGemini`, `callAnthropic`, `callOpenCode`) are currently receipt-image specific. Generalize the provider-call layer to also accept text prompts (e.g., a shared text-completion function per provider) and reuse it here — do not duplicate four provider implementations in `plans.ts`.
 
 2. **Generate endpoint** (`POST /api/plans/generate` in `backend/src/apps/api.ts`):
    - Decrypt the AI key from `user_settings`.
@@ -83,7 +85,9 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
    - Valibot schema: `status` in `['bought', 'skipped']`.
    - Verify plan and item belong to the household.
    - Update status.
-   - If status is `bought`, update the corresponding `stock` row (increase qty by `plan_items.qty`) or create stock if missing. Recalculate `run_out_days`.
+   - If status is `bought`:
+     - Create a lightweight `purchases` + `purchase_items` row (date = today, `store_id` from the plan item, `price` from `price_estimate`) so purchase history, spending totals (Phase 05), and run-out learning stay consistent. Skip this when the plan item has no matched `item_id` — create the `items` row first in that case, reusing the name-matching logic from `POST /api/purchases`.
+     - Update the corresponding `stock` row (increase qty by `plan_items.qty`) or create stock if missing. Recalculate `run_out_days` with `computeRunOutDays` (the new purchase row feeds the estimate).
    - If all items are `bought` or `skipped`, set the plan status to `completed`.
    - Return the updated item and plan.
 
@@ -100,24 +104,30 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
    - `savePlan(items)` → `POST /api/plans`
    - `updatePlanItem(planId, itemId, status)` → `PATCH /api/plans/${planId}/items/${itemId}`
 
-2. **Plan page refactor** (`frontend/src/pages/Plan.jsx`):
-   - On mount, fetch the active plan.
+2. **TanStack Query hooks** (`frontend/src/lib/queries/plans.js`, replacing the existing stub):
+   - `usePlans(status = 'active')` — `useQuery` with key `['plans', status]`.
+   - `useGeneratePlan()` and `useSavePlan()` — mutations that invalidate `['plans']` on success.
+   - `useUpdatePlanItem()` — optimistic check-off following the `onMutate` / `onError` rollback / `onSettled` invalidate pattern from `queries/stock.js`; on settled also invalidate `['stock']` and `['home']` because buying items changes stock and dashboard stats.
+   - Keep the exports in `queries/index.js` in sync.
+
+3. **Plan page refactor** (`frontend/src/pages/Plan.jsx`):
+   - Remove the `PLAN` mock import and the `aiKey` / `setView` props; use `usePlans('active')` for data, `useSettings()` (`has_ai_key`) for the key-missing state, and TanStack Router navigation for links.
    - Show empty state if no active plan; offer to generate.
-   - Show generating state while calling `generatePlan`.
+   - Show generating state while calling `useGeneratePlan`.
    - Show review state after generation; allow saving or regenerating.
    - Show active plan as per-store cards with checkboxes for bought/skipped.
-   - Track which items are bought/skipped and optimistically update UI.
+   - Check-off is optimistic via `useUpdatePlanItem`.
    - When all items are bought/skipped, show "all-bought" state and prompt to create the next plan.
    - If no AI key is configured, show key-missing state with a link to Settings.
    - Use `personaText` for lead copy and empty states.
 
-3. **Plan store card component** (new or inline):
+4. **Plan store card component** (new or inline):
    - Group items by store.
    - Show item name, qty, unit, why, and price estimate.
    - Toggle between pending, bought, skipped.
 
-4. **Home page integration** (optional in this phase):
-   - Show next trip preview in Home if active plan exists.
+5. **Home page integration** (optional in this phase):
+   - Populate `next_trip` in `GET /api/home` from the active plan — the endpoint already returns `next_trip: null` as a placeholder.
 
 ---
 
@@ -139,6 +149,8 @@ No schema changes are required. The existing `plans` and `plan_items` tables sup
 ```sql
 CREATE INDEX IF NOT EXISTS idx_plans_household_status ON plans(household_id, status);
 ```
+
+If you add this index, create a new migration (`backend/migrations/0004_plan_indexes.sql`) — do not edit `0001_schema.sql`, which is already applied in production.
 
 If you want to store the AI-generated plan metadata, the existing `total_estimate` and `status` columns are enough. Add `generated_at` if needed, but `created_at` on `plans` already serves this purpose.
 
@@ -208,7 +220,7 @@ Add to `automation/tests/local/api/`:
 ## Open Questions
 
 1. **Should saving a new plan archive the old active plan or complete it?** Recommendation: archive it so the user can view history. If all items were bought, mark completed instead.
-2. **Should bought items be auto-added to stock immediately or only on plan completion?** Recommendation: update stock on each `bought` toggle; this is more intuitive.
+2. **Should bought items be auto-added to stock immediately or only on plan completion?** Resolved: immediately on each `bought` toggle, and a lightweight `purchases` + `purchase_items` row is created at the same time. Without the purchase row, run-out learning (computed from `purchase_items` history) and the Phase 05 History page would be blind to plan check-offs.
 3. **Should skipped items be excluded from the next regeneration?** Not in MVP. They are just marked skipped.
 4. **Should price_estimate be required from the AI?** No, make it optional. The UI shows it if present.
 5. **Should the plan generator consider items with zero stock?** Yes, if they have purchase history or were in a previous plan. Otherwise, include them if they are in the item catalog and have no stock.

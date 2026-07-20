@@ -45,9 +45,9 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | API client module                                       | Partial     | P0       | Has `getMe`, `getStock`, `getHealth`, `login`, `logout`, `isAuthenticated`; needs full endpoint coverage |
 | Authentication UI (login / logout)                      | Done        | P0       | Login page, user avatar/name in rail, logout button                                                      |
 | Error boundaries and loading states                     | Partial     | P1       | Skeletons exist; need global error handling                                                              |
-| Offline / optimistic updates                            | Not started | P1       | Local-first feel, sync when online                                                                       |
-| Frontend refactor (Kumo + TanStack + Tailwind v4 + PWA) | Not started | P1       | See `docs/plans/frontend-refactor-plan.md`                                                               |
-| PWA manifest & service worker                           | Not started | P2       | Installable app, offline caching                                                                         |
+| Offline / optimistic updates                            | Done        | P1       | PR #76 — query persistence + optimistic mutations                                                        |
+| Frontend refactor (Kumo + TanStack + Tailwind v4 + PWA) | Done        | P1       | PR #34 — TanStack Router + Query + Kumo UI + Tailwind v4 + PWA                                           |
+| PWA manifest & service worker                           | Done        | P2       | PR #34 — installable app, offline caching                                                                |
 | Push notifications                                      | Not started | P2       | Expiry/run-out reminders                                                                                 |
 | Mobile native wrappers (iOS/Android)                    | Not started | P2       | Future phase                                                                                             |
 
@@ -108,7 +108,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Item                              | Status      | Priority | Notes                                        |
 | --------------------------------- | ----------- | -------- | -------------------------------------------- |
 | BYO AI key in settings            | Done        | P0       | UI exists; backend encryption pending        |
-| Receipt OCR → parsed items        | Not started | P0       | Backend prompt + image proxy                 |
+| Receipt OCR → parsed items        | Done        | P0       | PR #63 — `backend/src/lib/ai.ts` + scan endpoint |
 | Shopping plan generation          | Not started | P0       | Low-stock + expiry + history → grouped plan  |
 | Assistant chat with system prompt | Not started | P0       | Include persona setting in prompt            |
 | Daily AI usage meter              | Done        | P0       | Backend counter + UsageMeter wired           |
@@ -233,6 +233,8 @@ _User impact: review past purchases and spending patterns; app goes live._
 
 ## Immediate next steps
 
-1. Open **PR 2 — Settings & Preferences** on a new branch from `main`.
-2. Configure Google OAuth credentials and run the login flow against Miniflare.
-3. Ensure `npm test` and `npx tsc --noEmit` pass before opening the PR.
+PRs 1-4 are merged (Settings #48, Inventory #57, Receipt Scan #63). Next up:
+
+1. Implement **Phase 04 — AI Shopping Plans** (`docs/plan/phase-04-ai-shopping-plans.md`) on a new branch from `main`.
+2. Then **Phase 05 — Purchase History & Ship** (`docs/plan/phase-05-purchase-history-and-ship.md`), which includes the AI Assistant chat endpoint.
+3. Ensure `npm test` and `npx tsc --noEmit` pass before opening each PR.
