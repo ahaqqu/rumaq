@@ -27,6 +27,7 @@ High-level objectives and defaults for frontend work. Prefer these over one-off 
 - Use the project's server-state hooks for data fetching and mutations.
 - Use shared contexts only for cross-cutting client state that does not belong in server cache.
 - Invalidate server state after successful mutations.
+- Prefer optimistic updates (snapshot/rollback) for high-frequency mutations; reconcile by invalidating on settle.
 
 ## Auth
 

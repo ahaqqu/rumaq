@@ -1,19 +1,14 @@
 import { Outlet, createRootRoute } from '@tanstack/react-router'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client'
 import { PersonaProvider } from '../context/PersonaContext.jsx'
 import { AppProvider } from '../context/AppContext.jsx'
 import { AppShell } from '../components/AppShell.jsx'
 import { Login } from '../pages/Login.jsx'
 import { PwaUpdatePrompt } from '../components/PwaUpdatePrompt.jsx'
+import { queryClient, persistOptions } from '../lib/queryClient.js'
 import { useMe } from '../lib/queries/me.js'
 import { useSettings } from '../lib/queries/settings.js'
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { staleTime: 1000 * 60 * 5, retry: 1 },
-  },
-})
 
 function AuthGate() {
   const { data: me, isLoading } = useMe()
@@ -48,13 +43,17 @@ function AuthGate() {
 
 function RootComponent() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={persistOptions}
+      onSuccess={() => queryClient.resumePausedMutations()}
+    >
       <AppProvider>
         <AuthGate />
       </AppProvider>
       <ReactQueryDevtools initialIsOpen={false} />
       <PwaUpdatePrompt />
-    </QueryClientProvider>
+    </PersistQueryClientProvider>
   )
 }
 

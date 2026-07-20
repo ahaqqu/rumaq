@@ -25,6 +25,7 @@ import {
   Warning as IconWarning,
   ArrowLeft as IconArrowLeft,
   CalendarBlank as IconCalendarBlank,
+  WifiSlash as IconOffline,
 } from '@phosphor-icons/react'
 
 export {
@@ -53,6 +54,7 @@ export {
   IconWarning,
   IconArrowLeft,
   IconCalendarBlank,
+  IconOffline,
 }
 
 export function BrandMark({ size = 32 }) {

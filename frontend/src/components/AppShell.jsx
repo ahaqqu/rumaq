@@ -14,6 +14,7 @@ import { AI_USAGE, usageState } from '../data/mock.js'
 import { useApp } from '../context/AppContext.jsx'
 import { useMe, useLogout } from '../lib/queries/me.js'
 import { Assistant } from './Assistant.jsx'
+import { OfflineBanner } from './OfflineBanner.jsx'
 
 const NAV = [
   { id: 'home', key: 'nav.home', Icon: IconHome, to: '/' },
@@ -136,6 +137,7 @@ export function AppShell({ children }) {
       </aside>
 
       <div className="main">
+        <OfflineBanner />
         <header className="topbar">
           <h1 className="topbar__title">{title}</h1>
           <div className="topbar__spacer" />
