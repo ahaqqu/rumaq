@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from 'vitest'
-import { planItemPatchSchema, planCreateSchema, planGenerateResponseSchema } from '../lib/plans.js'
+import {
+  planItemPatchSchema,
+  planCreateSchema,
+  planGenerateResponseSchema,
+} from '../lib/plans.js'
 import { safeParse } from 'valibot'
 
 describe('planItemPatchSchema', () => {
@@ -24,7 +28,10 @@ describe('planItemPatchSchema', () => {
   })
 
   it('rejects unknown fields', () => {
-    const result = safeParse(planItemPatchSchema, { status: 'bought', extra: 'field' })
+    const result = safeParse(planItemPatchSchema, {
+      status: 'bought',
+      extra: 'field',
+    })
     expect(result.success).toBe(false)
   })
 })
@@ -33,7 +40,14 @@ describe('planCreateSchema', () => {
   it('accepts valid plan items', () => {
     const result = safeParse(planCreateSchema, {
       items: [
-        { name: 'Susu', qty: 1, unit: 'L', store_id: 's1', price_estimate: 15000, why: 'Habis' },
+        {
+          name: 'Susu',
+          qty: 1,
+          unit: 'L',
+          store_id: 's1',
+          price_estimate: 15000,
+          why: 'Habis',
+        },
       ],
     })
     expect(result.success).toBe(true)
@@ -41,27 +55,21 @@ describe('planCreateSchema', () => {
 
   it('accepts minimal items without optional fields', () => {
     const result = safeParse(planCreateSchema, {
-      items: [
-        { name: 'Susu', qty: 1, unit: 'L' },
-      ],
+      items: [{ name: 'Susu', qty: 1, unit: 'L' }],
     })
     expect(result.success).toBe(true)
   })
 
   it('rejects items with empty name', () => {
     const result = safeParse(planCreateSchema, {
-      items: [
-        { name: '', qty: 1, unit: 'L' },
-      ],
+      items: [{ name: '', qty: 1, unit: 'L' }],
     })
     expect(result.success).toBe(false)
   })
 
   it('rejects items with negative qty', () => {
     const result = safeParse(planCreateSchema, {
-      items: [
-        { name: 'Susu', qty: -1, unit: 'L' },
-      ],
+      items: [{ name: 'Susu', qty: -1, unit: 'L' }],
     })
     expect(result.success).toBe(false)
   })
@@ -76,7 +84,14 @@ describe('planGenerateResponseSchema', () => {
   it('accepts valid AI response', () => {
     const result = safeParse(planGenerateResponseSchema, {
       items: [
-        { name: 'Susu', qty: 1, unit: 'L', store_id: null, price_estimate: 15000, why: 'Habis' },
+        {
+          name: 'Susu',
+          qty: 1,
+          unit: 'L',
+          store_id: null,
+          price_estimate: 15000,
+          why: 'Habis',
+        },
       ],
     })
     expect(result.success).toBe(true)
@@ -84,27 +99,21 @@ describe('planGenerateResponseSchema', () => {
 
   it('accepts items without optional store_id and price_estimate', () => {
     const result = safeParse(planGenerateResponseSchema, {
-      items: [
-        { name: 'Susu', qty: 1, unit: 'L', why: 'Habis' },
-      ],
+      items: [{ name: 'Susu', qty: 1, unit: 'L', why: 'Habis' }],
     })
     expect(result.success).toBe(true)
   })
 
   it('rejects items without name', () => {
     const result = safeParse(planGenerateResponseSchema, {
-      items: [
-        { qty: 1, unit: 'L', why: 'test' },
-      ],
+      items: [{ qty: 1, unit: 'L', why: 'test' }],
     })
     expect(result.success).toBe(false)
   })
 
   it('rejects items with empty name', () => {
     const result = safeParse(planGenerateResponseSchema, {
-      items: [
-        { name: '', qty: 1, unit: 'L', why: 'test' },
-      ],
+      items: [{ name: '', qty: 1, unit: 'L', why: 'test' }],
     })
     expect(result.success).toBe(false)
   })

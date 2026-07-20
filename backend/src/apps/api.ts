@@ -1453,11 +1453,18 @@ apiApp.post(
       `SELECT ai_provider, encrypted_ai_key, currency FROM user_settings WHERE user_id = ?`
     )
       .bind(userId)
-      .first<{ ai_provider: string | null; encrypted_ai_key: string | null; currency: string | null }>()
+      .first<{
+        ai_provider: string | null
+        encrypted_ai_key: string | null
+        currency: string | null
+      }>()
 
     if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
       return c.json(
-        { error: 'AI provider not configured. Go to Settings to set up your AI key.' },
+        {
+          error:
+            'AI provider not configured. Go to Settings to set up your AI key.',
+        },
         402
       )
     }
@@ -1486,7 +1493,10 @@ apiApp.post(
 
     if (usageRow.used >= usageRow.daily_limit) {
       return c.json(
-        { error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.' },
+        {
+          error:
+            'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+        },
         429
       )
     }
@@ -1499,7 +1509,13 @@ apiApp.post(
        AND (COALESCE(s.run_out_days, 999) <= 7 OR s.run_out_days IS NULL)`
     )
       .bind(householdId)
-      .all<{ name: string; qty: number; unit: string | null; run_out_days: number | null; expiry_date: string | null }>()
+      .all<{
+        name: string
+        qty: number
+        unit: string | null
+        run_out_days: number | null
+        expiry_date: string | null
+      }>()
 
     const sevenDaysFromNow = new Date()
     sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
@@ -1513,7 +1529,12 @@ apiApp.post(
        AND s.expiry_date IS NOT NULL AND s.expiry_date <= ?`
     )
       .bind(householdId, expiryCutoff)
-      .all<{ name: string; qty: number; unit: string | null; expiry_date: string | null }>()
+      .all<{
+        name: string
+        qty: number
+        unit: string | null
+        expiry_date: string | null
+      }>()
 
     const thirtyDaysAgo = new Date()
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
@@ -1548,9 +1569,30 @@ apiApp.post(
 
     if (c.env.TEST_MODE === 'true') {
       generatedItems = [
-        { name: 'Susu cair 1L', qty: 1, unit: 'L', store_id: stores[0]?.id || null, price_estimate: 18500, why: 'running out in 2 days' },
-        { name: 'Roti tawar', qty: 1, unit: 'pack', store_id: stores[0]?.id || null, price_estimate: 15000, why: 'expires in 2 days' },
-        { name: 'Telur', qty: 10, unit: 'pcs', store_id: stores[1]?.id || null, price_estimate: 28000, why: 'running out in 3 days' },
+        {
+          name: 'Susu cair 1L',
+          qty: 1,
+          unit: 'L',
+          store_id: stores[0]?.id || null,
+          price_estimate: 18500,
+          why: 'running out in 2 days',
+        },
+        {
+          name: 'Roti tawar',
+          qty: 1,
+          unit: 'pack',
+          store_id: stores[0]?.id || null,
+          price_estimate: 15000,
+          why: 'expires in 2 days',
+        },
+        {
+          name: 'Telur',
+          qty: 10,
+          unit: 'pcs',
+          store_id: stores[1]?.id || null,
+          price_estimate: 28000,
+          why: 'running out in 3 days',
+        },
       ]
     } else {
       try {
@@ -1565,7 +1607,9 @@ apiApp.post(
         )
       } catch (err) {
         return c.json(
-          { error: `AI plan generation failed: ${err instanceof Error ? err.message : 'Unknown error'}` },
+          {
+            error: `AI plan generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          },
           502
         )
       }
@@ -1667,7 +1711,10 @@ apiApp.post(
           .bind(item.store_id, householdId)
           .first<{ id: string }>()
         if (!store) {
-          return c.json({ error: `Store ${item.store_id} not found in this household` }, 400)
+          return c.json(
+            { error: `Store ${item.store_id} not found in this household` },
+            400
+          )
         }
       }
 
@@ -1711,7 +1758,9 @@ apiApp.post(
       await c.env.DB.batch(statements)
     } catch (err) {
       return c.json(
-        { error: `Failed to save plan: ${err instanceof Error ? err.message : 'Unknown'}` },
+        {
+          error: `Failed to save plan: ${err instanceof Error ? err.message : 'Unknown'}`,
+        },
         500
       )
     }
@@ -1889,7 +1938,9 @@ apiApp.patch(
       await c.env.DB.batch(statements)
     } catch (err) {
       return c.json(
-        { error: `Failed to update plan item: ${err instanceof Error ? err.message : 'Unknown'}` },
+        {
+          error: `Failed to update plan item: ${err instanceof Error ? err.message : 'Unknown'}`,
+        },
         500
       )
     }
@@ -1905,7 +1956,9 @@ apiApp.patch(
       const newStatus = body.status === 'bought' ? 'completed' : 'completed'
       await c.env.DB.prepare(
         `UPDATE plans SET status = ?, updated_at = datetime('now') WHERE id = ?`
-      ).bind(newStatus, planId).run()
+      )
+        .bind(newStatus, planId)
+        .run()
     }
 
     const updatedItem = await c.env.DB.prepare(

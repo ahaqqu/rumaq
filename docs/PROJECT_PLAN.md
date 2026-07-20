@@ -105,19 +105,19 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 ## 6. AI features
 
-| Item                              | Status      | Priority | Notes                                        |
-| --------------------------------- | ----------- | -------- | -------------------------------------------- |
-| BYO AI key in settings            | Done        | P0       | UI exists; backend encryption pending        |
+| Item                              | Status      | Priority | Notes                                            |
+| --------------------------------- | ----------- | -------- | ------------------------------------------------ |
+| BYO AI key in settings            | Done        | P0       | UI exists; backend encryption pending            |
 | Receipt OCR → parsed items        | Done        | P0       | PR #63 — `backend/src/lib/ai.ts` + scan endpoint |
-| Shopping plan generation          | Not started | P0       | Low-stock + expiry + history → grouped plan  |
-| Assistant chat with system prompt | Not started | P0       | Include persona setting in prompt            |
-| Daily AI usage meter              | Done        | P0       | Backend counter + UsageMeter wired           |
-| Use-it-up expiry recipe nudge     | Not started | P1       | Suggest recipes for near-expiry items        |
-| Cheapest-store recommendation     | Not started | P1       | From price history; Haqita integration later |
-| Consumption calibration           | Not started | P1       | Detect actual vs estimated depletion         |
-| Natural-language quick add        | Not started | P1       | Parse "beli 2L susu di Indomaret"            |
-| Trip optimization                 | Not started | P2       | Group plan by location/time                  |
-| Price memory & alerts             | Not started | P2       | Track price changes per store/product        |
+| Shopping plan generation          | Not started | P0       | Low-stock + expiry + history → grouped plan      |
+| Assistant chat with system prompt | Not started | P0       | Include persona setting in prompt                |
+| Daily AI usage meter              | Done        | P0       | Backend counter + UsageMeter wired               |
+| Use-it-up expiry recipe nudge     | Not started | P1       | Suggest recipes for near-expiry items            |
+| Cheapest-store recommendation     | Not started | P1       | From price history; Haqita integration later     |
+| Consumption calibration           | Not started | P1       | Detect actual vs estimated depletion             |
+| Natural-language quick add        | Not started | P1       | Parse "beli 2L susu di Indomaret"                |
+| Trip optimization                 | Not started | P2       | Group plan by location/time                      |
+| Price memory & alerts             | Not started | P2       | Track price changes per store/product            |
 
 ## 7. DevOps & deployment
 

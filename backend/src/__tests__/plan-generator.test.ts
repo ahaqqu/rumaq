@@ -3,7 +3,13 @@ import { buildPlanPrompt, normalizeItemName } from '../lib/plans.js'
 
 describe('buildPlanPrompt', () => {
   const lowStock = [
-    { name: 'Susu cair', qty: 0.5, unit: 'L', run_out_days: 2, expiry_date: null },
+    {
+      name: 'Susu cair',
+      qty: 0.5,
+      unit: 'L',
+      run_out_days: 2,
+      expiry_date: null,
+    },
     { name: 'Telur', qty: 3, unit: 'pcs', run_out_days: 3, expiry_date: null },
   ]
   const expiring = [
@@ -19,31 +25,61 @@ describe('buildPlanPrompt', () => {
   ]
 
   it('includes store list in prompt', () => {
-    const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, 'IDR')
+    const prompt = buildPlanPrompt(
+      lowStock,
+      expiring,
+      recentPurchases,
+      stores,
+      'IDR'
+    )
     expect(prompt).toContain('store-1: Indomaret')
     expect(prompt).toContain('store-2: Pasar')
   })
 
   it('includes low-stock items', () => {
-    const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, 'IDR')
+    const prompt = buildPlanPrompt(
+      lowStock,
+      expiring,
+      recentPurchases,
+      stores,
+      'IDR'
+    )
     expect(prompt).toContain('Susu cair')
     expect(prompt).toContain('Telur')
     expect(prompt).toContain('runs out in 2 days')
   })
 
   it('includes expiring items', () => {
-    const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, 'IDR')
+    const prompt = buildPlanPrompt(
+      lowStock,
+      expiring,
+      recentPurchases,
+      stores,
+      'IDR'
+    )
     expect(prompt).toContain('Roti tawar')
     expect(prompt).toContain('expires: 2026-07-01')
   })
 
   it('includes recent purchase history', () => {
-    const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, 'IDR')
+    const prompt = buildPlanPrompt(
+      lowStock,
+      expiring,
+      recentPurchases,
+      stores,
+      'IDR'
+    )
     expect(prompt).toContain('Susu cair @ Indomaret')
   })
 
   it('handles empty stores', () => {
-    const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, [], 'IDR')
+    const prompt = buildPlanPrompt(
+      lowStock,
+      expiring,
+      recentPurchases,
+      [],
+      'IDR'
+    )
     expect(prompt).toContain('No stores configured')
   })
 
@@ -53,12 +89,24 @@ describe('buildPlanPrompt', () => {
   })
 
   it('uses the provided currency', () => {
-    const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, 'USD')
+    const prompt = buildPlanPrompt(
+      lowStock,
+      expiring,
+      recentPurchases,
+      stores,
+      'USD'
+    )
     expect(prompt).toContain('USD')
   })
 
   it('requests JSON format output', () => {
-    const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, 'IDR')
+    const prompt = buildPlanPrompt(
+      lowStock,
+      expiring,
+      recentPurchases,
+      stores,
+      'IDR'
+    )
     expect(prompt).toContain('"items"')
     expect(prompt).toContain('"store_id"')
   })

@@ -1,19 +1,30 @@
 import type { PlanItem } from './ai.js'
 import { completeText } from './ai.js'
 import {
-  object, strictObject, string, number, picklist, optional,
-  array, pipe, minLength, minValue, nullish,
+  object,
+  strictObject,
+  string,
+  number,
+  picklist,
+  optional,
+  array,
+  pipe,
+  minLength,
+  minValue,
+  nullish,
 } from 'valibot'
 
 export const planGenerateResponseSchema = object({
-  items: array(object({
-    name: pipe(string(), minLength(1)),
-    qty: pipe(number(), minValue(0)),
-    unit: string(),
-    store_id: nullish(string()),
-    price_estimate: nullish(number()),
-    why: string(),
-  })),
+  items: array(
+    object({
+      name: pipe(string(), minLength(1)),
+      qty: pipe(number(), minValue(0)),
+      unit: string(),
+      store_id: nullish(string()),
+      price_estimate: nullish(number()),
+      why: string(),
+    })
+  ),
 })
 
 export const planItemPatchSchema = strictObject({
@@ -22,35 +33,54 @@ export const planItemPatchSchema = strictObject({
 
 export const planCreateSchema = strictObject({
   items: pipe(
-    array(object({
-      name: pipe(string(), minLength(1)),
-      qty: pipe(number(), minValue(0)),
-      unit: string(),
-      store_id: optional(string()),
-      price_estimate: optional(number()),
-      why: optional(string()),
-    })),
+    array(
+      object({
+        name: pipe(string(), minLength(1)),
+        qty: pipe(number(), minValue(0)),
+        unit: string(),
+        store_id: optional(string()),
+        price_estimate: optional(number()),
+        why: optional(string()),
+      })
+    ),
     minLength(1)
   ),
 })
 
 export function buildPlanPrompt(
-  lowStock: Array<{ name: string; qty: number; unit: string | null; run_out_days: number | null; expiry_date: string | null }>,
-  expiring: Array<{ name: string; qty: number; unit: string | null; expiry_date: string | null }>,
+  lowStock: Array<{
+    name: string
+    qty: number
+    unit: string | null
+    run_out_days: number | null
+    expiry_date: string | null
+  }>,
+  expiring: Array<{
+    name: string
+    qty: number
+    unit: string | null
+    expiry_date: string | null
+  }>,
   recentPurchases: Array<{ name: string; store_label: string | null }>,
   stores: Array<{ id: string; label: string }>,
   currency: string
 ): string {
   const storeLines = stores.map((s) => `${s.id}: ${s.label}`).join('\n')
-  const lowStockLines = lowStock.map(
-    (s) => `${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, runs out in ${s.run_out_days ?? '?'} days)`
-  ).join('\n')
-  const expiringLines = expiring.map(
-    (s) => `${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, expires: ${s.expiry_date})`
-  ).join('\n')
-  const purchaseLines = recentPurchases.map(
-    (p) => `${p.name}${p.store_label ? ' @ ' + p.store_label : ''}`
-  ).join('\n')
+  const lowStockLines = lowStock
+    .map(
+      (s) =>
+        `${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, runs out in ${s.run_out_days ?? '?'} days)`
+    )
+    .join('\n')
+  const expiringLines = expiring
+    .map(
+      (s) =>
+        `${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, expires: ${s.expiry_date})`
+    )
+    .join('\n')
+  const purchaseLines = recentPurchases
+    .map((p) => `${p.name}${p.store_label ? ' @ ' + p.store_label : ''}`)
+    .join('\n')
 
   return `You are a shopping plan assistant. Based on the household's current inventory and purchase history, generate a shopping plan.
 
@@ -94,18 +124,37 @@ Rules:
 export async function generateAiPlan(
   provider: string,
   apiKey: string,
-  lowStock: Array<{ name: string; qty: number; unit: string | null; run_out_days: number | null; expiry_date: string | null }>,
-  expiring: Array<{ name: string; qty: number; unit: string | null; expiry_date: string | null }>,
+  lowStock: Array<{
+    name: string
+    qty: number
+    unit: string | null
+    run_out_days: number | null
+    expiry_date: string | null
+  }>,
+  expiring: Array<{
+    name: string
+    qty: number
+    unit: string | null
+    expiry_date: string | null
+  }>,
   recentPurchases: Array<{ name: string; store_label: string | null }>,
   stores: Array<{ id: string; label: string }>,
   currency: string
 ): Promise<PlanItem[]> {
-  const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, currency)
+  const prompt = buildPlanPrompt(
+    lowStock,
+    expiring,
+    recentPurchases,
+    stores,
+    currency
+  )
   const systemPrompt = `You are a helpful shopping plan assistant. Generate concise, practical shopping plans in JSON format.`
 
   const content = await completeText(provider, apiKey, systemPrompt, prompt)
 
-  const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || '{}') as Record<string, unknown>
+  const parsed = JSON.parse(
+    content.match(/\{[\s\S]*\}/)?.[0] || '{}'
+  ) as Record<string, unknown>
   const items = (parsed.items || []) as Record<string, unknown>[]
 
   return items.slice(0, 50).map((it) => ({
@@ -113,7 +162,8 @@ export async function generateAiPlan(
     qty: Number(it.qty) || 1,
     unit: String(it.unit || 'pcs'),
     store_id: it.store_id ? String(it.store_id) : null,
-    price_estimate: it.price_estimate != null ? Math.round(Number(it.price_estimate)) : null,
+    price_estimate:
+      it.price_estimate != null ? Math.round(Number(it.price_estimate)) : null,
     why: String(it.why || ''),
   }))
 }

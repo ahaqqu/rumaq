@@ -1,5 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { usePlans, useGeneratePlan, useSavePlan, useUpdatePlanItem } from '../lib/queries/index.js'
+import {
+  usePlans,
+  useGeneratePlan,
+  useSavePlan,
+  useUpdatePlanItem,
+} from '../lib/queries/index.js'
 import { useSettings } from '../lib/queries/index.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
@@ -36,14 +41,20 @@ export function Plan({ askAssistant, setView }) {
 
   const allDone =
     activePlan &&
-    activePlan.items.every((it) => it.status === 'bought' || it.status === 'skipped')
+    activePlan.items.every(
+      (it) => it.status === 'bought' || it.status === 'skipped'
+    )
 
   const itemsByStore = (items) => {
     const map = {}
     for (const it of items) {
       const storeId = it.store_id || '__unknown__'
       if (!map[storeId]) {
-        map[storeId] = { store_id: storeId, store_label: it.store_label || t('plan.otherStore'), items: [] }
+        map[storeId] = {
+          store_id: storeId,
+          store_label: it.store_label || t('plan.otherStore'),
+          items: [],
+        }
       }
       map[storeId].items.push(it)
     }
@@ -118,14 +129,24 @@ export function Plan({ askAssistant, setView }) {
 
   if (generatedItems && !activePlan) {
     const stores = itemsByStore(generatedItems)
-    const grandTotal = generatedItems.reduce((s, it) => s + (it.price_estimate || 0), 0)
+    const grandTotal = generatedItems.reduce(
+      (s, it) => s + (it.price_estimate || 0),
+      0
+    )
 
     return (
       <>
         <div className="page__head">
           <p className="page__lead">{personaText('planLead', persona, t)}</p>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)', flexWrap: 'wrap' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 'var(--sp-3)',
+            marginBottom: 'var(--sp-5)',
+            flexWrap: 'wrap',
+          }}
+        >
           <button
             className="btn btn--primary"
             onClick={handleGenerateAndSave}
@@ -142,19 +163,26 @@ export function Plan({ askAssistant, setView }) {
           </button>
           {grandTotal > 0 && (
             <div className="chip" style={{ alignSelf: 'center' }}>
-              {t('plan.stores', { count: stores.length })} · {formatPrice(grandTotal)}
+              {t('plan.stores', { count: stores.length })} ·{' '}
+              {formatPrice(grandTotal)}
             </div>
           )}
         </div>
         {stores.map((store) => (
-          <div className="trip" key={store.store_id} style={{ marginBottom: 'var(--sp-4)' }}>
+          <div
+            className="trip"
+            key={store.store_id}
+            style={{ marginBottom: 'var(--sp-4)' }}
+          >
             <div className="trip__head">
               <div className="trip__store">
                 <IconShop size={18} /> {store.store_label}
               </div>
               <div className="trip__total">
                 {t('home.itemCount', { count: store.items.length })} ·{' '}
-                {formatPrice(store.items.reduce((s, it) => s + (it.price_estimate || 0), 0))}
+                {formatPrice(
+                  store.items.reduce((s, it) => s + (it.price_estimate || 0), 0)
+                )}
               </div>
             </div>
             <div className="trip__items">
@@ -162,12 +190,15 @@ export function Plan({ askAssistant, setView }) {
                 <div className="plan-item" key={it.name}>
                   <div className="plan-item__main">
                     <div className="plan-item__name">
-                      {it.name} · {it.qty}{it.unit ? ` ${it.unit}` : ''}
+                      {it.name} · {it.qty}
+                      {it.unit ? ` ${it.unit}` : ''}
                     </div>
                     <div className="plan-item__why">{it.why}</div>
                   </div>
                   {it.price_estimate != null && (
-                    <div className="plan-item__price">{formatPrice(it.price_estimate)}</div>
+                    <div className="plan-item__price">
+                      {formatPrice(it.price_estimate)}
+                    </div>
                   )}
                 </div>
               ))}
@@ -205,7 +236,10 @@ export function Plan({ askAssistant, setView }) {
   }
 
   const stores = itemsByStore(activePlan.items)
-  const grandTotal = activePlan.items.reduce((s, it) => s + (it.price_estimate || 0), 0)
+  const grandTotal = activePlan.items.reduce(
+    (s, it) => s + (it.price_estimate || 0),
+    0
+  )
 
   return (
     <>
@@ -213,7 +247,14 @@ export function Plan({ askAssistant, setView }) {
         <p className="page__lead">{personaText('planLead', persona, t)}</p>
       </div>
 
-      <div style={{ display: 'flex', gap: 'var(--sp-3)', marginBottom: 'var(--sp-5)', flexWrap: 'wrap' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 'var(--sp-3)',
+          marginBottom: 'var(--sp-5)',
+          flexWrap: 'wrap',
+        }}
+      >
         <button
           className="btn btn--secondary"
           onClick={() => generateMutation.mutate()}
@@ -223,20 +264,27 @@ export function Plan({ askAssistant, setView }) {
         </button>
         {grandTotal > 0 && (
           <div className="chip" style={{ alignSelf: 'center' }}>
-            {t('plan.stores', { count: stores.length })} · {formatPrice(grandTotal)}
+            {t('plan.stores', { count: stores.length })} ·{' '}
+            {formatPrice(grandTotal)}
           </div>
         )}
       </div>
 
       {stores.map((store) => (
-        <div className="trip" key={store.store_id} style={{ marginBottom: 'var(--sp-4)' }}>
+        <div
+          className="trip"
+          key={store.store_id}
+          style={{ marginBottom: 'var(--sp-4)' }}
+        >
           <div className="trip__head">
             <div className="trip__store">
               <IconShop size={18} /> {store.store_label}
             </div>
             <div className="trip__total">
               {t('home.itemCount', { count: store.items.length })} ·{' '}
-              {formatPrice(store.items.reduce((s, it) => s + (it.price_estimate || 0), 0))}
+              {formatPrice(
+                store.items.reduce((s, it) => s + (it.price_estimate || 0), 0)
+              )}
             </div>
           </div>
           <div className="trip__items">
@@ -252,16 +300,21 @@ export function Plan({ askAssistant, setView }) {
                     type="checkbox"
                     className="plan-item__check"
                     checked={isDone}
-                    onChange={() => handleCheckItem(activePlan.id, it.id, it.status)}
+                    onChange={() =>
+                      handleCheckItem(activePlan.id, it.id, it.status)
+                    }
                   />
                   <div className="plan-item__main">
                     <div className="plan-item__name">
-                      {it.item_name || it.name} · {it.qty}{it.unit ? ` ${it.unit}` : ''}
+                      {it.item_name || it.name} · {it.qty}
+                      {it.unit ? ` ${it.unit}` : ''}
                     </div>
                     {it.why && <div className="plan-item__why">{it.why}</div>}
                   </div>
                   {it.price_estimate != null && (
-                    <div className="plan-item__price">{formatPrice(it.price_estimate)}</div>
+                    <div className="plan-item__price">
+                      {formatPrice(it.price_estimate)}
+                    </div>
                   )}
                 </label>
               )

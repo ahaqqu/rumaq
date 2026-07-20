@@ -124,10 +124,14 @@ async function callGemini(
   const systemMsg = messages.find((m) => m.role === 'system')
   const userMsg = messages.find((m) => m.role === 'user')
 
-  const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = []
+  const parts: Array<
+    { text: string } | { inline_data: { mime_type: string; data: string } }
+  > = []
 
   if (systemMsg) {
-    parts.push({ text: typeof systemMsg.content === 'string' ? systemMsg.content : '' })
+    parts.push({
+      text: typeof systemMsg.content === 'string' ? systemMsg.content : '',
+    })
   }
   if (userMsg) {
     if (typeof userMsg.content === 'string') {
@@ -140,7 +144,9 @@ async function callGemini(
           const url = part.image_url.url
           parts.push({
             inline_data: {
-              mime_type: url.startsWith('data:') ? url.split(';')[0].replace('data:', '') : 'image/jpeg',
+              mime_type: url.startsWith('data:')
+                ? url.split(';')[0].replace('data:', '')
+                : 'image/jpeg',
               data: url.startsWith('data:') ? url.split(',')[1] : url,
             },
           })
@@ -182,20 +188,23 @@ async function callAnthropic(
     max_tokens: 2000,
     messages: chatMessages.map((m) => ({
       role: m.role,
-      content: typeof m.content === 'string'
-        ? m.content
-        : m.content.map((part) => {
-            if (part.type === 'text') return { type: 'text', text: part.text }
-            const url = part.image_url.url
-            return {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: url.startsWith('data:') ? url.split(';')[0].replace('data:', '') : 'image/jpeg',
-                data: url.startsWith('data:') ? url.split(',')[1] : url,
-              },
-            }
-          }),
+      content:
+        typeof m.content === 'string'
+          ? m.content
+          : m.content.map((part) => {
+              if (part.type === 'text') return { type: 'text', text: part.text }
+              const url = part.image_url.url
+              return {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: url.startsWith('data:')
+                    ? url.split(';')[0].replace('data:', '')
+                    : 'image/jpeg',
+                  data: url.startsWith('data:') ? url.split(',')[1] : url,
+                },
+              }
+            }),
     })),
   }
 

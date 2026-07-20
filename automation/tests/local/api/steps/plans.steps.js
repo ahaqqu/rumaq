@@ -8,9 +8,7 @@ import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
 
-const feature = loadFeature(
-  'automation/tests/local/api/features/plans.feature'
-)
+const feature = loadFeature('automation/tests/local/api/features/plans.feature')
 
 defineFeature(feature, (test) => {
   let ctx
@@ -77,24 +75,22 @@ defineFeature(feature, (test) => {
       await ctx.authenticate()
     })
 
-    when(
-      /I create a new plan with items/,
-      async (itemsTable) => {
-        const items = itemsTable.map((row) => {
-          const item = {
-            name: row.name,
-            qty: parseFloat(row.qty),
-            unit: row.unit,
-          }
-          if (row.store_id) item.store_id = row.store_id
-          if (row.price_estimate) item.price_estimate = parseInt(row.price_estimate, 10)
-          if (row.why) item.why = row.why
-          return item
-        })
-        await ctx.sendRequestWithBody('POST', '/api/plans', { items })
-        savedPlanId = ctx.responseBody?.plan?.id
-      }
-    )
+    when(/I create a new plan with items/, async (itemsTable) => {
+      const items = itemsTable.map((row) => {
+        const item = {
+          name: row.name,
+          qty: parseFloat(row.qty),
+          unit: row.unit,
+        }
+        if (row.store_id) item.store_id = row.store_id
+        if (row.price_estimate)
+          item.price_estimate = parseInt(row.price_estimate, 10)
+        if (row.why) item.why = row.why
+        return item
+      })
+      await ctx.sendRequestWithBody('POST', '/api/plans', { items })
+      savedPlanId = ctx.responseBody?.plan?.id
+    })
 
     then('the response status should be 201', () => {
       ctx.expectStatus(201)
@@ -156,12 +152,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Marking an item bought updates stock', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Marking an item bought updates stock', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -173,8 +164,22 @@ defineFeature(feature, (test) => {
     and('there is an active plan with items', async () => {
       await ctx.sendRequestWithBody('POST', '/api/plans', {
         items: [
-          { name: 'Milk', qty: 2, unit: 'L', store_id: 'store-indo', price_estimate: 25000, why: 'running low' },
-          { name: 'Cooking Oil', qty: 1, unit: 'L', store_id: 'store-indo', price_estimate: 15000, why: 'expires soon' },
+          {
+            name: 'Milk',
+            qty: 2,
+            unit: 'L',
+            store_id: 'store-indo',
+            price_estimate: 25000,
+            why: 'running low',
+          },
+          {
+            name: 'Cooking Oil',
+            qty: 1,
+            unit: 'L',
+            store_id: 'store-indo',
+            price_estimate: 15000,
+            why: 'expires soon',
+          },
         ],
       })
       expect(ctx.responseBody?.plan?.status).toBe('active')
@@ -216,7 +221,14 @@ defineFeature(feature, (test) => {
     and('there is an active plan with items', async () => {
       await ctx.sendRequestWithBody('POST', '/api/plans', {
         items: [
-          { name: 'Milk', qty: 2, unit: 'L', store_id: 'store-indo', price_estimate: 25000, why: 'running low' },
+          {
+            name: 'Milk',
+            qty: 2,
+            unit: 'L',
+            store_id: 'store-indo',
+            price_estimate: 25000,
+            why: 'running low',
+          },
         ],
       })
       expect(ctx.responseBody?.plan?.status).toBe('active')
@@ -257,41 +269,42 @@ defineFeature(feature, (test) => {
 
     and('there is an active plan', async () => {
       await ctx.sendRequestWithBody('POST', '/api/plans', {
-        items: [
-          { name: 'Milk', qty: 2, unit: 'L', why: 'running low' },
-        ],
+        items: [{ name: 'Milk', qty: 2, unit: 'L', why: 'running low' }],
       })
       expect(ctx.responseBody?.plan?.status).toBe('active')
     })
 
-    when(
-      /I create a new plan with items/,
-      async (itemsTable) => {
-        const items = itemsTable.map((row) => ({
-          name: row.name,
-          qty: parseFloat(row.qty),
-          unit: row.unit,
-          why: row.why,
-        }))
-        await ctx.sendRequestWithBody('POST', '/api/plans', { items })
-      }
-    )
+    when(/I create a new plan with items/, async (itemsTable) => {
+      const items = itemsTable.map((row) => ({
+        name: row.name,
+        qty: parseFloat(row.qty),
+        unit: row.unit,
+        why: row.why,
+      }))
+      await ctx.sendRequestWithBody('POST', '/api/plans', { items })
+    })
 
     then('the response status should be 201', () => {
       ctx.expectStatus(201)
     })
 
-    and(/GET \/api\/plans with status active returns the new plan/, async () => {
-      await ctx.sendRequest('GET', '/api/plans?status=active')
-      expect(ctx.responseBody.plans.length).toBe(1)
-      expect(ctx.responseBody.plans[0].items.length).toBe(1)
-      expect(ctx.responseBody.plans[0].items[0].item_name).toBe('Rice')
-    })
+    and(
+      /GET \/api\/plans with status active returns the new plan/,
+      async () => {
+        await ctx.sendRequest('GET', '/api/plans?status=active')
+        expect(ctx.responseBody.plans.length).toBe(1)
+        expect(ctx.responseBody.plans[0].items.length).toBe(1)
+        expect(ctx.responseBody.plans[0].items[0].item_name).toBe('Rice')
+      }
+    )
 
-    and(/GET \/api\/plans with status archived returns the old plan/, async () => {
-      await ctx.sendRequest('GET', '/api/plans?status=archived')
-      expect(ctx.responseBody.plans.length).toBe(1)
-    })
+    and(
+      /GET \/api\/plans with status archived returns the old plan/,
+      async () => {
+        await ctx.sendRequest('GET', '/api/plans?status=archived')
+        expect(ctx.responseBody.plans.length).toBe(1)
+      }
+    )
   })
 
   test('Modifying a non-existent plan item returns 404', ({
@@ -308,12 +321,9 @@ defineFeature(feature, (test) => {
       await ctx.authenticate()
     })
 
-    when(
-      /I send a PATCH request to (\S+) with body/,
-      async (path, body) => {
-        await ctx.sendRequestWithBody('PATCH', path, JSON.parse(body))
-      }
-    )
+    when(/I send a PATCH request to (\S+) with body/, async (path, body) => {
+      await ctx.sendRequestWithBody('PATCH', path, JSON.parse(body))
+    })
 
     then('the response status should be 404', () => {
       ctx.expectStatus(404)

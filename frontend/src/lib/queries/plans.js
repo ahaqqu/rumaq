@@ -32,7 +32,8 @@ export function useSavePlan() {
 export function useUpdatePlanItem() {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: ({ planId, itemId, status }) => updatePlanItem(planId, itemId, status),
+    mutationFn: ({ planId, itemId, status }) =>
+      updatePlanItem(planId, itemId, status),
     onMutate: async ({ planId, itemId, status }) => {
       await queryClient.cancelQueries({ queryKey: ['plans'] })
       const previous = queryClient.getQueriesData({ queryKey: ['plans'] })

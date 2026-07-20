@@ -51,7 +51,13 @@ vi.mock('../lib/queries/index.js', () => ({
   useSettings: vi.fn(),
 }))
 
-import { usePlans, useGeneratePlan, useSavePlan, useUpdatePlanItem, useSettings } from '../lib/queries/index.js'
+import {
+  usePlans,
+  useGeneratePlan,
+  useSavePlan,
+  useUpdatePlanItem,
+  useSettings,
+} from '../lib/queries/index.js'
 
 function createQueryClient() {
   return new QueryClient({
@@ -72,8 +78,14 @@ function renderWithQuery(ui) {
 
 describe('Plan', () => {
   beforeEach(() => {
-    vi.mocked(useSettings).mockReturnValue({ data: mockSettingsWithKey, isLoading: false })
-    vi.mocked(usePlans).mockReturnValue({ data: mockActivePlan, isLoading: false })
+    vi.mocked(useSettings).mockReturnValue({
+      data: mockSettingsWithKey,
+      isLoading: false,
+    })
+    vi.mocked(usePlans).mockReturnValue({
+      data: mockActivePlan,
+      isLoading: false,
+    })
     vi.mocked(useGeneratePlan).mockReturnValue({
       mutate: vi.fn(),
       mutateAsync: vi.fn(),
@@ -92,7 +104,10 @@ describe('Plan', () => {
   })
 
   it('renders no-key state when has_ai_key is false', () => {
-    vi.mocked(useSettings).mockReturnValue({ data: mockSettingsNoKey, isLoading: false })
+    vi.mocked(useSettings).mockReturnValue({
+      data: mockSettingsNoKey,
+      isLoading: false,
+    })
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
@@ -141,7 +156,10 @@ describe('Plan', () => {
         },
       ],
     }
-    vi.mocked(usePlans).mockReturnValue({ data: allBoughtPlan, isLoading: false })
+    vi.mocked(usePlans).mockReturnValue({
+      data: allBoughtPlan,
+      isLoading: false,
+    })
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
@@ -149,7 +167,10 @@ describe('Plan', () => {
   })
 
   it('renders generate button in empty state', () => {
-    vi.mocked(usePlans).mockReturnValue({ data: { plans: [] }, isLoading: false })
+    vi.mocked(usePlans).mockReturnValue({
+      data: { plans: [] },
+      isLoading: false,
+    })
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
@@ -158,7 +179,10 @@ describe('Plan', () => {
   })
 
   it('no-key state has add key button', () => {
-    vi.mocked(useSettings).mockReturnValue({ data: mockSettingsNoKey, isLoading: false })
+    vi.mocked(useSettings).mockReturnValue({
+      data: mockSettingsNoKey,
+      isLoading: false,
+    })
     const setView = vi.fn()
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView })
