@@ -12,7 +12,20 @@ export type ScanResult = {
   items: ParsedItem[]
 }
 
-function buildPrompt(): string {
+export type PlanItem = {
+  name: string
+  qty: number
+  unit: string
+  store_id: string | null
+  price_estimate: number | null
+  why: string
+}
+
+export type PlanResult = {
+  items: PlanItem[]
+}
+
+function buildScanPrompt(): string {
   return `You are a receipt OCR assistant. Extract line items from the receipt image.
 
 Return ONLY valid JSON in this exact format:
@@ -33,6 +46,15 @@ Rules:
 - If you cannot read the receipt clearly, return { "items": [] }.
 - Do NOT include any text outside the JSON.`
 }
+
+type ChatMessage = {
+  role: 'user' | 'assistant' | 'system'
+  content: string | ChatContentPart[]
+}
+
+type ChatContentPart =
+  | { type: 'text'; text: string }
+  | { type: 'image_url'; image_url: { url: string } }
 
 type OpenAIResponse = {
   choices?: Array<{
@@ -68,8 +90,8 @@ type OpenCodeResponse = {
 
 async function callOpenAI(
   apiKey: string,
-  imageData: string
-): Promise<ScanResult> {
+  messages: ChatMessage[]
+): Promise<string> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -78,84 +100,108 @@ async function callOpenAI(
     },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: buildPrompt() },
-            { type: 'image_url', image_url: { url: imageData } },
-          ],
-        },
-      ],
+      messages,
       max_tokens: 2000,
     }),
   })
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`OpenAI OCR failed: ${res.status} ${body}`)
+    throw new Error(`OpenAI request failed: ${res.status} ${body}`)
   }
 
   const data = (await res.json()) as OpenAIResponse
   const content = data.choices?.[0]?.message?.content
   if (!content) throw new Error('OpenAI returned empty response')
 
-  return parseJsonResponse(content)
+  return content
 }
 
 async function callGemini(
   apiKey: string,
-  imageData: string
-): Promise<ScanResult> {
+  messages: ChatMessage[]
+): Promise<string> {
+  const systemMsg = messages.find((m) => m.role === 'system')
+  const userMsg = messages.find((m) => m.role === 'user')
+
+  const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = []
+
+  if (systemMsg) {
+    parts.push({ text: typeof systemMsg.content === 'string' ? systemMsg.content : '' })
+  }
+  if (userMsg) {
+    if (typeof userMsg.content === 'string') {
+      parts.push({ text: userMsg.content })
+    } else if (Array.isArray(userMsg.content)) {
+      for (const part of userMsg.content) {
+        if (part.type === 'text') {
+          parts.push({ text: part.text })
+        } else if (part.type === 'image_url') {
+          const url = part.image_url.url
+          parts.push({
+            inline_data: {
+              mime_type: url.startsWith('data:') ? url.split(';')[0].replace('data:', '') : 'image/jpeg',
+              data: url.startsWith('data:') ? url.split(',')[1] : url,
+            },
+          })
+        }
+      }
+    }
+  }
+
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              { text: buildPrompt() },
-              {
-                inline_data: {
-                  mime_type: imageData.startsWith('data:')
-                    ? imageData.split(';')[0].replace('data:', '')
-                    : 'image/jpeg',
-                  data: imageData.startsWith('data:')
-                    ? imageData.split(',')[1]
-                    : imageData,
-                },
-              },
-            ],
-          },
-        ],
-      }),
+      body: JSON.stringify({ contents: [{ parts }] }),
     }
   )
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`Gemini OCR failed: ${res.status} ${body}`)
+    throw new Error(`Gemini request failed: ${res.status} ${body}`)
   }
 
   const data = (await res.json()) as GeminiResponse
   const content = data.candidates?.[0]?.content?.parts?.[0]?.text
   if (!content) throw new Error('Gemini returned empty response')
 
-  return parseJsonResponse(content)
+  return content
 }
 
 async function callAnthropic(
   apiKey: string,
-  imageData: string
-): Promise<ScanResult> {
-  const mediaType = imageData.startsWith('data:')
-    ? imageData.split(';')[0].replace('data:', '')
-    : 'image/jpeg'
-  const data = imageData.startsWith('data:')
-    ? imageData.split(',')[1]
-    : imageData
+  messages: ChatMessage[]
+): Promise<string> {
+  const systemMsg = messages.find((m) => m.role === 'system')
+  const chatMessages = messages.filter((m) => m.role !== 'system')
+
+  const body: Record<string, unknown> = {
+    model: 'claude-3-haiku-20240307',
+    max_tokens: 2000,
+    messages: chatMessages.map((m) => ({
+      role: m.role,
+      content: typeof m.content === 'string'
+        ? m.content
+        : m.content.map((part) => {
+            if (part.type === 'text') return { type: 'text', text: part.text }
+            const url = part.image_url.url
+            return {
+              type: 'image',
+              source: {
+                type: 'base64',
+                media_type: url.startsWith('data:') ? url.split(';')[0].replace('data:', '') : 'image/jpeg',
+                data: url.startsWith('data:') ? url.split(',')[1] : url,
+              },
+            }
+          }),
+    })),
+  }
+
+  if (systemMsg) {
+    body.system = typeof systemMsg.content === 'string' ? systemMsg.content : ''
+  }
 
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -164,44 +210,25 @@ async function callAnthropic(
       'x-api-key': apiKey,
       'anthropic-version': '2023-06-01',
     },
-    body: JSON.stringify({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 2000,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: buildPrompt() },
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: mediaType,
-                data,
-              },
-            },
-          ],
-        },
-      ],
-    }),
+    body: JSON.stringify(body),
   })
 
   if (!res.ok) {
-    const body = await res.text()
-    throw new Error(`Anthropic OCR failed: ${res.status} ${body}`)
+    const bodyText = await res.text()
+    throw new Error(`Anthropic request failed: ${res.status} ${bodyText}`)
   }
 
   const result = (await res.json()) as AnthropicResponse
   const content = result.content?.[0]?.text
   if (!content) throw new Error('Anthropic returned empty response')
 
-  return parseJsonResponse(content)
+  return content
 }
 
 async function callOpenCode(
   apiKey: string,
-  imageData: string
-): Promise<ScanResult> {
+  messages: ChatMessage[]
+): Promise<string> {
   const res = await fetch('https://api.opencode.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -210,55 +237,31 @@ async function callOpenCode(
     },
     body: JSON.stringify({
       model: 'opencode-vision',
-      messages: [
-        {
-          role: 'user',
-          content: [
-            { type: 'text', text: buildPrompt() },
-            { type: 'image_url', image_url: { url: imageData } },
-          ],
-        },
-      ],
+      messages,
       max_tokens: 2000,
     }),
   })
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`OpenCode OCR failed: ${res.status} ${body}`)
+    throw new Error(`OpenCode request failed: ${res.status} ${body}`)
   }
 
   const data = (await res.json()) as OpenCodeResponse
   const content = data.choices?.[0]?.message?.content
   if (!content) throw new Error('OpenCode returned empty response')
 
-  return parseJsonResponse(content)
+  return content
 }
 
-function parseJsonResponse(content: string): ScanResult {
+function parseJsonResponse<T>(content: string): T {
   const jsonMatch = content.match(/\{[\s\S]*\}/)
   if (!jsonMatch) {
     throw new Error('AI response did not contain valid JSON')
   }
 
   try {
-    const parsed = JSON.parse(jsonMatch[0]) as Record<string, unknown>
-
-    const items: ParsedItem[] = (
-      (parsed.items || []) as Record<string, unknown>[]
-    ).map((it) => ({
-      name: String(it.name || ''),
-      qty: Number(it.qty) || 1,
-      unit: String(it.unit || 'pcs'),
-      price: Math.round(Number(it.price) || 0),
-      total: it.total ? Math.round(Number(it.total)) : undefined,
-    }))
-
-    return {
-      store_name: parsed.store_name ? String(parsed.store_name) : undefined,
-      date: parsed.date ? String(parsed.date) : undefined,
-      items,
-    }
+    return JSON.parse(jsonMatch[0]) as T
   } catch {
     throw new Error('Failed to parse AI response JSON')
   }
@@ -278,6 +281,38 @@ function arrayBufferToBase64(buffer: ArrayBuffer): string {
   return btoa(binary)
 }
 
+async function callProvider(
+  provider: string,
+  apiKey: string,
+  messages: ChatMessage[]
+): Promise<string> {
+  switch (provider) {
+    case 'openai':
+      return callOpenAI(apiKey, messages)
+    case 'gemini':
+      return callGemini(apiKey, messages)
+    case 'anthropic':
+      return callAnthropic(apiKey, messages)
+    case 'opencode':
+      return callOpenCode(apiKey, messages)
+    default:
+      throw new Error(`Unsupported AI provider: ${provider}`)
+  }
+}
+
+export async function completeText(
+  provider: string,
+  apiKey: string,
+  systemPrompt: string,
+  userPrompt: string
+): Promise<string> {
+  const messages: ChatMessage[] = [
+    { role: 'system', content: systemPrompt },
+    { role: 'user', content: userPrompt },
+  ]
+  return callProvider(provider, apiKey, messages)
+}
+
 export async function extractReceiptItems(
   imageBuffer: ArrayBuffer,
   imageType: string,
@@ -286,16 +321,32 @@ export async function extractReceiptItems(
 ): Promise<ScanResult> {
   const imageData = toDataUri(imageBuffer, imageType)
 
-  switch (provider) {
-    case 'openai':
-      return callOpenAI(apiKey, imageData)
-    case 'gemini':
-      return callGemini(apiKey, imageData)
-    case 'anthropic':
-      return callAnthropic(apiKey, imageData)
-    case 'opencode':
-      return callOpenCode(apiKey, imageData)
-    default:
-      throw new Error(`Unsupported AI provider: ${provider}`)
+  const messages: ChatMessage[] = [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: buildScanPrompt() },
+        { type: 'image_url', image_url: { url: imageData } },
+      ],
+    },
+  ]
+
+  const content = await callProvider(provider, apiKey, messages)
+  const result = parseJsonResponse<ScanResult>(content)
+
+  const items: ParsedItem[] = (
+    (result.items || []) as Record<string, unknown>[]
+  ).map((it) => ({
+    name: String(it.name || ''),
+    qty: Number(it.qty) || 1,
+    unit: String(it.unit || 'pcs'),
+    price: Math.round(Number(it.price) || 0),
+    total: it.total ? Math.round(Number(it.total)) : undefined,
+  }))
+
+  return {
+    store_name: result.store_name ? String(result.store_name) : undefined,
+    date: result.date ? String(result.date) : undefined,
+    items,
   }
 }

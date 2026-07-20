@@ -75,7 +75,13 @@
     "allBoughtDesc": "Stok diperbarui otomatis dari struk berikutnya.",
     "basedOnItems": "Rencana ini disusun dari {{count}} item yang menipis. Minta asisten menggabungkan agar cukup satu perjalanan per toko.",
     "basedOnItems_plural": "Rencana ini disusun dari {{count}} item yang menipis. Minta asisten menggabungkan agar cukup satu perjalanan per toko.",
-    "askAssistant": "Tanya asisten"
+    "askAssistant": "Tanya asisten",
+    "savePlan": "Simpan rencana",
+    "noActivePlan": "Belum ada rencana aktif",
+    "generatePrompt": "Hasilkan rencana belanja dari stok dan riwayat pembelianmu saat ini.",
+    "generate": "Buat rencana",
+    "generateNext": "Buat rencana berikutnya",
+    "otherStore": "Toko lain"
   },
   "history": {
     "date": "Tanggal",

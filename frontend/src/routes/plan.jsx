@@ -4,11 +4,10 @@ import { Plan } from '../pages/Plan.jsx'
 
 function RouteComponent() {
   const navigate = useNavigate()
-  const { aiKey, setAssistantOpen } = useApp()
+  const { setAssistantOpen } = useApp()
 
   return (
     <Plan
-      aiKey={aiKey}
       askAssistant={() => setAssistantOpen(true)}
       setView={(view) => navigate({ to: `/${view === 'home' ? '' : view}` })}
     />
