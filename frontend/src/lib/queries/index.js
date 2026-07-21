@@ -9,5 +9,10 @@ export {
   useDeleteLocation,
 } from './locations.js'
 export { useStores, useCreateStore, useDeleteStore } from './stores.js'
-export { usePlans, useGeneratePlan } from './plans.js'
+export {
+  usePlans,
+  useGeneratePlan,
+  useSavePlan,
+  useUpdatePlanItem,
+} from './plans.js'
 export { useHistory } from './history.js'

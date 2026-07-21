@@ -3,7 +3,7 @@ import { logger } from 'hono/logger'
 
 import { sValidator } from '@hono/standard-validator'
 import { openAPIRouteHandler, describeRoute } from 'hono-openapi'
-import { object, string, optional } from 'valibot'
+import { object, string, optional, picklist } from 'valibot'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { propsAuthMiddleware } from '../auth.js'
@@ -25,10 +25,20 @@ import {
   stockPatchSchema,
   purchaseCreateSchema,
 } from '../schemas.js'
+import {
+  planItemPatchSchema,
+  planCreateSchema,
+  generateAiPlan,
+  normalizeItemName,
+} from '../lib/plans.js'
 
 const stockQuery = object({
   location: optional(string()),
   q: optional(string()),
+})
+
+const plansQuery = object({
+  status: optional(picklist(['active', 'archived', 'completed', 'all'])),
 })
 
 const apiApp = new Hono<Env>()
@@ -125,6 +135,7 @@ apiApp.use('/api/stores/:id', propsAuthMiddleware)
 apiApp.use('/api/purchases', propsAuthMiddleware)
 apiApp.use('/api/purchases/scan', propsAuthMiddleware)
 apiApp.use('/api/purchases/:id/receipt', propsAuthMiddleware)
+apiApp.use('/api/plans*', propsAuthMiddleware)
 
 apiApp.get(
   '/api/me',
@@ -1337,6 +1348,678 @@ apiApp.delete(
       .run()
 
     return c.newResponse(null, 204)
+  }
+)
+
+apiApp.get(
+  '/api/plans',
+  describeRoute({
+    description: 'List plans for the active household.',
+    security: [{ cookieAuth: [] }],
+    parameters: [
+      {
+        in: 'query',
+        name: 'status',
+        required: false,
+        schema: {
+          type: 'string',
+          enum: ['active', 'archived', 'completed', 'all'],
+          default: 'active',
+        },
+      },
+    ],
+    responses: {
+      200: { description: 'OK' },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  sValidator('query', plansQuery),
+  async (c) => {
+    const householdId = c.get('householdId')
+    const status = c.req.valid('query').status || 'active'
+
+    let planSql = `SELECT id, household_id, status, total_estimate, created_at, updated_at
+       FROM plans WHERE household_id = ?`
+    const planParams: unknown[] = [householdId]
+
+    if (status !== 'all') {
+      planSql += ' AND status = ?'
+      planParams.push(status)
+    }
+    planSql += ' ORDER BY created_at DESC'
+
+    const { results: plans } = await c.env.DB.prepare(planSql)
+      .bind(...planParams)
+      .all<{
+        id: string
+        household_id: string
+        status: string
+        total_estimate: number | null
+        created_at: string
+        updated_at: string
+      }>()
+
+    if (plans.length === 0) {
+      const res = c.json({ plans: [] })
+      res.headers.set('Cache-Control', 'private, no-cache')
+      return res
+    }
+
+    const planIds = plans.map((p) => p.id)
+    const placeholders = planIds.map(() => '?').join(',')
+
+    const { results: items } = await c.env.DB.prepare(
+      `SELECT pi.id, pi.plan_id, pi.item_id, pi.store_id, i.name AS item_name,
+              s.label AS store_label, pi.qty, pi.unit, pi.price_estimate, pi.why, pi.status, pi.created_at
+       FROM plan_items pi
+       LEFT JOIN items i ON i.id = pi.item_id
+       LEFT JOIN stores s ON s.id = pi.store_id
+       WHERE pi.plan_id IN (${placeholders})
+       ORDER BY pi.created_at`
+    )
+      .bind(...planIds)
+      .all<{
+        id: string
+        plan_id: string
+        item_id: string | null
+        store_id: string | null
+        item_name: string | null
+        store_label: string | null
+        qty: number
+        unit: string | null
+        price_estimate: number | null
+        why: string | null
+        status: string
+        created_at: string
+      }>()
+
+    const itemsByPlan: Record<string, typeof items> = {}
+    for (const item of items) {
+      if (!itemsByPlan[item.plan_id]) itemsByPlan[item.plan_id] = []
+      itemsByPlan[item.plan_id].push(item)
+    }
+
+    const result = plans.map((plan) => ({
+      ...plan,
+      items: itemsByPlan[plan.id] || [],
+    }))
+
+    const res = c.json({ plans: result })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.post(
+  '/api/plans/generate',
+  describeRoute({
+    description: 'Generate an AI shopping plan from household context.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'Plan generated' },
+      402: { description: 'AI key not configured' },
+      429: { description: 'AI usage limit exceeded' },
+    },
+  }),
+  async (c) => {
+    const userId = c.get('userId')
+    const householdId = c.get('householdId')
+
+    const settings = await c.env.DB.prepare(
+      `SELECT ai_provider, encrypted_ai_key, currency FROM user_settings WHERE user_id = ?`
+    )
+      .bind(userId)
+      .first<{
+        ai_provider: string | null
+        encrypted_ai_key: string | null
+        currency: string | null
+      }>()
+
+    if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
+      return c.json(
+        {
+          error:
+            'AI provider not configured. Go to Settings to set up your AI key.',
+        },
+        402
+      )
+    }
+
+    const aiKey = await decryptAiKey(
+      settings.encrypted_ai_key,
+      c.env.WORKER_ENCRYPTION_KEY
+    )
+
+    const today = new Date().toISOString().slice(0, 10)
+    let usageRow = await c.env.DB.prepare(
+      'SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?'
+    )
+      .bind(userId, today)
+      .first<{ id: string; used: number; daily_limit: number }>()
+
+    if (!usageRow) {
+      const id = crypto.randomUUID()
+      await c.env.DB.prepare(
+        'INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)'
+      )
+        .bind(id, userId, today, settings.ai_provider)
+        .run()
+      usageRow = { id, used: 0, daily_limit: 20 }
+    }
+
+    if (usageRow.used >= usageRow.daily_limit) {
+      return c.json(
+        {
+          error:
+            'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+        },
+        429
+      )
+    }
+
+    const lowStock = await c.env.DB.prepare(
+      `SELECT i.name, s.qty, s.unit, s.run_out_days, s.expiry_date
+       FROM stock s
+       JOIN items i ON i.id = s.item_id
+       WHERE s.household_id = ? AND s.qty > 0
+       AND (COALESCE(s.run_out_days, 999) <= 7 OR s.run_out_days IS NULL)`
+    )
+      .bind(householdId)
+      .all<{
+        name: string
+        qty: number
+        unit: string | null
+        run_out_days: number | null
+        expiry_date: string | null
+      }>()
+
+    const sevenDaysFromNow = new Date()
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+    const expiryCutoff = sevenDaysFromNow.toISOString().slice(0, 10)
+
+    const expiring = await c.env.DB.prepare(
+      `SELECT i.name, s.qty, s.unit, s.expiry_date
+       FROM stock s
+       JOIN items i ON i.id = s.item_id
+       WHERE s.household_id = ? AND s.qty > 0
+       AND s.expiry_date IS NOT NULL AND s.expiry_date <= ?`
+    )
+      .bind(householdId, expiryCutoff)
+      .all<{
+        name: string
+        qty: number
+        unit: string | null
+        expiry_date: string | null
+      }>()
+
+    const thirtyDaysAgo = new Date()
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
+    const sinceDate = thirtyDaysAgo.toISOString().slice(0, 10)
+
+    const recentPurchases = await c.env.DB.prepare(
+      `SELECT DISTINCT i.name, s.label AS store_label
+       FROM purchase_items pi
+       JOIN purchases p ON p.id = pi.purchase_id
+       JOIN items i ON i.id = pi.item_id
+       LEFT JOIN stores s ON s.id = p.store_id
+       WHERE p.household_id = ? AND p.date >= ?
+       ORDER BY i.name`
+    )
+      .bind(householdId, sinceDate)
+      .all<{ name: string; store_label: string | null }>()
+
+    const { results: stores } = await c.env.DB.prepare(
+      'SELECT id, label FROM stores WHERE household_id = ? ORDER BY label'
+    )
+      .bind(householdId)
+      .all<{ id: string; label: string }>()
+
+    let generatedItems: Array<{
+      name: string
+      qty: number
+      unit: string
+      store_id: string | null
+      price_estimate: number | null
+      why: string
+    }>
+
+    if (c.env.TEST_MODE === 'true') {
+      generatedItems = [
+        {
+          name: 'Susu cair 1L',
+          qty: 1,
+          unit: 'L',
+          store_id: stores[0]?.id || null,
+          price_estimate: 18500,
+          why: 'running out in 2 days',
+        },
+        {
+          name: 'Roti tawar',
+          qty: 1,
+          unit: 'pack',
+          store_id: stores[0]?.id || null,
+          price_estimate: 15000,
+          why: 'expires in 2 days',
+        },
+        {
+          name: 'Telur',
+          qty: 10,
+          unit: 'pcs',
+          store_id: stores[1]?.id || null,
+          price_estimate: 28000,
+          why: 'running out in 3 days',
+        },
+      ]
+    } else {
+      try {
+        generatedItems = await generateAiPlan(
+          settings.ai_provider,
+          aiKey,
+          lowStock.results || [],
+          expiring.results || [],
+          recentPurchases.results || [],
+          stores || [],
+          settings.currency || 'IDR'
+        )
+      } catch (err) {
+        return c.json(
+          {
+            error: `AI plan generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          },
+          502
+        )
+      }
+    }
+
+    await c.env.DB.prepare('UPDATE ai_usage SET used = used + 1 WHERE id = ?')
+      .bind(usageRow.id)
+      .run()
+
+    const storeLabels = new Map(stores.map((s) => [s.id, s.label]))
+
+    const items = await Promise.all(
+      generatedItems.map(async (item) => {
+        const existingItem = await c.env.DB.prepare(
+          'SELECT id, name FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
+        )
+          .bind(householdId, normalizeItemName(item.name))
+          .first<{ id: string; name: string }>()
+
+        return {
+          name: item.name,
+          qty: item.qty,
+          unit: item.unit,
+          store_id: item.store_id,
+          store_label: item.store_id
+            ? storeLabels.get(item.store_id) || null
+            : null,
+          price_estimate: item.price_estimate,
+          why: item.why,
+          item_id: existingItem?.id || null,
+          matched_item_name: existingItem?.name || null,
+        }
+      })
+    )
+
+    const total_estimate = items.reduce(
+      (sum, it) => sum + (it.price_estimate || 0),
+      0
+    )
+
+    const res = c.json({
+      items,
+      total_estimate,
+      generated_at: new Date().toISOString(),
+    })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.post(
+  '/api/plans',
+  describeRoute({
+    description: 'Save a generated plan as active.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      201: { description: 'Plan created' },
+      400: { description: 'Validation error' },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  sValidator('json', planCreateSchema),
+  async (c) => {
+    const householdId = c.get('householdId')
+    const body = c.req.valid('json')
+
+    const statements: D1PreparedStatement[] = []
+
+    const existingActive = await c.env.DB.prepare(
+      'SELECT id, status FROM plans WHERE household_id = ? AND status = ?'
+    )
+      .bind(householdId, 'active')
+      .first<{ id: string; status: string }>()
+
+    if (existingActive) {
+      statements.push(
+        c.env.DB.prepare(
+          "UPDATE plans SET status = 'archived', updated_at = datetime('now') WHERE id = ?"
+        ).bind(existingActive.id)
+      )
+    }
+
+    const planId = crypto.randomUUID()
+    const now = new Date().toISOString()
+
+    const totalEstimate = body.items.reduce(
+      (sum, it) => sum + (it.price_estimate || 0),
+      0
+    )
+
+    statements.push(
+      c.env.DB.prepare(
+        `INSERT INTO plans (id, household_id, status, total_estimate, created_at, updated_at)
+         VALUES (?, ?, 'active', ?, ?, ?)`
+      ).bind(planId, householdId, totalEstimate, now, now)
+    )
+
+    const itemIdsByName = new Map<string, string>()
+
+    for (const item of body.items) {
+      let itemId: string | null = null
+      if (item.store_id) {
+        const store = await c.env.DB.prepare(
+          'SELECT id FROM stores WHERE id = ? AND household_id = ?'
+        )
+          .bind(item.store_id, householdId)
+          .first<{ id: string }>()
+        if (!store) {
+          return c.json(
+            { error: `Store ${item.store_id} not found in this household` },
+            400
+          )
+        }
+      }
+
+      const normalizedName = normalizeItemName(item.name)
+      const seenItemId = itemIdsByName.get(normalizedName)
+
+      if (seenItemId) {
+        itemId = seenItemId
+      } else {
+        const existingItem = await c.env.DB.prepare(
+          'SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
+        )
+          .bind(householdId, normalizedName)
+          .first<{ id: string }>()
+
+        if (existingItem) {
+          itemId = existingItem.id
+        } else {
+          itemId = crypto.randomUUID()
+          statements.push(
+            c.env.DB.prepare(
+              'INSERT INTO items (id, household_id, name, default_unit) VALUES (?, ?, ?, ?)'
+            ).bind(itemId, householdId, item.name.trim(), item.unit)
+          )
+        }
+        itemIdsByName.set(normalizedName, itemId)
+      }
+
+      const planItemId = crypto.randomUUID()
+      statements.push(
+        c.env.DB.prepare(
+          `INSERT INTO plan_items (id, plan_id, item_id, store_id, qty, unit, price_estimate, why, status, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+        ).bind(
+          planItemId,
+          planId,
+          itemId,
+          item.store_id || null,
+          item.qty,
+          item.unit,
+          item.price_estimate ?? null,
+          item.why ?? null,
+          now
+        )
+      )
+    }
+
+    try {
+      await c.env.DB.batch(statements)
+    } catch (err) {
+      return c.json(
+        {
+          error: `Failed to save plan: ${err instanceof Error ? err.message : 'Unknown'}`,
+        },
+        500
+      )
+    }
+
+    const plan = await c.env.DB.prepare(
+      'SELECT id, household_id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ?'
+    )
+      .bind(planId)
+      .first()
+
+    const { results: planItems } = await c.env.DB.prepare(
+      `SELECT pi.id, pi.item_id, pi.store_id, i.name AS item_name,
+              s.label AS store_label, pi.qty, pi.unit, pi.price_estimate, pi.why, pi.status
+       FROM plan_items pi
+       LEFT JOIN items i ON i.id = pi.item_id
+       LEFT JOIN stores s ON s.id = pi.store_id
+       WHERE pi.plan_id = ?
+       ORDER BY pi.created_at`
+    )
+      .bind(planId)
+      .all<{
+        id: string
+        item_id: string | null
+        store_id: string | null
+        item_name: string | null
+        store_label: string | null
+        qty: number
+        unit: string | null
+        price_estimate: number | null
+        why: string | null
+        status: string
+      }>()
+
+    const res = c.json({ plan: { ...plan, items: planItems } }, 201)
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.patch(
+  '/api/plans/:id/items/:itemId',
+  describeRoute({
+    description: 'Mark a plan item as bought or skipped.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'Updated' },
+      400: { description: 'Validation error' },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Not found' },
+    },
+  }),
+  sValidator('json', planItemPatchSchema),
+  async (c) => {
+    const householdId = c.get('householdId')
+    const planId = c.req.param('id')
+    const itemId = c.req.param('itemId')
+    const body = c.req.valid('json')
+
+    const plan = await c.env.DB.prepare(
+      'SELECT id, status FROM plans WHERE id = ? AND household_id = ?'
+    )
+      .bind(planId, householdId)
+      .first<{ id: string; status: string }>()
+
+    if (!plan) {
+      return c.json({ error: 'Plan not found' }, 404)
+    }
+
+    const planItem = await c.env.DB.prepare(
+      `SELECT pi.id, pi.item_id, pi.store_id, pi.qty, pi.unit, pi.price_estimate, pi.status, pi.plan_id
+       FROM plan_items pi WHERE pi.id = ? AND pi.plan_id = ?`
+    )
+      .bind(itemId, planId)
+      .first<{
+        id: string
+        item_id: string | null
+        store_id: string | null
+        qty: number
+        unit: string | null
+        price_estimate: number | null
+        status: string
+        plan_id: string
+      }>()
+
+    if (!planItem) {
+      return c.json({ error: 'Plan item not found' }, 404)
+    }
+
+    if (plan.status !== 'active') {
+      return c.json({ error: 'Plan is not active' }, 400)
+    }
+
+    const now = new Date().toISOString()
+    const statements: D1PreparedStatement[] = []
+
+    statements.push(
+      c.env.DB.prepare(
+        `UPDATE plan_items SET status = ?, updated_at = datetime('now') WHERE id = ?`
+      ).bind(body.status, itemId)
+    )
+
+    if (
+      body.status === 'bought' &&
+      planItem.item_id &&
+      planItem.status !== 'bought'
+    ) {
+      const defaultLocation = await c.env.DB.prepare(
+        'SELECT id FROM locations WHERE household_id = ? ORDER BY sort_order LIMIT 1'
+      )
+        .bind(householdId)
+        .first<{ id: string }>()
+
+      const purchaseId = crypto.randomUUID()
+      statements.push(
+        c.env.DB.prepare(
+          `INSERT INTO purchases (id, household_id, store_id, date, created_at)
+           VALUES (?, ?, ?, ?, ?)`
+        ).bind(
+          purchaseId,
+          householdId,
+          planItem.store_id || null,
+          now.slice(0, 10),
+          now
+        )
+      )
+
+      const purchaseItemId = crypto.randomUUID()
+      statements.push(
+        c.env.DB.prepare(
+          `INSERT INTO purchase_items (id, purchase_id, item_id, qty, unit, price, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`
+        ).bind(
+          purchaseItemId,
+          purchaseId,
+          planItem.item_id,
+          planItem.qty,
+          planItem.unit,
+          planItem.price_estimate ?? 0,
+          now
+        )
+      )
+
+      const existingStock = await c.env.DB.prepare(
+        'SELECT id, qty FROM stock WHERE household_id = ? AND item_id = ?'
+      )
+        .bind(householdId, planItem.item_id)
+        .first<{ id: string; qty: number }>()
+
+      if (existingStock) {
+        const newQty = existingStock.qty + planItem.qty
+        const runOut = await computeRunOutDays(
+          householdId,
+          planItem.item_id,
+          newQty,
+          c.env.DB
+        )
+        statements.push(
+          c.env.DB.prepare(
+            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`
+          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id)
+        )
+      } else {
+        const stockId = crypto.randomUUID()
+        const locationId = defaultLocation?.id || null
+        statements.push(
+          c.env.DB.prepare(
+            `INSERT INTO stock (id, household_id, item_id, location_id, qty, unit, run_out_days, basis, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?, 30, 'default', ?)`
+          ).bind(
+            stockId,
+            householdId,
+            planItem.item_id,
+            locationId,
+            planItem.qty,
+            planItem.unit,
+            now
+          )
+        )
+      }
+    }
+
+    try {
+      await c.env.DB.batch(statements)
+    } catch (err) {
+      return c.json(
+        {
+          error: `Failed to update plan item: ${err instanceof Error ? err.message : 'Unknown'}`,
+        },
+        500
+      )
+    }
+
+    const { results: allItems } = await c.env.DB.prepare(
+      `SELECT status FROM plan_items WHERE plan_id = ?`
+    )
+      .bind(planId)
+      .all<{ status: string }>()
+
+    const allResolved = allItems.every((i) => i.status !== 'pending')
+    if (allResolved) {
+      const newStatus = body.status === 'bought' ? 'completed' : 'completed'
+      await c.env.DB.prepare(
+        `UPDATE plans SET status = ?, updated_at = datetime('now') WHERE id = ?`
+      )
+        .bind(newStatus, planId)
+        .run()
+    }
+
+    const updatedItem = await c.env.DB.prepare(
+      `SELECT pi.id, pi.item_id, pi.store_id, i.name AS item_name,
+              s.label AS store_label, pi.qty, pi.unit, pi.price_estimate, pi.why, pi.status
+       FROM plan_items pi
+       LEFT JOIN items i ON i.id = pi.item_id
+       LEFT JOIN stores s ON s.id = pi.store_id
+       WHERE pi.id = ?`
+    )
+      .bind(itemId)
+      .first()
+
+    const updatedPlan = await c.env.DB.prepare(
+      'SELECT id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ?'
+    )
+      .bind(planId)
+      .first()
+
+    const res = c.json({ item: updatedItem, plan: updatedPlan })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
   }
 )
 

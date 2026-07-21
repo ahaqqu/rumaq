@@ -75,7 +75,14 @@
     "allBoughtDesc": "Stock is updated automatically from the next receipt.",
     "basedOnItems": "This plan was created from {{count}} item running low. Ask the assistant to combine into one trip per store.",
     "basedOnItems_plural": "This plan was created from {{count}} items running low. Ask the assistant to combine into one trip per store.",
-    "askAssistant": "Ask assistant"
+    "askAssistant": "Ask assistant",
+    "savePlan": "Save plan",
+    "noActivePlan": "No active plan",
+    "generatePrompt": "Generate a shopping plan from your current stock and purchase history.",
+    "generate": "Generate plan",
+    "generateNext": "Make next plan",
+    "otherStore": "Other store",
+    "discardDraft": "Discard"
   },
   "history": {
     "date": "Date",

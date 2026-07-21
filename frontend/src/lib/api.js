@@ -167,3 +167,27 @@ export function createPurchase(payload) {
 export function getReceiptUrl(purchaseId) {
   return `${BASE}/api/purchases/${purchaseId}/receipt`
 }
+
+export function getPlans(status = 'active') {
+  return request(`/api/plans?status=${status}`)
+}
+
+export function generatePlan() {
+  return request('/api/plans/generate', {
+    method: 'POST',
+  })
+}
+
+export function savePlan(items) {
+  return request('/api/plans', {
+    method: 'POST',
+    body: JSON.stringify({ items }),
+  })
+}
+
+export function updatePlanItem(planId, itemId, status) {
+  return request(`/api/plans/${planId}/items/${itemId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ status }),
+  })
+}
