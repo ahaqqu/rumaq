@@ -53,29 +53,29 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 
 ## 3. Backend (Cloudflare Workers + Hono)
 
-| Item                                          | Status      | Priority | Notes                                                                      |
-| --------------------------------------------- | ----------- | -------- | -------------------------------------------------------------------------- |
-| Backend project scaffold                      | Done        | P0       | `backend/` with Hono, Wrangler config example                              |
-| Google OAuth 2.0 login & callback             | Done        | P0       | OAuth flow with PKCE, JWT sessions, default seed on household creation     |
-| JWT session cookie middleware                 | Done        | P0       | `backend/src/middleware.ts`; verifies cookie + loads active household      |
-| CORS configuration                            | Done        | P0       | Configured for Pages origin + localhost                                    |
-| Health check endpoint                         | Done        | P0       | `GET /api/health`                                                          |
-| `GET /api/me` endpoint                        | Done        | P0       | Returns current user                                                       |
-| `GET /api/stock` endpoint                     | Done        | P0       | Query with location/q filters, ordered by run-out + expiry                 |
-| Stock CRUD endpoints (`PATCH /api/stock/:id`) | Not started | P0       |                                                                            |
-| Household endpoints                           | Not started | P0       | Create/list households, set active                                         |
-| Location endpoints                            | Done        | P0       | `GET/POST/DELETE /api/locations`                                           |
-| Store endpoints                               | Done        | P0       | `GET/POST/DELETE /api/stores`                                              |
-| Purchase endpoints                            | Not started | P0       | `GET/POST /api/purchases`                                                  |
-| Receipt upload to R2                          | Not started | P0       | `POST /api/purchases/scan`                                                 |
-| Plan endpoints                                | Not started | P0       | `GET/POST /api/plans`, `POST /api/plans/generate`                          |
-| Settings endpoints                            | Done        | P0       | `GET/PATCH /api/settings`                                                  |
-| AI chat endpoint                              | Not started | P0       | `POST /api/ai/chat` with streaming                                         |
-| AI usage endpoint                             | Done        | P0       | `GET /api/ai/usage`                                                        |
-| Input validation with Valibot                 | Done        | P0       | Add to all routes                                                          |
-| Centralized error handling                    | Done        | P1       | `app.onError` catches all unhandled errors; middleware returns JSON errors |
-| Rate limiting                                 | Not started | P1       | Per-user AI and API limits                                                 |
-| Request logging / observability               | Not started | P2       | Structured logs, optional analytics                                        |
+| Item                                          | Status      | Priority | Notes                                                                              |
+| --------------------------------------------- | ----------- | -------- | ---------------------------------------------------------------------------------- |
+| Backend project scaffold                      | Done        | P0       | `backend/` with Hono, Wrangler config example                                      |
+| Google OAuth 2.0 login & callback             | Done        | P0       | OAuth flow with PKCE, JWT sessions, default seed on household creation             |
+| JWT session cookie middleware                 | Done        | P0       | `backend/src/middleware.ts`; verifies cookie + loads active household              |
+| CORS configuration                            | Done        | P0       | Configured for Pages origin + localhost                                            |
+| Health check endpoint                         | Done        | P0       | `GET /api/health`                                                                  |
+| `GET /api/me` endpoint                        | Done        | P0       | Returns current user                                                               |
+| `GET /api/stock` endpoint                     | Done        | P0       | Query with location/q filters, ordered by run-out + expiry                         |
+| Stock CRUD endpoints (`PATCH /api/stock/:id`) | Done        | P0       |                                                                                    |
+| Household endpoints                           | Not started | P0       | Create/list households, set active                                                 |
+| Location endpoints                            | Done        | P0       | `GET/POST/DELETE /api/locations`                                                   |
+| Store endpoints                               | Done        | P0       | `GET/POST/DELETE /api/stores`                                                      |
+| Purchase endpoints                            | Done        | P0       | `GET/POST /api/purchases`, `GET /api/purchases/:id`, `GET /api/purchases/patterns` |
+| Receipt upload to R2                          | Not started | P0       | `POST /api/purchases/scan`                                                         |
+| Plan endpoints                                | Done        | P0       | `GET/POST /api/plans`, `POST /api/plans/generate`, `PATCH /api/plans/items/:id`    |
+| Settings endpoints                            | Done        | P0       | `GET/PATCH /api/settings`                                                          |
+| AI chat endpoint                              | Done        | P0       | `POST /api/ai/chat` (streaming deferred; see ARCHITECTURE.md §13)                  |
+| AI usage endpoint                             | Done        | P0       | `GET /api/ai/usage`                                                                |
+| Input validation with Valibot                 | Done        | P0       | Add to all routes                                                                  |
+| Centralized error handling                    | Done        | P1       | `app.onError` catches all unhandled errors; middleware returns JSON errors         |
+| Rate limiting                                 | Not started | P1       | Per-user AI and API limits                                                         |
+| Request logging / observability               | Not started | P2       | Structured logs, optional analytics                                                |
 
 ## 4. Database (Cloudflare D1)
 
@@ -84,54 +84,54 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | Relational schema design        | Done        | P0       | `backend/migrations/0001_schema.sql`                                            |
 | Migration runner / setup script | Done        | P0       | `scripts/deploy/setup-db.js`                                                    |
 | Seed default locations & stores | Done        | P0       | Kulkas, Freezer, Lemari, Rak + Indomaret, Alfamart, Pasar on household creation |
-| Run-out estimate computation    | Not started | P0       | SQL/view or Worker logic from purchase history                                  |
+| Run-out estimate computation    | Done        | P0       | `computeRunOutDays` in `backend/src/lib/stock.ts`; full history, weighted avg   |
 | Index tuning                    | Partial     | P0       | Basic indexes in schema; validate with query patterns                           |
 | Multi-household data isolation  | Partial     | P0       | Schema ready; enforce in all queries                                            |
 | Backup / export strategy        | Not started | P2       | Periodic D1 export                                                              |
 
 ## 5. Authentication & security
 
-| Item                            | Status      | Priority | Notes                                                               |
-| ------------------------------- | ----------- | -------- | ------------------------------------------------------------------- |
-| Google OAuth 2.0 integration    | Partial     | P0       | Code complete; needs secrets and live test                          |
-| Session JWT signing             | Partial     | P0       | `backend/src/auth.ts`; verify key rotation story                    |
-| Secure AI key encryption        | Done        | P0       | AES-GCM with `WORKER_ENCRYPTION_KEY`                                |
-| R2 signed URLs for receipts     | Not started | P0       | Don't expose bucket directly                                        |
-| AI prompt data isolation        | Not started | P0       | System prompt + context must never include another household's data |
-| HTTPS-only cookies              | Partial     | P0       | Set `Secure`; verify on deployed domain                             |
-| CORS restricted to Pages origin | Done        | P0       | Allows Pages origin + `*.rumaq.pages.dev` preview subdomains        |
-| CSRF protection via OAuth state | Done        | P0       | `state` + PKCE in `backend/src/auth.ts`                             |
-| Row-level security review       | Not started | P1       | Ensure every query filters by household                             |
+| Item                            | Status      | Priority | Notes                                                                                                             |
+| ------------------------------- | ----------- | -------- | ----------------------------------------------------------------------------------------------------------------- |
+| Google OAuth 2.0 integration    | Partial     | P0       | Code complete; needs secrets and live test                                                                        |
+| Session JWT signing             | Partial     | P0       | `backend/src/auth.ts`; verify key rotation story                                                                  |
+| Secure AI key encryption        | Done        | P0       | AES-GCM with `WORKER_ENCRYPTION_KEY`                                                                              |
+| R2 signed URLs for receipts     | Partial     | P0       | Receipts served through `GET /api/purchases/:id/receipt` proxy; R2 signed URLs deferred (see ARCHITECTURE.md §13) |
+| AI prompt data isolation        | Done        | P0       | All chat/plan/scan prompts filtered by `household_id` in queries                                                  |
+| HTTPS-only cookies              | Partial     | P0       | Set `Secure`; verify on deployed domain                                                                           |
+| CORS restricted to Pages origin | Done        | P0       | Allows Pages origin + `*.rumaq.pages.dev` preview subdomains                                                      |
+| CSRF protection via OAuth state | Done        | P0       | `state` + PKCE in `backend/src/auth.ts`                                                                           |
+| Row-level security review       | Not started | P1       | Ensure every query filters by household                                                                           |
 
 ## 6. AI features
 
-| Item                              | Status      | Priority | Notes                                            |
-| --------------------------------- | ----------- | -------- | ------------------------------------------------ |
-| BYO AI key in settings            | Done        | P0       | UI exists; backend encryption pending            |
-| Receipt OCR → parsed items        | Done        | P0       | PR #63 — `backend/src/lib/ai.ts` + scan endpoint |
-| Shopping plan generation          | Done        | P0       | PR #77 — plans API + Plan page wired             |
-| Assistant chat with system prompt | Not started | P0       | Include persona setting in prompt                |
-| Daily AI usage meter              | Done        | P0       | Backend counter + UsageMeter wired               |
-| Use-it-up expiry recipe nudge     | Not started | P1       | Suggest recipes for near-expiry items            |
-| Cheapest-store recommendation     | Not started | P1       | From price history; Haqita integration later     |
-| Consumption calibration           | Not started | P1       | Detect actual vs estimated depletion             |
-| Natural-language quick add        | Not started | P1       | Parse "beli 2L susu di Indomaret"                |
-| Trip optimization                 | Not started | P2       | Group plan by location/time                      |
-| Price memory & alerts             | Not started | P2       | Track price changes per store/product            |
+| Item                              | Status      | Priority | Notes                                                                                          |
+| --------------------------------- | ----------- | -------- | ---------------------------------------------------------------------------------------------- |
+| BYO AI key in settings            | Done        | P0       | UI exists; backend encryption pending                                                          |
+| Receipt OCR → parsed items        | Done        | P0       | PR #63 — `backend/src/lib/ai.ts` + scan endpoint                                               |
+| Shopping plan generation          | Done        | P0       | PR #77 — plans API + Plan page wired                                                           |
+| Assistant chat with system prompt | Done        | P0       | EN-only persona; see ARCHITECTURE.md §13                                                       |
+| Daily AI usage meter              | Done        | P0       | Backend counter + UsageMeter wired                                                             |
+| Use-it-up expiry recipe nudge     | Not started | P1       | Suggest recipes for near-expiry items                                                          |
+| Cheapest-store recommendation     | Not started | P1       | From price history; Haqita integration later                                                   |
+| Consumption calibration           | Partial     | P1       | Run-out recalibration extends in-place; no bulk recalibrate endpoint (see ARCHITECTURE.md §13) |
+| Natural-language quick add        | Not started | P1       | Parse "beli 2L susu di Indomaret"                                                              |
+| Trip optimization                 | Not started | P2       | Group plan by location/time                                                                    |
+| Price memory & alerts             | Not started | P2       | Track price changes per store/product                                                          |
 
 ## 7. DevOps & deployment
 
-| Item                                | Status      | Priority | Notes                                                    |
-| ----------------------------------- | ----------- | -------- | -------------------------------------------------------- |
-| Cloudflare Pages deployment config  | Partial     | P0       | Vite build ready; need `wrangler pages deploy`           |
-| Cloudflare Worker deployment config | Partial     | P0       | `backend/wrangler.toml.example`; user must copy and fill |
-| D1 database creation guide          | Done        | P0       | `scripts/deploy/setup-db.js` + README                    |
-| R2 bucket creation guide            | Not started | P0       | Add to README or script                                  |
-| GitHub Actions CI                   | Done        | P1       | Unit tests + build on push/PR to main                    |
-| Test automation CI                  | Done        | P1       | Docker-based integration/E2E tests on push/PR to main    |
-| Preview deployments for PRs         | Done        | P1       | Branch-specific Worker + Pages preview; auto-cleanup     |
-| Secrets management documentation    | Partial     | P0       | Listed in `docs/ARCHITECTURE.md`; add step-by-step       |
-| Environment-specific configs        | Not started | P1       | `.dev.vars` for local, secrets for prod                  |
+| Item                                | Status      | Priority | Notes                                                                                |
+| ----------------------------------- | ----------- | -------- | ------------------------------------------------------------------------------------ |
+| Cloudflare Pages deployment config  | Partial     | P0       | Vite build ready; need `wrangler pages deploy`                                       |
+| Cloudflare Worker deployment config | Partial     | P0       | `backend/wrangler.toml.example`; user must copy and fill                             |
+| D1 database creation guide          | Done        | P0       | `scripts/deploy/setup-db.js` + README                                                |
+| R2 bucket creation guide            | Not started | P0       | Add to README or script                                                              |
+| GitHub Actions CI                   | Done        | P1       | Unit tests + build on push/PR to main                                                |
+| Test automation CI                  | Done        | P1       | Docker-based integration/E2E tests on push/PR to main                                |
+| Preview deployments for PRs         | Done        | P1       | Branch-specific Worker + Pages preview; auto-cleanup                                 |
+| Secrets management documentation    | Done        | P0       | `docs/ARCHITECTURE.md` §8 env vars table; `RUN_SECRETS_CHECK` guards missing secrets |
+| Environment-specific configs        | Not started | P1       | `.dev.vars` for local, secrets for prod                                              |
 
 ## 8. Quality assurance
 
@@ -217,24 +217,28 @@ _User impact: get an auto-generated per-store shopping plan from low stock, expi
 - Add tests for plan CRUD, generate endpoint, and check-off flow.
 - Ensure plan generation prompt context is scoped to the current household only.
 
-### PR 6 — Purchase History + Ship
+### PR 6 — Purchase History + Ship ✅
 
 _User impact: review past purchases and spending patterns; app goes live._
 
-- Implement `GET /api/purchases` with date/store/month-grouping filters.
-- Wire History page: month-grouped table, totals, pattern detection.
-- Refine run-out estimates from actual purchase history.
-- Finalize Cloudflare Pages and Worker deployment configs.
-- Update deployment documentation (secrets guide, R2 setup, deploy steps).
-- Update this plan: mark all P0 items as `Done`.
-- Run end-to-end verification on the live URL.
+- ✅ Implemented `GET /api/purchases` with date/store/month-grouping filters, text search, keyset pagination.
+- ✅ Implemented `GET /api/purchases/:id` for single purchase detail.
+- ✅ Implemented `GET /api/purchases/patterns` for consumption pattern detection.
+- ✅ Wired History page: month-grouped table, totals, pattern cards, receipt lightbox.
+- ✅ Refined run-out estimates from full purchase history (weighted avg, 90-day gap fallback).
+- ✅ Implemented `POST /api/ai/chat` with household-scoped system prompt.
+- ✅ Wired Assistant: real chat, usage limits, AI-proposal apply-to-plan.
+- ✅ Added `RUN_SECRETS_CHECK` for production config validation.
+- ✅ Added BDD feature files + step definitions for purchase history and AI chat.
+- ✅ Updated deployment documentation and tech debt notes in ARCHITECTURE.md §13.
 
 ---
 
 ## Immediate next steps
 
-PRs 1-4 are merged (Settings #48, Inventory #57, Receipt Scan #63). Next up:
+Phase 04 (AI Shopping Plans) and Phase 05 (Purchase History & Ship) are complete. Remaining P0 items:
 
-1. Implement **Phase 04 — AI Shopping Plans** (`docs/plan/phase-04-ai-shopping-plans.md`) on a new branch from `main`.
-2. Then **Phase 05 — Purchase History & Ship** (`docs/plan/phase-05-purchase-history-and-ship.md`), which includes the AI Assistant chat endpoint.
-3. Ensure `npm test` and `npx tsc --noEmit` pass before opening each PR.
+1. Enable email auth in production (`EMAIL_AUTH_ENABLED = "true"` in `wrangler.cloudflare.toml`) after verifying the login flow live.
+2. Deploy to Cloudflare via `./scripts/deploy.sh cloudflare` and run end-to-end smoke verification.
+3. Run automation-local and production smoke tests.
+4. Address tech debt items listed in `docs/ARCHITECTURE.md` §13.

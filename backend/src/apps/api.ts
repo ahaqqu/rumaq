@@ -3,12 +3,22 @@ import { logger } from 'hono/logger'
 
 import { sValidator } from '@hono/standard-validator'
 import { openAPIRouteHandler, describeRoute } from 'hono-openapi'
-import { object, string, optional, picklist } from 'valibot'
+import {
+  object,
+  string,
+  optional,
+  picklist,
+  number,
+  integer,
+  minValue,
+  pipe,
+} from 'valibot'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { propsAuthMiddleware } from '../auth.js'
 import { encryptAiKey, decryptAiKey } from '../lib/crypto.js'
 import { computeRunOutDays } from '../lib/stock.js'
+import { computePatterns } from '../lib/patterns.js'
 import {
   validateImage,
   buildKey,
@@ -17,6 +27,7 @@ import {
   extFromType,
 } from '../lib/receipts.js'
 import { extractReceiptItems } from '../lib/ai.js'
+import { sendChatMessage } from '../lib/chat.js'
 import {
   settingsPatchSchema,
   locationSchema,
@@ -24,6 +35,7 @@ import {
   aiKeyTestSchema,
   stockPatchSchema,
   purchaseCreateSchema,
+  chatSchema,
 } from '../schemas.js'
 import {
   planItemPatchSchema,
@@ -39,6 +51,16 @@ const stockQuery = object({
 
 const plansQuery = object({
   status: optional(picklist(['active', 'archived', 'completed', 'all'])),
+})
+
+const purchasesQuery = object({
+  store: optional(string()),
+  from: optional(string()),
+  to: optional(string()),
+  q: optional(string()),
+  group_by: optional(picklist(['month', 'store'])),
+  limit: optional(pipe(number(), integer(), minValue(1))),
+  cursor: optional(string()),
 })
 
 const apiApp = new Hono<Env>()
@@ -134,7 +156,10 @@ apiApp.use('/api/stores', propsAuthMiddleware)
 apiApp.use('/api/stores/:id', propsAuthMiddleware)
 apiApp.use('/api/purchases', propsAuthMiddleware)
 apiApp.use('/api/purchases/scan', propsAuthMiddleware)
+apiApp.use('/api/purchases/patterns', propsAuthMiddleware)
+apiApp.use('/api/purchases/:id', propsAuthMiddleware)
 apiApp.use('/api/purchases/:id/receipt', propsAuthMiddleware)
+apiApp.use('/api/ai/chat', propsAuthMiddleware)
 apiApp.use('/api/plans*', propsAuthMiddleware)
 
 apiApp.get(
@@ -711,6 +736,187 @@ apiApp.get(
 )
 
 apiApp.post(
+  '/api/ai/chat',
+  describeRoute({
+    description:
+      'Send a message to the household-scoped assistant and receive a reply.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'Reply' },
+      400: { description: 'Validation error' },
+      401: { description: 'Unauthorized' },
+      402: { description: 'AI key not configured' },
+      429: { description: 'AI usage limit exceeded' },
+      502: { description: 'AI provider error' },
+    },
+  }),
+  sValidator('json', chatSchema),
+  async (c) => {
+    const userId = c.get('userId')
+    const householdId = c.get('householdId')
+    const { message, history } = c.req.valid('json')
+
+    const settings = await c.env.DB.prepare(
+      `SELECT ai_provider, encrypted_ai_key,
+              persona_enabled, persona_user_role, persona_ai_role
+         FROM user_settings WHERE user_id = ?`
+    )
+      .bind(userId)
+      .first<{
+        ai_provider: string | null
+        encrypted_ai_key: string | null
+        persona_enabled: number | null
+        persona_user_role: string | null
+        persona_ai_role: string | null
+      }>()
+
+    if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
+      return c.json(
+        {
+          error:
+            'AI provider not configured. Go to Settings to set up your AI key.',
+        },
+        402
+      )
+    }
+
+    const aiKey = await decryptAiKey(
+      settings.encrypted_ai_key,
+      c.env.WORKER_ENCRYPTION_KEY
+    )
+
+    const today = new Date().toISOString().slice(0, 10)
+    let usageRow = await c.env.DB.prepare(
+      'SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?'
+    )
+      .bind(userId, today)
+      .first<{ id: string; used: number; daily_limit: number }>()
+
+    if (!usageRow) {
+      const id = crypto.randomUUID()
+      await c.env.DB.prepare(
+        'INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)'
+      )
+        .bind(id, userId, today, settings.ai_provider)
+        .run()
+      usageRow = { id, used: 0, daily_limit: 20 }
+    }
+
+    if (usageRow.used >= usageRow.daily_limit) {
+      return c.json(
+        {
+          error:
+            'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+        },
+        429
+      )
+    }
+
+    let reply: string
+    if (c.env.TEST_MODE === 'true') {
+      reply = `(test) You asked: "${message}". Based on your household stock, consider checking your low items soon.`
+    } else {
+      const lowStock = await c.env.DB.prepare(
+        `SELECT i.name, s.qty, s.unit, s.run_out_days, s.expiry_date
+           FROM stock s JOIN items i ON i.id = s.item_id
+          WHERE s.household_id = ? AND s.qty > 0
+            AND (COALESCE(s.run_out_days, 999) <= 7 OR s.run_out_days IS NULL)`
+      )
+        .bind(householdId)
+        .all<{
+          name: string
+          qty: number
+          unit: string | null
+          run_out_days: number | null
+          expiry_date: string | null
+        }>()
+
+      const sevenDaysFromNow = new Date()
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
+      const expiryCutoff = sevenDaysFromNow.toISOString().slice(0, 10)
+
+      const expiring = await c.env.DB.prepare(
+        `SELECT i.name, s.qty, s.unit, s.expiry_date
+           FROM stock s JOIN items i ON i.id = s.item_id
+          WHERE s.household_id = ? AND s.qty > 0
+            AND s.expiry_date IS NOT NULL AND s.expiry_date <= ?`
+      )
+        .bind(householdId, expiryCutoff)
+        .all<{
+          name: string
+          qty: number
+          unit: string | null
+          expiry_date: string | null
+        }>()
+
+      const recentPurchases = await c.env.DB.prepare(
+        `SELECT DISTINCT i.name, s.label AS store_label
+           FROM purchase_items pi
+           JOIN purchases p ON p.id = pi.purchase_id
+           JOIN items i ON i.id = pi.item_id
+           LEFT JOIN stores s ON s.id = p.store_id
+          WHERE p.household_id = ? AND p.date >= ?
+          ORDER BY i.name`
+      )
+        .bind(householdId, expiryCutoff)
+        .all<{ name: string; store_label: string | null }>()
+
+      const activePlan = await c.env.DB.prepare(
+        `SELECT pi.qty, pi.unit, i.name, s.label AS store_label
+           FROM plan_items pi
+           JOIN plans p ON p.id = pi.plan_id
+           JOIN items i ON i.id = pi.item_id
+           LEFT JOIN stores s ON s.id = pi.store_id
+          WHERE p.household_id = ? AND p.status = 'active' AND pi.status = 'pending'
+          ORDER BY pi.created_at`
+      )
+        .bind(householdId)
+        .all<{
+          name: string
+          qty: number
+          unit: string
+          store_label: string | null
+        }>()
+
+      try {
+        reply = await sendChatMessage(
+          settings.ai_provider,
+          aiKey,
+          {
+            persona: {
+              persona_enabled: settings.persona_enabled,
+              persona_user_role: settings.persona_user_role,
+              persona_ai_role: settings.persona_ai_role,
+            },
+            lowStock: lowStock.results || [],
+            expiring: expiring.results || [],
+            activePlan: activePlan.results || [],
+            recentPurchases: recentPurchases.results || [],
+          },
+          message,
+          history || []
+        )
+      } catch (err) {
+        return c.json(
+          {
+            error: `AI chat failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+          },
+          502
+        )
+      }
+    }
+
+    await c.env.DB.prepare('UPDATE ai_usage SET used = used + 1 WHERE id = ?')
+      .bind(usageRow.id)
+      .run()
+
+    const res = c.json({ reply })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.post(
   '/api/purchases/scan',
   describeRoute({
     description:
@@ -1107,6 +1313,259 @@ apiApp.get(
 
     const body = await object.blob()
     return new Response(body, { headers })
+  }
+)
+
+apiApp.get(
+  '/api/purchases/patterns',
+  describeRoute({
+    description:
+      'Return top purchase patterns for the active household (avg interval, avg qty).',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'OK' },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  async (c) => {
+    const householdId = c.get('householdId')
+    const patterns = await computePatterns(householdId, c.env.DB)
+    const res = c.json({ patterns })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.get(
+  '/api/purchases',
+  describeRoute({
+    description:
+      'List purchase history for the active household with filters and pagination.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'OK' },
+      401: { description: 'Unauthorized' },
+    },
+  }),
+  sValidator('query', purchasesQuery),
+  async (c) => {
+    const householdId = c.get('householdId')
+    const { store, from, to, q, group_by, limit, cursor } = c.req.valid('query')
+    void group_by
+
+    const pageSize = Math.min(Math.max(Number(limit ?? 50), 1), 100)
+
+    let sql =
+      'SELECT p.id, p.store_id, s.label AS store_label, p.date, p.total, p.receipt_image_key, p.created_at FROM purchases p LEFT JOIN stores s ON s.id = p.store_id WHERE p.household_id = ?'
+    const params: unknown[] = [householdId]
+    if (store) {
+      sql += ' AND p.store_id = ?'
+      params.push(store)
+    }
+    if (from) {
+      sql += ' AND p.date >= ?'
+      params.push(from)
+    }
+    if (to) {
+      sql += ' AND p.date <= ?'
+      params.push(to)
+    }
+    if (q) {
+      sql +=
+        ' AND p.id IN (SELECT pi.purchase_id FROM purchase_items pi JOIN items i ON i.id = pi.item_id WHERE i.name LIKE ?)'
+      params.push(`%${q}%`)
+    }
+    if (cursor) {
+      const sep = cursor.indexOf('|')
+      const cursorDate = sep >= 0 ? cursor.slice(0, sep) : cursor
+      const cursorCreated = sep >= 0 ? cursor.slice(sep + 1) : ''
+      sql += ' AND (p.date < ? OR (p.date = ? AND p.created_at < ?))'
+      params.push(cursorDate, cursorDate, cursorCreated)
+    }
+    sql += ' ORDER BY p.date DESC, p.created_at DESC LIMIT ?'
+    params.push(pageSize + 1)
+
+    const { results } = await c.env.DB.prepare(sql)
+      .bind(...params)
+      .all<{
+        id: string
+        store_id: string | null
+        store_label: string | null
+        date: string
+        total: number | null
+        receipt_image_key: string | null
+        created_at: string
+      }>()
+
+    const hasMore = results.length > pageSize
+    const purchases = hasMore ? results.slice(0, pageSize) : results
+    const nextCursor =
+      hasMore && purchases.length > 0
+        ? `${purchases[purchases.length - 1].date}|${purchases[purchases.length - 1].created_at}`
+        : null
+
+    const itemsByPurchase = new Map<
+      string,
+      Array<{
+        id: string
+        item_id: string | null
+        name: string | null
+        qty: number
+        unit: string | null
+        price: number | null
+      }>
+    >()
+    if (purchases.length > 0) {
+      const placeholders = purchases.map(() => '?').join(',')
+      const purchaseIds = purchases.map((p) => p.id)
+      const { results: items } = await c.env.DB.prepare(
+        `SELECT pi.id, pi.purchase_id, pi.item_id, i.name, pi.qty, pi.unit, pi.price
+           FROM purchase_items pi
+           LEFT JOIN items i ON i.id = pi.item_id
+          WHERE pi.purchase_id IN (${placeholders})`
+      )
+        .bind(...purchaseIds)
+        .all<{
+          purchase_id: string
+          id: string
+          item_id: string | null
+          name: string | null
+          qty: number
+          unit: string | null
+          price: number | null
+        }>()
+      for (const it of items) {
+        const list = itemsByPurchase.get(it.purchase_id) || []
+        list.push({
+          id: it.id,
+          item_id: it.item_id,
+          name: it.name,
+          qty: it.qty,
+          unit: it.unit,
+          price: it.price,
+        })
+        itemsByPurchase.set(it.purchase_id, list)
+      }
+    }
+
+    const purchasesWithItems = purchases.map((p) => ({
+      id: p.id,
+      store_id: p.store_id,
+      store_label: p.store_label,
+      date: p.date,
+      total: p.total,
+      receipt_image_key: p.receipt_image_key,
+      has_receipt: !!p.receipt_image_key,
+      created_at: p.created_at,
+      items: itemsByPurchase.get(p.id) || [],
+    }))
+
+    let monthSql =
+      "SELECT strftime('%Y-%m', p.date) AS month, COUNT(p.id) AS count, COALESCE(SUM(p.total), 0) AS total FROM purchases p WHERE p.household_id = ?"
+    const monthParams: unknown[] = [householdId]
+    if (store) {
+      monthSql += ' AND p.store_id = ?'
+      monthParams.push(store)
+    }
+    if (from) {
+      monthSql += ' AND p.date >= ?'
+      monthParams.push(from)
+    }
+    if (to) {
+      monthSql += ' AND p.date <= ?'
+      monthParams.push(to)
+    }
+    if (q) {
+      monthSql +=
+        ' AND p.id IN (SELECT pi.purchase_id FROM purchase_items pi JOIN items i ON i.id = pi.item_id WHERE i.name LIKE ?)'
+      monthParams.push(`%${q}%`)
+    }
+    monthSql += ' GROUP BY month ORDER BY month DESC'
+    const { results: monthTotals } = await c.env.DB.prepare(monthSql)
+      .bind(...monthParams)
+      .all<{ month: string; count: number; total: number }>()
+
+    const avgPerMonth =
+      monthTotals.length > 0
+        ? Math.round(
+            monthTotals.reduce((sum, m) => sum + m.total, 0) /
+              monthTotals.length
+          )
+        : 0
+
+    const res = c.json({
+      purchases: purchasesWithItems,
+      next_cursor: nextCursor,
+      month_totals: monthTotals,
+      avg_per_month: avgPerMonth,
+    })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
+  }
+)
+
+apiApp.get(
+  '/api/purchases/:id',
+  describeRoute({
+    description: 'Return a single purchase with all its items.',
+    security: [{ cookieAuth: [] }],
+    responses: {
+      200: { description: 'OK' },
+      401: { description: 'Unauthorized' },
+      404: { description: 'Not found' },
+    },
+  }),
+  async (c) => {
+    const purchaseId = c.req.param('id')
+    const householdId = c.get('householdId')
+
+    const purchase = await c.env.DB.prepare(
+      `SELECT p.id, p.store_id, s.label AS store_label, p.date, p.total, p.receipt_image_key, p.created_at
+         FROM purchases p
+         LEFT JOIN stores s ON s.id = p.store_id
+        WHERE p.id = ? AND p.household_id = ?`
+    )
+      .bind(purchaseId, householdId)
+      .first<{
+        id: string
+        store_id: string | null
+        store_label: string | null
+        date: string
+        total: number | null
+        receipt_image_key: string | null
+        created_at: string
+      }>()
+
+    if (!purchase) {
+      return c.json({ error: 'Purchase not found' }, 404)
+    }
+
+    const { results: items } = await c.env.DB.prepare(
+      `SELECT pi.id, pi.item_id, i.name, pi.qty, pi.unit, pi.price
+         FROM purchase_items pi
+         LEFT JOIN items i ON i.id = pi.item_id
+        WHERE pi.purchase_id = ?
+        ORDER BY pi.created_at`
+    )
+      .bind(purchaseId)
+      .all<{
+        id: string
+        item_id: string | null
+        name: string | null
+        qty: number
+        unit: string | null
+        price: number | null
+      }>()
+
+    const res = c.json({
+      purchase: {
+        ...purchase,
+        has_receipt: !!purchase.receipt_image_key,
+      },
+      items,
+    })
+    res.headers.set('Cache-Control', 'private, no-cache')
+    return res
   }
 )
 

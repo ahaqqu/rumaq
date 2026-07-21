@@ -74,10 +74,10 @@ A scheduled GitHub Actions workflow (`.github/workflows/smoke.yml`) verifies `ru
 
 This project uses agent skills to keep complex workflows consistent. Invoke them with `/<skill-name>`.
 
-| Skill                    | When to use                                                   | How to use                                              | Benefit                                                                            |
-| ------------------------ | ------------------------------------------------------------- | ------------------------------------------------------- | ---------------------------------------------------------------------------------- |
-| `/pr-creation`           | Creating or opening a pull request                            | Mention or invoke `/pr-creation`                        | Ensures a green gate, proper description, and review rules before submitting       |
-| `/guided-implementation` | Implementing a difficult or unclear plan from a markdown file | Invoke `/guided-implementation` with the plan file path | Confirms the high-level approach before coding and protects architecture decisions |
+| Skill                   | When to use                                                   | How to use                                             | Benefit                                                                            |
+| ----------------------- | ------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `pr-creation`           | Creating or opening a pull request                            | Mention or invoke `pr-creation`                        | Ensures a green gate, proper description, and review rules before submitting       |
+| `guided-implementation` | Implementing a difficult or unclear plan from a markdown file | Invoke `guided-implementation` with the plan file path | Confirms the high-level approach before coding and protects architecture decisions |
 
 ### `/pr-creation`
 

@@ -15,6 +15,7 @@ export type Env = {
     EMAIL_AUTH_ENABLED: string
     ASSETS: Fetcher
     TEST_MODE?: string
+    RUN_SECRETS_CHECK?: string
     props?: AuthProps
   }
   Variables: {

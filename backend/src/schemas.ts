@@ -62,3 +62,18 @@ export const purchaseCreateSchema = strictObject({
   receipt_image_key: optional(string()),
   items: pipe(array(purchaseItemSchema), minLength(1)),
 })
+
+export const chatSchema = object({
+  message: pipe(string(), minLength(1), maxLength(4000)),
+  history: optional(
+    pipe(
+      array(
+        object({
+          role: picklist(['user', 'assistant']),
+          content: pipe(string(), minLength(1), maxLength(4000)),
+        })
+      ),
+      maxLength(10)
+    )
+  ),
+})

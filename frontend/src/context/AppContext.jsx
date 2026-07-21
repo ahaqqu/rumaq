@@ -6,6 +6,7 @@ export function AppProvider({ children }) {
   const [aiKey, setAiKey] = useState(null)
   const [motion, setMotion] = useState('standard')
   const [assistantOpen, setAssistantOpen] = useState(false)
+  const [assistantProposal, setAssistantProposal] = useState(null)
 
   useEffect(() => {
     document.documentElement.dataset.motion = motion
@@ -20,6 +21,8 @@ export function AppProvider({ children }) {
         setMotion,
         assistantOpen,
         setAssistantOpen,
+        assistantProposal,
+        setAssistantProposal,
       }}
     >
       {children}

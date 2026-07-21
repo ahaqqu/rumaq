@@ -19,6 +19,7 @@ Errors use `{ "error": "..." }`.
 | Method | Path                           | Auth | Query          | Body | Description                                                                      |
 | ------ | ------------------------------ | ---- | -------------- | ---- | -------------------------------------------------------------------------------- |
 | POST   | /api/ai-key/test               | Yes  | —              | —    | Validates an AI provider API key.                                                |
+| POST   | /api/ai/chat                   | Yes  | —              | —    | Send a message to the household-scoped assistant and receive a reply.            |
 | GET    | /api/ai/usage                  | Yes  | —              | —    | Returns today AI usage for the current user.                                     |
 | GET    | /api/auth/callback             | —    | —              | —    | Google OAuth callback. Sets rumaq_session and redirects to /.                    |
 | POST   | /api/auth/email-login          | —    | —              | —    | Validates credentials and sets rumaq_session.                                    |
@@ -36,8 +37,11 @@ Errors use `{ "error": "..." }`.
 | POST   | /api/plans                     | Yes  | —              | —    | Save a generated plan as active.                                                 |
 | PATCH  | /api/plans/{id}/items/{itemId} | Yes  | `id`, `itemId` | —    | Mark a plan item as bought or skipped.                                           |
 | POST   | /api/plans/generate            | Yes  | —              | —    | Generate an AI shopping plan from household context.                             |
+| GET    | /api/purchases                 | Yes  | —              | —    | List purchase history for the active household with filters and pagination.      |
 | POST   | /api/purchases                 | Yes  | —              | —    | Create a purchase with items, updating stock and purchase history.               |
+| GET    | /api/purchases/{id}            | Yes  | `id`           | —    | Return a single purchase with all its items.                                     |
 | GET    | /api/purchases/{id}/receipt    | Yes  | `id`           | —    | Stream a receipt image from R2.                                                  |
+| GET    | /api/purchases/patterns        | Yes  | —              | —    | Return top purchase patterns for the active household (avg interval, avg qty).   |
 | POST   | /api/purchases/scan            | Yes  | —              | —    | Upload a receipt image, scan with AI OCR, return parsed items.                   |
 | GET    | /api/settings                  | Yes  | —              | —    | Returns the current authenticated user settings.                                 |
 | PATCH  | /api/settings                  | Yes  | —              | —    | Updates the current user settings.                                               |
