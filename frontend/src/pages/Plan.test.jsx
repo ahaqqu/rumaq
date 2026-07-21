@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { render, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Plan } from './Plan.jsx'
@@ -200,5 +200,98 @@ describe('Plan', () => {
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
     expect(container.querySelector('.skeleton')).toBeTruthy()
+  })
+
+  it('disables checkbox for bought items', () => {
+    const mutate = vi.fn()
+    vi.mocked(useUpdatePlanItem).mockReturnValue({ mutate, isPending: false })
+    const boughtPlan = {
+      plans: [
+        {
+          ...mockActivePlan.plans[0],
+          items: [{ ...mockActivePlan.plans[0].items[0], status: 'bought' }],
+        },
+      ],
+    }
+    vi.mocked(usePlans).mockReturnValue({ data: boughtPlan, isLoading: false })
+    const { container } = renderWithQuery(
+      React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
+    )
+    const checkbox = container.querySelector('.plan-item__check')
+    expect(checkbox.disabled).toBe(true)
+    fireEvent.click(checkbox)
+    expect(mutate).not.toHaveBeenCalled()
+  })
+
+  it('shows draft review even when an active plan exists', () => {
+    vi.mocked(useGeneratePlan).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      reset: vi.fn(),
+      isPending: false,
+      data: {
+        items: [
+          {
+            name: 'Telur',
+            qty: 10,
+            unit: 'pcs',
+            store_id: 'indomaret',
+            store_label: 'Indomaret',
+            price_estimate: 28000,
+            why: 'running out',
+          },
+        ],
+      },
+    })
+    const { container } = renderWithQuery(
+      React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
+    )
+    expect(container.textContent).toContain('plan.savePlan')
+    expect(container.textContent).toContain('Telur')
+  })
+
+  it('saves the viewed draft without regenerating', async () => {
+    const reset = vi.fn()
+    const generateMutateAsync = vi.fn()
+    const saveMutateAsync = vi.fn().mockResolvedValue({})
+    vi.mocked(usePlans).mockReturnValue({
+      data: { plans: [] },
+      isLoading: false,
+    })
+    vi.mocked(useGeneratePlan).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: generateMutateAsync,
+      reset,
+      isPending: false,
+      data: {
+        items: [
+          {
+            name: 'Telur',
+            qty: 10,
+            unit: 'pcs',
+            store_id: 'indomaret',
+            store_label: 'Indomaret',
+            price_estimate: 28000,
+            why: 'running out',
+          },
+        ],
+      },
+    })
+    vi.mocked(useSavePlan).mockReturnValue({
+      mutate: vi.fn(),
+      mutateAsync: saveMutateAsync,
+      isPending: false,
+    })
+    const { container } = renderWithQuery(
+      React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
+    )
+    const saveBtn = container.querySelector('.btn--primary')
+    fireEvent.click(saveBtn)
+
+    await waitFor(() => expect(reset).toHaveBeenCalled())
+    expect(generateMutateAsync).not.toHaveBeenCalled()
+    const savedArg = saveMutateAsync.mock.calls[0][0]
+    expect(Array.isArray(savedArg)).toBe(true)
+    expect(savedArg[0]).toMatchObject({ name: 'Telur', qty: 10, unit: 'pcs' })
   })
 })

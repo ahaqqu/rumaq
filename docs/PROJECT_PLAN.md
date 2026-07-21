@@ -109,7 +109,7 @@ This plan lists every known work item for RumaQ, its current status, and its pri
 | --------------------------------- | ----------- | -------- | ------------------------------------------------ |
 | BYO AI key in settings            | Done        | P0       | UI exists; backend encryption pending            |
 | Receipt OCR → parsed items        | Done        | P0       | PR #63 — `backend/src/lib/ai.ts` + scan endpoint |
-| Shopping plan generation          | Not started | P0       | Low-stock + expiry + history → grouped plan      |
+| Shopping plan generation          | Done        | P0       | PR #77 — plans API + Plan page wired             |
 | Assistant chat with system prompt | Not started | P0       | Include persona setting in prompt                |
 | Daily AI usage meter              | Done        | P0       | Backend counter + UsageMeter wired               |
 | Use-it-up expiry recipe nudge     | Not started | P1       | Suggest recipes for near-expiry items            |

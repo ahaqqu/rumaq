@@ -3,7 +3,7 @@ import { logger } from 'hono/logger'
 
 import { sValidator } from '@hono/standard-validator'
 import { openAPIRouteHandler, describeRoute } from 'hono-openapi'
-import { object, string, optional } from 'valibot'
+import { object, string, optional, picklist } from 'valibot'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { propsAuthMiddleware } from '../auth.js'
@@ -26,7 +26,6 @@ import {
   purchaseCreateSchema,
 } from '../schemas.js'
 import {
-  planGenerateResponseSchema,
   planItemPatchSchema,
   planCreateSchema,
   generateAiPlan,
@@ -36,6 +35,10 @@ import {
 const stockQuery = object({
   location: optional(string()),
   q: optional(string()),
+})
+
+const plansQuery = object({
+  status: optional(picklist(['active', 'archived', 'completed', 'all'])),
 })
 
 const apiApp = new Hono<Env>()
@@ -1353,14 +1356,27 @@ apiApp.get(
   describeRoute({
     description: 'List plans for the active household.',
     security: [{ cookieAuth: [] }],
+    parameters: [
+      {
+        in: 'query',
+        name: 'status',
+        required: false,
+        schema: {
+          type: 'string',
+          enum: ['active', 'archived', 'completed', 'all'],
+          default: 'active',
+        },
+      },
+    ],
     responses: {
       200: { description: 'OK' },
       401: { description: 'Unauthorized' },
     },
   }),
+  sValidator('query', plansQuery),
   async (c) => {
     const householdId = c.get('householdId')
-    const status = c.req.query('status') || 'active'
+    const status = c.req.valid('query').status || 'active'
 
     let planSql = `SELECT id, household_id, status, total_estimate, created_at, updated_at
        FROM plans WHERE household_id = ?`
@@ -1619,12 +1635,14 @@ apiApp.post(
       .bind(usageRow.id)
       .run()
 
+    const storeLabels = new Map(stores.map((s) => [s.id, s.label]))
+
     const items = await Promise.all(
       generatedItems.map(async (item) => {
         const existingItem = await c.env.DB.prepare(
           'SELECT id, name FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
         )
-          .bind(householdId, item.name.trim())
+          .bind(householdId, normalizeItemName(item.name))
           .first<{ id: string; name: string }>()
 
         return {
@@ -1632,6 +1650,9 @@ apiApp.post(
           qty: item.qty,
           unit: item.unit,
           store_id: item.store_id,
+          store_label: item.store_id
+            ? storeLabels.get(item.store_id) || null
+            : null,
           price_estimate: item.price_estimate,
           why: item.why,
           item_id: existingItem?.id || null,
@@ -1702,6 +1723,8 @@ apiApp.post(
       ).bind(planId, householdId, totalEstimate, now, now)
     )
 
+    const itemIdsByName = new Map<string, string>()
+
     for (const item of body.items) {
       let itemId: string | null = null
       if (item.store_id) {
@@ -1718,21 +1741,29 @@ apiApp.post(
         }
       }
 
-      const existingItem = await c.env.DB.prepare(
-        'SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
-      )
-        .bind(householdId, item.name.trim())
-        .first<{ id: string }>()
+      const normalizedName = normalizeItemName(item.name)
+      const seenItemId = itemIdsByName.get(normalizedName)
 
-      if (existingItem) {
-        itemId = existingItem.id
+      if (seenItemId) {
+        itemId = seenItemId
       } else {
-        itemId = crypto.randomUUID()
-        statements.push(
-          c.env.DB.prepare(
-            'INSERT INTO items (id, household_id, name, default_unit) VALUES (?, ?, ?, ?)'
-          ).bind(itemId, householdId, item.name.trim(), item.unit)
+        const existingItem = await c.env.DB.prepare(
+          'SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
         )
+          .bind(householdId, normalizedName)
+          .first<{ id: string }>()
+
+        if (existingItem) {
+          itemId = existingItem.id
+        } else {
+          itemId = crypto.randomUUID()
+          statements.push(
+            c.env.DB.prepare(
+              'INSERT INTO items (id, household_id, name, default_unit) VALUES (?, ?, ?, ?)'
+            ).bind(itemId, householdId, item.name.trim(), item.unit)
+          )
+        }
+        itemIdsByName.set(normalizedName, itemId)
       }
 
       const planItemId = crypto.randomUUID()
@@ -1849,6 +1880,10 @@ apiApp.patch(
       return c.json({ error: 'Plan item not found' }, 404)
     }
 
+    if (plan.status !== 'active') {
+      return c.json({ error: 'Plan is not active' }, 400)
+    }
+
     const now = new Date().toISOString()
     const statements: D1PreparedStatement[] = []
 
@@ -1858,7 +1893,11 @@ apiApp.patch(
       ).bind(body.status, itemId)
     )
 
-    if (body.status === 'bought' && planItem.item_id) {
+    if (
+      body.status === 'bought' &&
+      planItem.item_id &&
+      planItem.status !== 'bought'
+    ) {
       const defaultLocation = await c.env.DB.prepare(
         'SELECT id FROM locations WHERE household_id = ? ORDER BY sort_order LIMIT 1'
       )

@@ -329,4 +329,128 @@ defineFeature(feature, (test) => {
       ctx.expectStatus(404)
     })
   })
+
+  test('Modifying an item on an archived plan returns 400', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    and('there is an active plan with items', async () => {
+      await ctx.sendRequestWithBody('POST', '/api/plans', {
+        items: [
+          {
+            name: 'Milk',
+            qty: 2,
+            unit: 'L',
+            store_id: 'store-indo',
+            price_estimate: 25000,
+            why: 'running low',
+          },
+        ],
+      })
+      expect(ctx.responseBody?.plan?.status).toBe('active')
+      ctx.__planId = ctx.responseBody.plan.id
+      ctx.__itemId = ctx.responseBody.plan.items[0].id
+    })
+
+    when(/I create a new plan with items/, async (itemsTable) => {
+      const items = itemsTable.map((row) => ({
+        name: row.name,
+        qty: parseFloat(row.qty),
+        unit: row.unit,
+        why: row.why,
+      }))
+      await ctx.sendRequestWithBody('POST', '/api/plans', { items })
+    })
+
+    and(/I mark the first plan item as "([^"]+)"/, async (status) => {
+      await ctx.sendRequestWithBody(
+        'PATCH',
+        `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`,
+        { status }
+      )
+    })
+
+    then('the response status should be 400', () => {
+      ctx.expectStatus(400)
+    })
+  })
+
+  test('Marking an item bought twice does not duplicate stock', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    and('there is an active plan with items', async () => {
+      await ctx.sendRequestWithBody('POST', '/api/plans', {
+        items: [
+          {
+            name: 'Milk',
+            qty: 2,
+            unit: 'L',
+            store_id: 'store-indo',
+            price_estimate: 25000,
+            why: 'running low',
+          },
+          {
+            name: 'Cooking Oil',
+            qty: 1,
+            unit: 'L',
+            store_id: 'store-indo',
+            price_estimate: 15000,
+            why: 'expires soon',
+          },
+        ],
+      })
+      expect(ctx.responseBody?.plan?.status).toBe('active')
+      ctx.__planId = ctx.responseBody.plan.id
+      ctx.__itemId = ctx.responseBody.plan.items[0].id
+    })
+
+    when(/I mark the first plan item as "([^"]+)"/, async (status) => {
+      await ctx.sendRequestWithBody(
+        'PATCH',
+        `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`,
+        { status }
+      )
+    })
+
+    and(/I mark the first plan item as "([^"]+)"/, async (status) => {
+      await ctx.sendRequestWithBody(
+        'PATCH',
+        `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`,
+        { status }
+      )
+    })
+
+    then('the response status should be 200', () => {
+      ctx.expectStatus(200)
+    })
+
+    and(
+      /GET \/api\/stock shows "([^"]+)" with qty ([\d.]+)/,
+      async (name, qty) => {
+        await ctx.sendRequest('GET', '/api/stock')
+        ctx.expectStockForItem(name, parseFloat(qty))
+      }
+    )
+  })
 })

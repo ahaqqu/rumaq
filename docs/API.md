@@ -32,7 +32,7 @@ Errors use `{ "error": "..." }`.
 | POST   | /api/locations                 | Yes  | —              | —    | Creates a new location for the active household.                                 |
 | DELETE | /api/locations/{id}            | Yes  | `id`           | —    | Deletes a location if not referenced by stock.                                   |
 | GET    | /api/me                        | Yes  | —              | —    | Returns the current authenticated user.                                          |
-| GET    | /api/plans                     | Yes  | —              | —    | List plans for the active household.                                             |
+| GET    | /api/plans                     | Yes  | `status?`      | —    | List plans for the active household.                                             |
 | POST   | /api/plans                     | Yes  | —              | —    | Save a generated plan as active.                                                 |
 | PATCH  | /api/plans/{id}/items/{itemId} | Yes  | `id`, `itemId` | —    | Mark a plan item as bought or skipped.                                           |
 | POST   | /api/plans/generate            | Yes  | —              | —    | Generate an AI shopping plan from household context.                             |

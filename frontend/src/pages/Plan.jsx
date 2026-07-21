@@ -17,10 +17,10 @@ import {
   IconBolt,
 } from '../components/icons.jsx'
 
-function formatPrice(amount) {
+function formatPrice(amount, currency) {
   return new Intl.NumberFormat('id-ID', {
     style: 'currency',
-    currency: 'IDR',
+    currency: currency || 'IDR',
     minimumFractionDigits: 0,
   }).format(amount)
 }
@@ -35,6 +35,7 @@ export function Plan({ askAssistant, setView }) {
   const updateItemMutation = useUpdatePlanItem()
 
   const hasAiKey = settings?.has_ai_key === true
+  const currency = settings?.currency || 'IDR'
 
   const activePlan = plansData?.plans?.[0] ?? null
   const generatedItems = generateMutation.data?.items ?? null
@@ -62,13 +63,12 @@ export function Plan({ askAssistant, setView }) {
   }
 
   const handleCheckItem = (planId, itemId, currentStatus) => {
-    const newStatus = currentStatus === 'bought' ? 'pending' : 'bought'
-    updateItemMutation.mutate({ planId, itemId, status: newStatus })
+    if (currentStatus !== 'pending') return
+    updateItemMutation.mutate({ planId, itemId, status: 'bought' })
   }
 
-  const handleGenerateAndSave = async () => {
-    const result = await generateMutation.mutateAsync()
-    const items = result.items.map((it) => ({
+  const handleSaveDraft = async () => {
+    const items = generatedItems.map((it) => ({
       name: it.name,
       qty: it.qty,
       unit: it.unit,
@@ -76,7 +76,12 @@ export function Plan({ askAssistant, setView }) {
       price_estimate: it.price_estimate,
       why: it.why,
     }))
-    await saveMutation.mutateAsync({ items })
+    await saveMutation.mutateAsync(items)
+    generateMutation.reset()
+  }
+
+  const handleDiscardDraft = () => {
+    generateMutation.reset()
   }
 
   if (settingsLoading || plansLoading) {
@@ -127,7 +132,7 @@ export function Plan({ askAssistant, setView }) {
     )
   }
 
-  if (generatedItems && !activePlan) {
+  if (generatedItems) {
     const stores = itemsByStore(generatedItems)
     const grandTotal = generatedItems.reduce(
       (s, it) => s + (it.price_estimate || 0),
@@ -149,7 +154,7 @@ export function Plan({ askAssistant, setView }) {
         >
           <button
             className="btn btn--primary"
-            onClick={handleGenerateAndSave}
+            onClick={handleSaveDraft}
             disabled={saveMutation.isPending}
           >
             <IconCheck size={18} /> {t('plan.savePlan')}
@@ -161,10 +166,17 @@ export function Plan({ askAssistant, setView }) {
           >
             <IconSpark size={18} /> {t('plan.regenerate')}
           </button>
+          <button
+            className="btn btn--ghost"
+            onClick={handleDiscardDraft}
+            disabled={saveMutation.isPending}
+          >
+            {t('plan.discardDraft')}
+          </button>
           {grandTotal > 0 && (
             <div className="chip" style={{ alignSelf: 'center' }}>
               {t('plan.stores', { count: stores.length })} ·{' '}
-              {formatPrice(grandTotal)}
+              {formatPrice(grandTotal, currency)}
             </div>
           )}
         </div>
@@ -181,7 +193,11 @@ export function Plan({ askAssistant, setView }) {
               <div className="trip__total">
                 {t('home.itemCount', { count: store.items.length })} ·{' '}
                 {formatPrice(
-                  store.items.reduce((s, it) => s + (it.price_estimate || 0), 0)
+                  store.items.reduce(
+                    (s, it) => s + (it.price_estimate || 0),
+                    0
+                  ),
+                  currency
                 )}
               </div>
             </div>
@@ -197,7 +213,7 @@ export function Plan({ askAssistant, setView }) {
                   </div>
                   {it.price_estimate != null && (
                     <div className="plan-item__price">
-                      {formatPrice(it.price_estimate)}
+                      {formatPrice(it.price_estimate, currency)}
                     </div>
                   )}
                 </div>
@@ -265,7 +281,7 @@ export function Plan({ askAssistant, setView }) {
         {grandTotal > 0 && (
           <div className="chip" style={{ alignSelf: 'center' }}>
             {t('plan.stores', { count: stores.length })} ·{' '}
-            {formatPrice(grandTotal)}
+            {formatPrice(grandTotal, currency)}
           </div>
         )}
       </div>
@@ -283,7 +299,8 @@ export function Plan({ askAssistant, setView }) {
             <div className="trip__total">
               {t('home.itemCount', { count: store.items.length })} ·{' '}
               {formatPrice(
-                store.items.reduce((s, it) => s + (it.price_estimate || 0), 0)
+                store.items.reduce((s, it) => s + (it.price_estimate || 0), 0),
+                currency
               )}
             </div>
           </div>
@@ -300,6 +317,7 @@ export function Plan({ askAssistant, setView }) {
                     type="checkbox"
                     className="plan-item__check"
                     checked={isDone}
+                    disabled={isDone || isSkipped}
                     onChange={() =>
                       handleCheckItem(activePlan.id, it.id, it.status)
                     }
@@ -313,7 +331,7 @@ export function Plan({ askAssistant, setView }) {
                   </div>
                   {it.price_estimate != null && (
                     <div className="plan-item__price">
-                      {formatPrice(it.price_estimate)}
+                      {formatPrice(it.price_estimate, currency)}
                     </div>
                   )}
                 </label>

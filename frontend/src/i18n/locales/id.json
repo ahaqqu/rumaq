@@ -81,7 +81,8 @@
     "generatePrompt": "Hasilkan rencana belanja dari stok dan riwayat pembelianmu saat ini.",
     "generate": "Buat rencana",
     "generateNext": "Buat rencana berikutnya",
-    "otherStore": "Toko lain"
+    "otherStore": "Toko lain",
+    "discardDraft": "Buang"
   },
   "history": {
     "date": "Tanggal",

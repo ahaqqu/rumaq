@@ -81,7 +81,8 @@
     "generatePrompt": "Generate a shopping plan from your current stock and purchase history.",
     "generate": "Generate plan",
     "generateNext": "Make next plan",
-    "otherStore": "Other store"
+    "otherStore": "Other store",
+    "discardDraft": "Discard"
   },
   "history": {
     "date": "Date",

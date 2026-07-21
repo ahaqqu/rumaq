@@ -67,3 +67,22 @@ Feature: Shopping Plans
     When I send a PATCH request to /api/plans/nonexistent-plan/items/nonexistent-item with body
       {"status": "bought"}
     Then the response status should be 404
+
+  Scenario: Modifying an item on an archived plan returns 400
+    Given the database has seed data
+    And I am authenticated as a test user
+    And there is an active plan with items
+    When I create a new plan with items
+      | name | qty | unit | why   |
+      | Rice | 1   | kg   | empty |
+    And I mark the first plan item as "bought"
+    Then the response status should be 400
+
+  Scenario: Marking an item bought twice does not duplicate stock
+    Given the database has seed data
+    And I am authenticated as a test user
+    And there is an active plan with items
+    When I mark the first plan item as "bought"
+    And I mark the first plan item as "bought"
+    Then the response status should be 200
+    And GET /api/stock shows "Milk" with qty 2
