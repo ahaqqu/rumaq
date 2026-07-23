@@ -285,4 +285,77 @@ export class ApiContext {
     expect(item).toBeDefined()
     expect(item.qty).toBe(qty)
   }
+
+  expectPurchasesArray() {
+    expect(Array.isArray(this.responseBody?.purchases)).toBe(true)
+  }
+
+  expectEachPurchaseHasItems() {
+    for (const p of this.responseBody.purchases) {
+      expect(p).toHaveProperty('items')
+      expect(Array.isArray(p.items)).toBe(true)
+    }
+  }
+
+  expectMonthTotals() {
+    expect(this.responseBody).toHaveProperty('month_totals')
+    expect(Array.isArray(this.responseBody.month_totals)).toBe(true)
+  }
+
+  expectAvgPerMonth() {
+    expect(this.responseBody).toHaveProperty('avg_per_month')
+    expect(typeof this.responseBody.avg_per_month).toBe('number')
+  }
+
+  expectSeedPurchasesInList() {
+    const ids = this.responseBody.purchases.map((p) => p.id)
+    expect(ids).toContain('purch-1')
+    expect(ids).toContain('purch-2')
+    expect(ids).toContain('purch-3')
+  }
+
+  expectAllPurchasesFromStore(label) {
+    for (const p of this.responseBody.purchases) {
+      expect(p.store_label).toBe(label)
+    }
+  }
+
+  expectAllPurchasesInDateRange(from, to) {
+    for (const p of this.responseBody.purchases) {
+      expect(p.date >= from && p.date <= to).toBe(true)
+    }
+  }
+
+  expectPurchasesContainItem(name) {
+    const allItems = this.responseBody.purchases.flatMap((p) =>
+      p.items.map((i) => i.name)
+    )
+    expect(allItems.filter(Boolean)).toContain(name)
+  }
+
+  expectPurchaseDetail(id) {
+    expect(this.responseBody).toHaveProperty('purchase')
+    expect(this.responseBody.purchase.id).toBe(id)
+  }
+
+  expectPurchaseDetailHasItems() {
+    expect(this.responseBody).toHaveProperty('items')
+    expect(Array.isArray(this.responseBody.items)).toBe(true)
+    expect(this.responseBody.items.length).toBeGreaterThan(0)
+  }
+
+  expectPatternsArray() {
+    expect(Array.isArray(this.responseBody?.patterns)).toBe(true)
+  }
+
+  expectPatternContains(name) {
+    const names = this.responseBody.patterns.map((p) => p.name)
+    expect(names).toContain(name)
+  }
+
+  expectChatReply() {
+    expect(this.responseBody).toHaveProperty('reply')
+    expect(typeof this.responseBody.reply).toBe('string')
+    expect(this.responseBody.reply.length).toBeGreaterThan(0)
+  }
 }

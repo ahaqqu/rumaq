@@ -3,6 +3,7 @@ import { render, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Plan } from './Plan.jsx'
+import { AppProvider } from '../context/AppContext.jsx'
 
 const mockActivePlan = {
   plans: [
@@ -69,10 +70,11 @@ function createQueryClient() {
 
 function renderWithQuery(ui) {
   return render(
-    React.createElement(QueryClientProvider, {
-      client: createQueryClient(),
-      children: ui,
-    })
+    React.createElement(
+      QueryClientProvider,
+      { client: createQueryClient() },
+      React.createElement(AppProvider, null, ui)
+    )
   )
 }
 

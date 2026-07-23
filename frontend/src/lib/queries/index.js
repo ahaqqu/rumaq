@@ -15,4 +15,8 @@ export {
   useSavePlan,
   useUpdatePlanItem,
 } from './plans.js'
-export { useHistory } from './history.js'
+export {
+  useHistory,
+  usePurchasePatterns,
+  useSendChatMessage,
+} from './history.js'

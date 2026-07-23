@@ -10,9 +10,10 @@ import {
   IconCheck,
   IconKey,
 } from './icons.jsx'
-import { formatRp, AI_USAGE, usageState } from '../data/mock.js'
 import { usePersona } from '../context/PersonaContext.jsx'
+import { useApp } from '../context/AppContext.jsx'
 import { personaText } from '../lib/persona.js'
+import { useUsage, useSendChatMessage } from '../lib/queries/index.js'
 
 const QUICK = [
   {
@@ -20,64 +21,78 @@ const QUICK = [
     key: 'planThisWeek',
     descKey: 'planThisWeekDesc',
     Icon: IconPlan,
+    prompt:
+      "Create this week's shopping plan from items running low and my purchase history.",
   },
   {
     id: 'store',
     key: 'cheapestStore',
     descKey: 'cheapestStoreDesc',
     Icon: IconShop,
+    prompt:
+      'Recommend the cheapest store for my usual items, based on price history.',
   },
   {
     id: 'useup',
     key: 'useUpExpiring',
     descKey: 'useUpExpiringDesc',
     Icon: IconLeaf,
+    prompt: 'Suggest recipes to use up items that are expiring soon.',
   },
 ]
 
-const PROPOSAL = {
-  title: 'Rencana belanja, 3 toko dalam 1 hari',
-  trips: [
-    {
-      store: 'Indomaret',
-      items: [
-        'Susu cair 1L · Rp18.500',
-        'Roti tawar · Rp15.000',
-        'Margarin · Rp14.000',
-      ],
-      why: 'Hampir habis',
-    },
-    {
-      store: 'Pasar',
-      items: ['Telur 10pcs · Rp28.000', 'Bayam · Rp5.000'],
-      why: 'Akan kedaluwarsa',
-    },
-  ],
-  total: 80500,
+function classifyError(err) {
+  const msg = err instanceof Error ? err.message : String(err)
+  if (/usage limit/i.test(msg)) return { kind: 'usage', message: msg }
+  if (/not configured|api key/i.test(msg))
+    return { kind: 'missing', message: msg }
+  return { kind: 'other', message: msg }
 }
 
 export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
   const { t } = useTranslation()
-  const [busy, setBusy] = useState(false)
-  const [proposal, setProposal] = useState(null)
-  const { warn, danger } = usageState()
+  const [input, setInput] = useState('')
+  const [reply, setReply] = useState(null)
   const { persona } = usePersona()
+  const { setAssistantProposal } = useApp()
+  const { data: usage } = useUsage()
+  const chat = useSendChatMessage()
 
-  const trigger = (id) => {
+  const used = usage?.used ?? 0
+  const limit = usage?.daily_limit ?? 20
+  const warn = used >= limit - 4
+  const danger = used >= limit
+
+  const send = async (text) => {
+    if (!text.trim() || chat.isPending) return
+    setReply(null)
+    try {
+      const result = await chat.mutateAsync({
+        message: text.trim(),
+        history: [],
+      })
+      setReply(result?.reply || '')
+    } catch (err) {
+      setReply({ error: classifyError(err) })
+    }
+  }
+
+  const trigger = (q) => {
     if (!aiKey) return
-    setBusy(true)
-    setProposal(null)
-    setTimeout(() => {
-      setBusy(false)
-      setProposal(PROPOSAL)
-    }, 1100)
+    send(q.prompt)
   }
 
   const accept = () => {
     onClose()
-    setProposal(null)
-    onNavigate('plan')
+    if (typeof reply === 'string' && reply.trim()) {
+      setAssistantProposal(reply.slice(0, 4000))
+    }
+    setReply(null)
+    onNavigate?.('plan')
   }
+
+  const errorState =
+    reply && typeof reply === 'object' && reply.error ? reply.error : null
 
   return (
     <>
@@ -114,10 +129,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                       />
                       {danger
                         ? t('assistant.dailyLimitReached')
-                        : t('assistant.ready', {
-                            used: AI_USAGE.used,
-                            limit: AI_USAGE.limit,
-                          })}
+                        : t('assistant.ready', { used, limit })}
                     </>
                   ) : (
                     t('assistant.notConnected')
@@ -162,19 +174,16 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
               <div className="assistant__body">
                 <p className="assistant__msg">
                   {personaText('assistantGreeting', persona, t)}{' '}
-                  <strong>{t('plan.stores', { count: 5 })}</strong>{' '}
-                  {t('plan.regenerate')}: 2 {t('home.expiring')}, 3{' '}
-                  {t('home.nearlyOut')}.{' '}
                   {personaText('assistantQuestion', persona, t)}
                 </p>
 
                 <div className="assistant__actions">
-                  {QUICK.map(({ id, key, descKey, Icon }) => (
+                  {QUICK.map(({ id, key, descKey, Icon, prompt }) => (
                     <button
                       key={id}
                       className="assistant__action"
-                      onClick={() => trigger(id)}
-                      disabled={busy}
+                      onClick={() => trigger({ prompt })}
+                      disabled={chat.isPending}
                     >
                       <Icon size={18} />
                       <span>
@@ -193,7 +202,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                   ))}
                 </div>
 
-                {busy && (
+                {chat.isPending && (
                   <div
                     className="assistant__msg"
                     style={{
@@ -211,25 +220,42 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                   </div>
                 )}
 
-                {proposal && (
+                {errorState && (
+                  <div
+                    className="assistant__msg"
+                    style={{
+                      color:
+                        errorState.kind === 'usage'
+                          ? 'var(--text-muted)'
+                          : 'var(--text-danger, currentColor)',
+                      fontSize: 'var(--fs-sm)',
+                    }}
+                  >
+                    {errorState.kind === 'usage'
+                      ? t('assistant.usageLimit')
+                      : errorState.kind === 'missing'
+                        ? t('assistant.keyMissing')
+                        : t('assistant.error', { message: errorState.message })}
+                    {(errorState.kind === 'usage' ||
+                      errorState.kind === 'missing') && (
+                      <div style={{ marginTop: 'var(--sp-2)' }}>
+                        <button
+                          className="btn btn--secondary btn--sm"
+                          onClick={() => {
+                            onClose()
+                            onNavigate('settings')
+                          }}
+                        >
+                          {t('assistant.addApiKey')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {reply && typeof reply === 'string' && (
                   <div className="assistant__proposal">
-                    <h4>{proposal.title}</h4>
-                    <ul>
-                      {proposal.trips.map((trip) => (
-                        <li key={trip.store}>
-                          <span>
-                            <strong>{trip.store}</strong> —{' '}
-                            {trip.items.join(', ')}
-                          </span>
-                          <span className="why">{trip.why}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <div style={{ marginTop: 'var(--sp-3)', fontWeight: 600 }}>
-                      {t('assistant.totalEstimated', {
-                        amount: formatRp(proposal.total),
-                      })}
-                    </div>
+                    <p style={{ whiteSpace: 'pre-wrap' }}>{reply}</p>
                     <div
                       style={{
                         display: 'flex',
@@ -245,13 +271,43 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                       </button>
                       <button
                         className="btn btn--secondary btn--sm"
-                        onClick={() => setProposal(null)}
+                        onClick={() => setReply(null)}
                       >
                         {t('assistant.change')}
                       </button>
                     </div>
                   </div>
                 )}
+
+                <form
+                  style={{
+                    marginTop: 'var(--sp-4)',
+                    display: 'flex',
+                    gap: 'var(--sp-2)',
+                  }}
+                  onSubmit={(e) => {
+                    e.preventDefault()
+                    send(input)
+                    setInput('')
+                  }}
+                >
+                  <input
+                    className="input"
+                    type="text"
+                    placeholder={t('assistant.inputPlaceholder')}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    aria-label={t('assistant.inputPlaceholder')}
+                  />
+                  <button
+                    type="submit"
+                    className="btn btn--primary btn--sm"
+                    disabled={chat.isPending || !input.trim()}
+                    aria-label={t('assistant.sendAriaLabel')}
+                  >
+                    {t('assistant.send')}
+                  </button>
+                </form>
               </div>
             )}
           </section>

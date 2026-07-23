@@ -7,6 +7,7 @@ import {
 } from '../lib/queries/index.js'
 import { useSettings } from '../lib/queries/index.js'
 import { usePersona } from '../context/PersonaContext.jsx'
+import { useApp } from '../context/AppContext.jsx'
 import { personaText } from '../lib/persona.js'
 import { SkeletonRows, EmptyState } from '../components/ui.jsx'
 import {
@@ -15,6 +16,7 @@ import {
   IconCheck,
   IconKey,
   IconBolt,
+  IconClose,
 } from '../components/icons.jsx'
 
 function formatPrice(amount, currency) {
@@ -28,6 +30,7 @@ function formatPrice(amount, currency) {
 export function Plan({ askAssistant, setView }) {
   const { t } = useTranslation()
   const { persona } = usePersona()
+  const { assistantProposal, setAssistantProposal } = useApp()
   const { data: settings, isLoading: settingsLoading } = useSettings()
   const { data: plansData, isLoading: plansLoading } = usePlans('active')
   const generateMutation = useGeneratePlan()
@@ -39,6 +42,44 @@ export function Plan({ askAssistant, setView }) {
 
   const activePlan = plansData?.plans?.[0] ?? null
   const generatedItems = generateMutation.data?.items ?? null
+
+  const renderProposalBanner = () => {
+    if (!assistantProposal) return null
+    return (
+      <div
+        className="panel"
+        style={{
+          padding: 'var(--sp-5)',
+          marginBottom: 'var(--sp-4)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--sp-3)',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--sp-3)',
+          }}
+        >
+          <span style={{ color: 'var(--accent)' }}>
+            <IconSpark size={18} />
+          </span>
+          <strong>{t('assistant.applyToPlan')}</strong>
+          <button
+            className="assistant__close"
+            onClick={() => setAssistantProposal(null)}
+            aria-label={t('assistant.closeAriaLabel')}
+            style={{ marginLeft: 'auto' }}
+          >
+            <IconClose size={16} />
+          </button>
+        </div>
+        <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{assistantProposal}</p>
+      </div>
+    )
+  }
 
   const allDone =
     activePlan &&
@@ -100,6 +141,7 @@ export function Plan({ askAssistant, setView }) {
             {personaText('planLeadNoKey', persona, t)}
           </p>
         </div>
+        {renderProposalBanner()}
         <div className="panel">
           <EmptyState
             icon={IconKey}
@@ -125,6 +167,7 @@ export function Plan({ askAssistant, setView }) {
         <div className="page__head">
           <p className="page__lead">{personaText('planLead', persona, t)}</p>
         </div>
+        {renderProposalBanner()}
         <div className="panel">
           <SkeletonRows n={4} />
         </div>
@@ -144,6 +187,7 @@ export function Plan({ askAssistant, setView }) {
         <div className="page__head">
           <p className="page__lead">{personaText('planLead', persona, t)}</p>
         </div>
+        {renderProposalBanner()}
         <div
           style={{
             display: 'flex',
@@ -231,6 +275,7 @@ export function Plan({ askAssistant, setView }) {
         <div className="page__head">
           <p className="page__lead">{personaText('planLead', persona, t)}</p>
         </div>
+        {renderProposalBanner()}
         <div className="panel">
           <EmptyState
             icon={IconSpark}
@@ -262,6 +307,8 @@ export function Plan({ askAssistant, setView }) {
       <div className="page__head">
         <p className="page__lead">{personaText('planLead', persona, t)}</p>
       </div>
+
+      {renderProposalBanner()}
 
       <div
         style={{

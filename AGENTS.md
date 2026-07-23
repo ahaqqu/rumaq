@@ -11,10 +11,11 @@
 - Consider to use public trusted library when working with external product (e.g. cloudflare) or commonly used logic (e.g. parsing json, authentication)
 - The plan is intents, direction, and guidelines, not strictly must be followed, you are allowed to be critical, verify, or provide better alternatives. Confirm to me first before deviate from plan.
 - Never commit and push directly to main branch, always use PR, except I asked it explicitly.
-- Before creating a PR, follow the `/pr-creation` skill.
-- When implementing a complex or unclear plan from a file, follow the `/guided-implementation` skill.
+- Before creating a PR, follow the `pr-creation` skill.
+- When implementing a complex or unclear plan from a file, follow the `guided-implementation` skill.
 - Before merging a PR, ensure the GitHub Action succeeds.
 - When creating new shell scripts, add them to `.gitattributes` with `mode=755` — otherwise CI will fail with `Permission denied`.
 - When asked to update this file, use format: "When <condition>, <action>", keep it concise and clear.
+- When using `gh pr edit` or `gh pr create`, use `gh api repos/:owner/:repo/pulls/:number -X PATCH` instead — GitHub's "Projects (classic) deprecated" GraphQL warning causes `gh` CLI v2.46.0+ to exit 1 and silently drop mutations. Example: `gh api repos/ahaqqu/rumaq/pulls/77 -X PATCH -f title="..." -F body=@/tmp/pr-body.md 2>/dev/null`. Use `-F body=@file` (not `-f body="$VAR"`) to avoid double-JSON-escaping.
 - Follow `docs/FRONTEND_CONVENTIONS.md` for frontend coding conventions.
 - Follow `docs/BACKEND_CONVENTIONS.md` for backend coding conventions.

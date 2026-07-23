@@ -9,12 +9,46 @@ const AUTH_ROUTES = new Set([
   '/api/auth/email-login',
 ])
 
+const REQUIRED_SECRETS = [
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'WORKER_JWT_SECRET',
+  'WORKER_ENCRYPTION_KEY',
+] as const
+
+const secretCache = new WeakMap<object, string[]>()
+
+function missingSecrets(env: Env['Bindings']): string[] {
+  if (env.RUN_SECRETS_CHECK !== 'true') return []
+  if (env.TEST_MODE === 'true') return []
+  const cacheKey = env as unknown as object
+  if (secretCache.has(cacheKey)) {
+    return secretCache.get(cacheKey) ?? []
+  }
+  const missing = REQUIRED_SECRETS.filter((k) => !env[k])
+  secretCache.set(cacheKey, missing)
+  return missing
+}
+
 export const gateway = {
   async fetch(
     request: Request,
     env: Env['Bindings'],
     ctx: ExecutionContext
   ): Promise<Response> {
+    const missing = missingSecrets(env)
+    if (missing.length > 0) {
+      return new Response(
+        JSON.stringify({
+          error: `Worker misconfigured; missing required secrets: ${missing.join(', ')}`,
+        }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
+    }
+
     const url = new URL(request.url)
     const path = url.pathname
 

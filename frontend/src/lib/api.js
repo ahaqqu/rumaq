@@ -168,6 +168,46 @@ export function getReceiptUrl(purchaseId) {
   return `${BASE}/api/purchases/${purchaseId}/receipt`
 }
 
+export function getPurchases({
+  store,
+  from,
+  to,
+  q,
+  groupBy,
+  limit,
+  cursor,
+} = {}) {
+  const params = new URLSearchParams()
+  if (store) params.set('store', store)
+  if (from) params.set('from', from)
+  if (to) params.set('to', to)
+  if (q) params.set('q', q)
+  if (groupBy) params.set('group_by', groupBy)
+  if (limit) params.set('limit', String(limit))
+  if (cursor) params.set('cursor', cursor)
+  const qs = params.toString()
+  return request(`/api/purchases${qs ? `?${qs}` : ''}`)
+}
+
+export function getPurchasePatterns() {
+  return request('/api/purchases/patterns')
+}
+
+export function getPurchase(id) {
+  return request(`/api/purchases/${id}`)
+}
+
+export function sendChatMessage(message, history = []) {
+  const payload = { message }
+  if (Array.isArray(history) && history.length > 0) {
+    payload.history = history
+  }
+  return request('/api/ai/chat', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  })
+}
+
 export function getPlans(status = 'active') {
   return request(`/api/plans?status=${status}`)
 }
