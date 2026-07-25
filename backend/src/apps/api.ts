@@ -161,6 +161,7 @@ apiApp.use('/api/purchases/:id', propsAuthMiddleware)
 apiApp.use('/api/purchases/:id/receipt', propsAuthMiddleware)
 apiApp.use('/api/ai/chat', propsAuthMiddleware)
 apiApp.use('/api/plans*', propsAuthMiddleware)
+apiApp.use('/api/ai-key/*', propsAuthMiddleware)
 
 apiApp.get(
   '/api/me',
@@ -521,15 +522,25 @@ apiApp.patch(
   }),
   sValidator('json', settingsPatchSchema),
   async (c) => {
-    const { ai_key, ...fields } = c.req.valid('json')
+    const body = c.req.valid('json')
     const updates: string[] = []
     const params: unknown[] = []
 
-    if (ai_key !== undefined) {
-      const encrypted = await encryptAiKey(ai_key, c.env.WORKER_ENCRYPTION_KEY)
-      updates.push('encrypted_ai_key = ?')
-      params.push(encrypted)
+    if (body.ai_key !== undefined) {
+      const normalized =
+        typeof body.ai_key === 'string' ? body.ai_key.trim() : ''
+      if (normalized.length === 0) {
+        updates.push('encrypted_ai_key = NULL')
+      } else {
+        const encrypted = await encryptAiKey(
+          normalized,
+          c.env.WORKER_ENCRYPTION_KEY
+        )
+        updates.push('encrypted_ai_key = ?')
+        params.push(encrypted)
+      }
     }
+    const fields = body
     if (fields.ai_provider !== undefined) {
       updates.push('ai_provider = ?')
       params.push(fields.ai_provider)
@@ -564,7 +575,7 @@ apiApp.patch(
       await c.env.DB.prepare(
         `UPDATE user_settings SET ${updates.join(', ')}, updated_at = datetime('now') WHERE user_id = ?`
       )
-        .bind(...params)
+        .bind(...params.map((p) => (p === undefined || p === null ? null : p)))
         .run()
     }
 
@@ -614,10 +625,16 @@ apiApp.post(
   }),
   sValidator('json', aiKeyTestSchema),
   async (c) => {
-    const { provider, key } = c.req.valid('json')
-    let apiKey = key
+    const body = c.req.valid('json')
+    const provider = body.provider
+    const providedKey = body.key
+    let apiKey: string | undefined
 
-    if (!apiKey) {
+    if (providedKey !== undefined && providedKey.trim().length > 0) {
+      apiKey = providedKey.trim()
+    }
+
+    if (apiKey === undefined) {
       const settings = await c.env.DB.prepare(
         'SELECT encrypted_ai_key FROM user_settings WHERE user_id = ?'
       )

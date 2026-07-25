@@ -12,6 +12,7 @@ import {
   minValue,
   array,
   integer,
+  transform,
 } from 'valibot'
 
 export const settingsPatchSchema = strictObject({
