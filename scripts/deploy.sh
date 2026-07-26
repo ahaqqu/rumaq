@@ -224,7 +224,7 @@ deploy_worker() {
   fi
 
   bunx wrangler deploy \
-    --config "$BACKEND_DIR/dist/api/wrangler.json" \
+    --config "$BACKEND_DIR/wrangler.cloudflare.toml" \
     --name "$WORKER_NAME" \
     --var PAGES_ORIGIN:"$PAGES_ORIGIN"
   ok "Worker deployed to ${WORKER_URL}."
