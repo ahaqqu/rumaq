@@ -558,7 +558,11 @@ describe('api routes', () => {
 
 describe('api routes edge cases', () => {
   it('returns 429 when rate limit exceeded', async () => {
-    const env = createMockEnv({ RATE_LIMIT_WINDOW_MS: '1000', RATE_LIMIT_MAX_REQUESTS: '1' })
+    const env = createMockEnv({
+      RATE_LIMIT_WINDOW_MS: '1000',
+      RATE_LIMIT_MAX_REQUESTS: '1',
+      TEST_MODE: 'false',
+    })
     await apiApp.request('/api/health', {}, env)
     const res = await apiApp.request('/api/health', {}, env)
     expect(res.status).toBe(429)

@@ -9,6 +9,7 @@ Feature: Receipt Scan
   Scenario: Scan returns parsed items with AI key configured
     Given the database has seed data
     And I am authenticated as a test user
+    And the user has an AI key configured
     When I upload a receipt image for scanning
     Then the response status should be 200
     And the response should contain parsed items

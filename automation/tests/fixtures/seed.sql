@@ -24,14 +24,14 @@ VALUES (
   'owner'
 );
 
--- User settings (with active household and AI key)
+-- User settings (with active household, no AI key configured)
 INSERT INTO user_settings (id, user_id, active_household_id, ai_provider, encrypted_ai_key)
 VALUES (
   'ssssssss-0000-0000-0000-000000000001',
   'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee',
   '11111111-2222-3333-4444-555555555555',
-  'openai',
-  'v1:YWJjZGVmZ2hpamtsbW5vcA=='
+  NULL,
+  NULL
 );
 
 -- Locations
@@ -39,6 +39,32 @@ INSERT INTO locations (id, household_id, label, sort_order) VALUES
   ('loc-kitchen', '11111111-2222-3333-4444-555555555555', 'Kitchen',       1),
   ('loc-fridge',  '11111111-2222-3333-4444-555555555555', 'Fridge',         2),
   ('loc-pantry',  '11111111-2222-3333-4444-555555555555', 'Pantry',         3);
+
+-- Second user (for cross-household security tests)
+INSERT INTO users (id, email, name) VALUES (
+  'bbbbbbbb-cccc-dddd-eeee-ffffffffffff',
+  'second@rumaq.dev',
+  'Second User'
+);
+
+INSERT INTO households (id, name, created_by) VALUES (
+  '22222222-3333-4444-5555-666666666666',
+  'Second Household',
+  'bbbbbbbb-cccc-dddd-eeee-ffffffffffff'
+);
+
+INSERT INTO household_members (household_id, user_id, role) VALUES (
+  '22222222-3333-4444-5555-666666666666',
+  'bbbbbbbb-cccc-dddd-eeee-ffffffffffff',
+  'owner'
+);
+
+INSERT INTO user_settings (id, user_id, active_household_id)
+VALUES (
+  'ssssssss-0000-0000-0000-000000000002',
+  'bbbbbbbb-cccc-dddd-eeee-ffffffffffff',
+  '22222222-3333-4444-5555-666666666666'
+);
 
 -- Stores
 INSERT INTO stores (id, household_id, label) VALUES

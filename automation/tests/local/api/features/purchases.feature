@@ -44,7 +44,9 @@ Feature: Purchase Creation and History
     Given the database has seed data
     And I am authenticated as a test user
     When I send a POST request to /api/purchases with body
+      """
       { "date": "2026-07-01", "items": [] }
+      """
     Then the response status should be 400
 
   Scenario: Another household cannot access purchase receipt

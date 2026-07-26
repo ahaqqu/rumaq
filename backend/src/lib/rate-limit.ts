@@ -11,7 +11,11 @@ const windows = new Map<string, WindowEntry>()
 export function getRateLimitConfig(env: {
   RATE_LIMIT_WINDOW_MS?: string
   RATE_LIMIT_MAX_REQUESTS?: string
+  TEST_MODE?: string
 }): { windowMs: number; maxRequests: number } {
+  if (env.TEST_MODE === 'true') {
+    return { windowMs: 60_000, maxRequests: 1_000_000 }
+  }
   const parsedWindow = Number(env.RATE_LIMIT_WINDOW_MS)
   const parsedMax = Number(env.RATE_LIMIT_MAX_REQUESTS)
   const windowMs = Number.isFinite(parsedWindow) && parsedWindow > 0 ? parsedWindow : 60_000

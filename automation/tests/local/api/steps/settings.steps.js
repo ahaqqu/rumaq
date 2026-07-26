@@ -38,7 +38,7 @@ defineFeature(feature, (test) => {
     then('the response status should be 200', () => {
       ctx.expectStatus(200)
     })
-    and('the settings should include motion_preference, currency, and has_ai_key', () => {
+    and('the settings should include motion_preference and has_ai_key', () => {
       ctx.expectSettingsShape()
     })
     and('has_ai_key should be false', () => {
@@ -67,7 +67,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('PATCH settings updates persona and currency', ({ given, when, then, and }) => {
+  test('PATCH settings updates persona', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
