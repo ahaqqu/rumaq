@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "wrangler dev --config wrangler.local.toml",
     "build": "vp build",
-    "preview": "vite preview",
+    "preview": "vp preview",
     "deploy": "wrangler deploy --config wrangler.cloudflare.toml",
     "deploy:prod": "wrangler deploy --config wrangler.cloudflare.toml --env production",
     "db:create": "bun ../scripts/deploy/setup-db.js",

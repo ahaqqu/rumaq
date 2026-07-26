@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vp dev",
     "build": "vp build",
-    "preview": "vite preview"
+    "preview": "vp preview"
   },
   "dependencies": {
     "@cloudflare/kumo": "^2.8.0",
