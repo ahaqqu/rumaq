@@ -25,6 +25,8 @@
     "itemCount_plural": "{{count}} item",
     "estimated": "perkiraan {{amount}}",
     "seePlan": "Lihat rencana",
+    "noPlanYet": "Belum ada rencana belanja",
+    "noPlanYetDesc": "Minta asisten untuk merencanakan perjalanan belanja berikutnya.",
     "quickRefill": "Cara cepat isi stok",
     "quickRefillTitle": "Foto struk, stok terisi otomatis",
     "quickRefillDesc": "AI membaca item, harga, dan toko. Kamu cukup konfirmasi.",
@@ -38,7 +40,9 @@
     "searchAriaLabel": "Cari item",
     "all": "Semua",
     "noMatch": "Tidak ada item cocok",
-    "noMatchDesc": "Coba kata kunci lain atau ganti filter lokasi penyimpanan."
+    "noMatchDesc": "Coba kata kunci lain atau ganti filter lokasi penyimpanan.",
+    "decreaseQty": "Kurangi jumlah",
+    "increaseQty": "Tambah jumlah"
   },
   "addReceipt": {
     "lead": "Foto atau unggah struk. AI membaca item, jumlah, harga, dan toko, lalu kamu konfirmasi.",
@@ -60,7 +64,11 @@
     "stockAdded_plural": "Stok bertambah {{count}} item",
     "stockUpdatedDesc": "Sisa item diperbarui otomatis dari pola belanja. Tidak perlu catat pakai manual.",
     "addAnother": "Tambah struk lagi",
-    "done": "Selesai"
+    "done": "Selesai",
+    "goToSettings": "Buka Pengaturan",
+    "selectStore": "Pilih toko...",
+    "itemName": "Nama item",
+    "keepNew": "— Item baru —"
   },
   "plan": {
     "leadNoKey": "Hubungkan kunci API dulu, lalu AI menyusun rencana belanja dari stok yang menipis.",
@@ -242,6 +250,7 @@
     "banner": "Kamu sedang offline — perubahan akan disinkronkan saat kembali online"
   },
   "common": {
+    "from": "dari",
     "today": "hari ini",
     "yesterday": "kemarin",
     "daysAgo": "{{days}} hari lalu",
