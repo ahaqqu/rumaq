@@ -9,39 +9,79 @@ description: |
 
 # pr-creation
 
-## Steps
+## Workflow
 
-1. **Check current state**: `git status`, `git log --oneline -5`, and check if a PR already exists for the branch.
+1. Check current state: `git status`, `git log --oneline -5`, and check if a PR already exists for the branch.
+2. If not exist, create a new branch from `main`. If the branch already exists, ensure it is up to date with `main` and resolve any conflicts.
+3. Analyze the security implications of the actual changes.
+4. Analyze the performance implications of the actual changes.
+5. Read `docs/` (`README.md` and all `.md` files), validate them against the code, and update whichever side is out of sync so they stay consistent.
+6. Ensure all acceptance criteria in `docs/TEST_STRATEGY.md` pass.
+7. Run `./scripts/github/ci.sh` and fix any failures until it exits successfully.
+8. Create the PR when the acceptance criteria in `docs/TEST_STRATEGY.md` are met.
 
-2. **Ensure CI gate is green**: Run `scripts/github/ci.sh` locally. If it fails, fix the issue before proceeding. PRs with a red CI gate are acceptable only if the failure is a known pre-existing issue (e.g., unfixable transitive advisory) documented in the PR body.
+## PR Title Format
 
-3. **Validate docs**: If API docs were affected, run `scripts/docs.sh` and verify `docs/API.md` is up to date.
-
-4. **Write the PR description**: Use the template below. Include a summary of what changed, why, and verification steps. Reference the issue or handoff if applicable.
-
-5. **Create or update the PR**: Use `gh pr create` for new PRs or `gh pr edit` for existing ones.
-
-## PR description template
-
-```markdown
-## Summary
-
-<one-paragraph summary of what this PR does and why>
-
-## Changes
-
-- <change 1>
-- <change 2>
-- <change 3>
-
-## Verification
-
-- [ ] CI gate passes (`scripts/github/ci.sh`)
-- [ ] Docs up to date (`scripts/docs.sh`)
-- [ ] Unit tests pass
+```
+<type>(<scope>): <short summary>     # max 72 chars
 ```
 
-## Conventions
+Types: `feat` · `fix` · `refactor` · `docs` · `chore`
+Scope: the resource or route touched
 
-- Do not merge the PR unless explicitly asked.
-- Use `gh api repos/:owner/:repo/pulls/:number -X PATCH` instead of `gh pr edit` (see AGENTS.md).
+## PR Description / Body Format
+
+The PR description is the body shown in GitHub. Write it in Markdown with the following sections in order:
+
+## Context
+
+**As** <role>
+**Given** <current situation>
+**When** <change is applied>
+**Then** <expected outcome>
+
+## Summary
+
+Clear and concise summary of the changes, not a list of files.
+
+## Architecture
+
+Architectural changes. Write `None` if none.
+
+## Backend
+
+Backend changes with automation test proof. Write `None` if none.
+
+## Frontend
+
+Frontend changes with automation test proof. Write `None` if none.
+
+## Security Review
+
+Security implications of the actual changes. Write `None` if none.
+
+## Performance Review
+
+Performance implications of the actual changes. Write `None` if none.
+
+## Acceptance Criteria
+
+Checklist of acceptance criteria met or not, based on `docs/TEST_STRATEGY.md`.
+
+## Documentation
+
+Checklist of documentation updated or added.
+
+## Limitations & Warnings
+
+Any limitations or warnings, or `None`.
+
+All sections must be written. Write `None` if there are no relevant changes for that section.
+
+## PR Rules (non-negotiable)
+
+- PR title and PR body/description must follow the formats defined above.
+- Never merge your own PR — submit for human review only.
+- Never create a PR with a dirty working tree (must be committed). If unclear whether to commit or discard changes, ask for confirmation before committing.
+- Always create a PR even for trivial changes — every change needs a review trail.
+- If a human-review gate was triggered (destructive migration, new dependency, auth change), state it prominently in **Limitations & Warnings**.
