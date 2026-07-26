@@ -237,7 +237,7 @@ authApp.all(
       maxAge: 0,
     })
     if (c.req.method === 'GET') {
-      return c.redirect(origin || c.env.PAGES_ORIGIN || '/')
+      return c.redirect(c.env.PAGES_ORIGIN || '/')
     }
     return c.json({ ok: true })
   }
