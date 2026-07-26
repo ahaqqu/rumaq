@@ -8,6 +8,9 @@ import {
 
 const TEST_KEY = 'abcdefghijklmnopqrstuvwxyz123456'
 const SHORT_KEY = 'short'
+const LONG_HEX_KEY =
+  'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'
+const LONG_ASCII_KEY = 'a'.repeat(64)
 
 describe('base64UrlEncode / base64UrlDecode', () => {
   it('round-trips a buffer', () => {
@@ -73,5 +76,26 @@ describe('encryptAiKey / decryptAiKey', () => {
     const encrypted = await encryptAiKey('', TEST_KEY)
     const decrypted = await decryptAiKey(encrypted, TEST_KEY)
     expect(decrypted).toBe('')
+  })
+
+  it('round-trips with a 64-character hex passphrase', async () => {
+    const plain = 'sk-my-secret-api-key-12345'
+    const encrypted = await encryptAiKey(plain, LONG_HEX_KEY)
+    const decrypted = await decryptAiKey(encrypted, LONG_HEX_KEY)
+    expect(decrypted).toBe(plain)
+  })
+
+  it('round-trips with a 64-character ascii passphrase', async () => {
+    const plain = 'sk-my-secret-api-key-12345'
+    const encrypted = await encryptAiKey(plain, LONG_ASCII_KEY)
+    const decrypted = await decryptAiKey(encrypted, LONG_ASCII_KEY)
+    expect(decrypted).toBe(plain)
+  })
+
+  it('round-trips with a 6-character short passphrase', async () => {
+    const plain = 'sk-my-secret-api-key-12345'
+    const encrypted = await encryptAiKey(plain, SHORT_KEY)
+    const decrypted = await decryptAiKey(encrypted, SHORT_KEY)
+    expect(decrypted).toBe(plain)
   })
 })

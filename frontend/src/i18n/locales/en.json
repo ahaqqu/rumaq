@@ -25,6 +25,8 @@
     "itemCount_plural": "{{count}} items",
     "estimated": "est. {{amount}}",
     "seePlan": "See plan",
+    "noPlanYet": "No trip planned",
+    "noPlanYetDesc": "Ask the assistant to plan your next shopping trip.",
     "quickRefill": "Quick way to restock",
     "quickRefillTitle": "Snap a receipt, stock is updated automatically",
     "quickRefillDesc": "AI reads items, prices, and store. You just confirm.",
@@ -38,7 +40,9 @@
     "searchAriaLabel": "Search items",
     "all": "All",
     "noMatch": "No matching items",
-    "noMatchDesc": "Try different keywords or change the storage location filter."
+    "noMatchDesc": "Try different keywords or change the storage location filter.",
+    "decreaseQty": "Decrease quantity",
+    "increaseQty": "Increase quantity"
   },
   "addReceipt": {
     "lead": "Take a photo or upload a receipt. AI reads items, quantity, price, and store, then you confirm.",
@@ -60,7 +64,11 @@
     "stockAdded_plural": "Stock increased by {{count}} items",
     "stockUpdatedDesc": "Remaining items are updated automatically from shopping patterns. No manual tracking needed.",
     "addAnother": "Add another receipt",
-    "done": "Done"
+    "done": "Done",
+    "goToSettings": "Go to Settings",
+    "selectStore": "Select store...",
+    "itemName": "Item name",
+    "keepNew": "— New item —"
   },
   "plan": {
     "leadNoKey": "Connect an API key first, then AI will create a shopping plan from items running low.",
@@ -242,6 +250,7 @@
     "banner": "You're offline — changes will sync when you reconnect"
   },
   "common": {
+    "from": "from",
     "today": "today",
     "yesterday": "yesterday",
     "daysAgo": "{{days}} days ago",
