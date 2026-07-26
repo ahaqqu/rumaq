@@ -19,9 +19,7 @@ export function useUpdateStock() {
         if (!old?.stock) return old
         return {
           ...old,
-          stock: old.stock.map((item) =>
-            item.id === id ? { ...item, ...payload } : item
-          ),
+          stock: old.stock.map((item) => (item.id === id ? { ...item, ...payload } : item)),
         }
       })
       return { previous }

@@ -70,9 +70,7 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(
-      container.querySelectorAll('.section').length
-    ).toBeGreaterThanOrEqual(2)
+    expect(container.querySelectorAll('.section').length).toBeGreaterThanOrEqual(2)
   })
 
   it('renders quick refill section', () => {
@@ -119,9 +117,7 @@ describe('Home', () => {
     )
     const btns = container.querySelectorAll('.btn--primary')
     const addBtn = Array.from(btns).find(
-      (b) =>
-        b.textContent?.includes('addReceipt') ||
-        b.textContent?.includes('nav.addFromReceipt')
+      (b) => b.textContent?.includes('addReceipt') || b.textContent?.includes('nav.addFromReceipt')
     )
     if (addBtn) {
       fireEvent.click(addBtn)

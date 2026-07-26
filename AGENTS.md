@@ -1,5 +1,6 @@
 # Agent Instructions
 
+- When chat to me, always start by "Ryōkai Mas-sama"
 - Never ask user to run CLI commands, except shell scripts under `scripts/`.
 - Do not read or display the contents of `.env` files.
 - `scripts/deploy.sh` is the single entrypoint for all deployments. Deploy to Cloudflare via `./scripts/deploy.sh cloudflare`.

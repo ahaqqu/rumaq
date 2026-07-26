@@ -6,22 +6,13 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '../../..')
 const BACKEND_DIR = resolve(ROOT, 'backend')
-const BUNDLE_PATH = resolve(BACKEND_DIR, 'dist/index.mjs')
+const BUNDLE_PATH = resolve(BACKEND_DIR, 'dist/api/index.js')
 
 // --- Read SQL files ---
-const migrationSql = readFileSync(
-  resolve(BACKEND_DIR, 'migrations/0001_schema.sql'),
-  'utf-8'
-)
+const migrationSql = readFileSync(resolve(BACKEND_DIR, 'migrations/0001_schema.sql'), 'utf-8')
 const emailAuthColumnSql = 'ALTER TABLE users ADD COLUMN password_hash TEXT;'
-const seedSql = readFileSync(
-  resolve(ROOT, 'automation/tests/fixtures/seed.sql'),
-  'utf-8'
-)
-const resetSql = readFileSync(
-  resolve(ROOT, 'automation/tests/fixtures/reset.sql'),
-  'utf-8'
-)
+const seedSql = readFileSync(resolve(ROOT, 'automation/tests/fixtures/seed.sql'), 'utf-8')
+const resetSql = readFileSync(resolve(ROOT, 'automation/tests/fixtures/reset.sql'), 'utf-8')
 
 // --- Load the bundled worker module ---
 const { Miniflare } = await import('miniflare')
@@ -117,10 +108,7 @@ const server = createServer(async (req, res) => {
     })
     const responseBody = await workerResponse.text()
 
-    res.writeHead(
-      workerResponse.status,
-      Object.fromEntries(workerResponse.headers)
-    )
+    res.writeHead(workerResponse.status, Object.fromEntries(workerResponse.headers))
     res.end(responseBody)
   } catch (err) {
     console.error('Worker server error:', err)

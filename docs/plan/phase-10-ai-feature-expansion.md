@@ -25,7 +25,7 @@ This phase is post-MVP. It builds on the AI infrastructure from Phases 01, 03, a
 6. **Price memory & alerts:** Track price changes per store/product and alert the user to significant changes.
 7. Each new AI feature has backend tests, frontend tests, and integration tests where applicable.
 8. AI prompts remain household-isolated.
-9. `npm test` and `npx tsc --noEmit` pass.
+9. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

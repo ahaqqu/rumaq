@@ -24,7 +24,7 @@ This phase is P1/P2 and should not block the MVP, but accessibility should be ad
 5. All interactive elements are reachable and operable via keyboard.
 6. No critical or serious axe-core violations.
 7. Unit and integration tests remain passing and coverage thresholds are met.
-8. `npm test` and `npx tsc --noEmit` pass.
+8. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

@@ -13,11 +13,7 @@ import {
 import { usePersona } from '../context/PersonaContext.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { personaText } from '../lib/persona.js'
-import {
-  useUsage,
-  useSendChatMessage,
-  useSettings,
-} from '../lib/queries/index.js'
+import { useUsage, useSendChatMessage, useSettings } from '../lib/queries/index.js'
 
 const QUICK = [
   {
@@ -25,16 +21,14 @@ const QUICK = [
     key: 'planThisWeek',
     descKey: 'planThisWeekDesc',
     Icon: IconPlan,
-    prompt:
-      "Create this week's shopping plan from items running low and my purchase history.",
+    prompt: "Create this week's shopping plan from items running low and my purchase history.",
   },
   {
     id: 'store',
     key: 'cheapestStore',
     descKey: 'cheapestStoreDesc',
     Icon: IconShop,
-    prompt:
-      'Recommend the cheapest store for my usual items, based on price history.',
+    prompt: 'Recommend the cheapest store for my usual items, based on price history.',
   },
   {
     id: 'useup',
@@ -48,8 +42,7 @@ const QUICK = [
 function classifyError(err) {
   const msg = err instanceof Error ? err.message : String(err)
   if (/usage limit/i.test(msg)) return { kind: 'usage', message: msg }
-  if (/not configured|api key/i.test(msg))
-    return { kind: 'missing', message: msg }
+  if (/not configured|api key/i.test(msg)) return { kind: 'missing', message: msg }
   return { kind: 'other', message: msg }
 }
 
@@ -99,8 +92,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
     onNavigate?.('plan')
   }
 
-  const errorState =
-    reply && typeof reply === 'object' && reply.error ? reply.error : null
+  const errorState = reply && typeof reply === 'object' && reply.error ? reply.error : null
 
   return (
     <>
@@ -118,11 +110,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
       {open && (
         <>
           <div className="scrim" onClick={onClose} />
-          <section
-            className="assistant"
-            role="dialog"
-            aria-label={t('assistant.dialogAriaLabel')}
-          >
+          <section className="assistant" role="dialog" aria-label={t('assistant.dialogAriaLabel')}>
             <header className="assistant__head">
               <div className="assistant__avatar">
                 <IconSpark size={18} />
@@ -132,9 +120,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                 <div className="assistant__status">
                   {isConnected ? (
                     <>
-                      <span
-                        className={`rail__dot ${danger ? 'is-off' : warn ? 'is-warn' : ''}`}
-                      />
+                      <span className={`rail__dot ${danger ? 'is-off' : warn ? 'is-warn' : ''}`} />
                       {danger
                         ? t('assistant.dailyLimitReached')
                         : t('assistant.ready', { used, limit })}
@@ -155,18 +141,11 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
 
             {!isConnected ? (
               <div className="assistant__keystate">
-                <div
-                  className="empty__icon"
-                  style={{ margin: '0 auto var(--sp-4)' }}
-                >
+                <div className="empty__icon" style={{ margin: '0 auto var(--sp-4)' }}>
                   <IconKey size={40} />
                 </div>
-                <div className="empty__title">
-                  {t('assistant.connectKeyFirst')}
-                </div>
-                <div className="empty__desc">
-                  {t('assistant.bringYourOwnKey')}
-                </div>
+                <div className="empty__title">{t('assistant.connectKeyFirst')}</div>
+                <div className="empty__desc">{t('assistant.bringYourOwnKey')}</div>
                 <button
                   className="btn btn--primary btn--block"
                   style={{ marginTop: 'var(--sp-5)' }}
@@ -219,11 +198,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                       gap: 'var(--sp-3)',
                     }}
                   >
-                    <IconBolt
-                      size={16}
-                      className="spin"
-                      style={{ color: 'var(--accent)' }}
-                    />
+                    <IconBolt size={16} className="spin" style={{ color: 'var(--accent)' }} />
                     {t('assistant.analyzing')}
                   </div>
                 )}
@@ -244,8 +219,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                       : errorState.kind === 'missing'
                         ? t('assistant.keyMissing')
                         : t('assistant.error', { message: errorState.message })}
-                    {(errorState.kind === 'usage' ||
-                      errorState.kind === 'missing') && (
+                    {(errorState.kind === 'usage' || errorState.kind === 'missing') && (
                       <div style={{ marginTop: 'var(--sp-2)' }}>
                         <button
                           className="btn btn--secondary btn--sm"
@@ -271,16 +245,10 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                         marginTop: 'var(--sp-4)',
                       }}
                     >
-                      <button
-                        className="btn btn--primary btn--sm btn--block"
-                        onClick={accept}
-                      >
+                      <button className="btn btn--primary btn--sm btn--block" onClick={accept}>
                         <IconCheck size={16} /> {t('assistant.applyToPlan')}
                       </button>
-                      <button
-                        className="btn btn--secondary btn--sm"
-                        onClick={() => setReply(null)}
-                      >
+                      <button className="btn btn--secondary btn--sm" onClick={() => setReply(null)}>
                         {t('assistant.change')}
                       </button>
                     </div>

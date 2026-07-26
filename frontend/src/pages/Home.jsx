@@ -3,12 +3,7 @@ import { TimeSignal, SkeletonRows } from '../components/ui.jsx'
 import { useHome } from '../lib/queries/index.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
-import {
-  IconReceipt,
-  IconSpark,
-  IconLeaf,
-  IconBox,
-} from '../components/icons.jsx'
+import { IconReceipt, IconSpark, IconLeaf, IconBox } from '../components/icons.jsx'
 
 function getDaysUntil(expiryDate) {
   if (!expiryDate) return null
@@ -54,15 +49,11 @@ export function Home({ setView, askAssistant }) {
           <div className="stat__label">{t('home.itemsMonitored')}</div>
         </div>
         <div className="stat">
-          <div className={`stat__num${expiring7d > 0 ? ' is-warn' : ''}`}>
-            {expiring7d}
-          </div>
+          <div className={`stat__num${expiring7d > 0 ? ' is-warn' : ''}`}>{expiring7d}</div>
           <div className="stat__label">{t('home.expiring')}</div>
         </div>
         <div className="stat">
-          <div className={`stat__num${runningOut7d > 0 ? ' is-warn' : ''}`}>
-            {runningOut7d}
-          </div>
+          <div className={`stat__num${runningOut7d > 0 ? ' is-warn' : ''}`}>{runningOut7d}</div>
           <div className="stat__label">{t('home.nearlyOut')}</div>
         </div>
         <div className="stat">
@@ -74,10 +65,7 @@ export function Home({ setView, askAssistant }) {
       <section className="section">
         <div className="section__head">
           <h2>{t('home.needsAttention')}</h2>
-          <button
-            className="btn btn--ghost btn--sm"
-            onClick={() => setView('inventory')}
-          >
+          <button className="btn btn--ghost btn--sm" onClick={() => setView('inventory')}>
             {t('home.seeAll')}
           </button>
         </div>
@@ -126,9 +114,7 @@ export function Home({ setView, askAssistant }) {
         {nextTrip ? (
           <div className="tripcard">
             <div>
-              <div className="tripcard__title">
-                {t('home.shopAt', { store: nextTrip.store })}
-              </div>
+              <div className="tripcard__title">{t('home.shopAt', { store: nextTrip.store })}</div>
               <div className="tripcard__sub">
                 {t('home.itemCount', { count: nextTrip.items?.length ?? 0 })}
               </div>
@@ -140,10 +126,7 @@ export function Home({ setView, askAssistant }) {
                 ))}
               </div>
             </div>
-            <button
-              className="btn btn--primary"
-              onClick={() => setView('plan')}
-            >
+            <button className="btn btn--primary" onClick={() => setView('plan')}>
               {t('home.seePlan')}
             </button>
           </div>
@@ -153,12 +136,9 @@ export function Home({ setView, askAssistant }) {
               <div className="empty__icon">
                 <IconBox size={40} />
               </div>
-              <div className="empty__title">
-                {t('home.noPlanYet') || 'No trip planned'}
-              </div>
+              <div className="empty__title">{t('home.noPlanYet') || 'No trip planned'}</div>
               <div className="empty__desc">
-                {t('home.noPlanYetDesc') ||
-                  'Ask the assistant to plan your next shopping trip.'}
+                {t('home.noPlanYetDesc') || 'Ask the assistant to plan your next shopping trip.'}
               </div>
             </div>
           </div>

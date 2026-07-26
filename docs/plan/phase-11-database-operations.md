@@ -23,7 +23,7 @@ This phase has both P0 components (run-out, isolation) and P2 components (backup
 4. A backup/export strategy is documented and optionally automated (P2).
 5. A migration strategy is documented for future schema changes.
 6. D1 query performance is measured and optimized for the common read paths.
-7. `npm test` and `npx tsc --noEmit` pass.
+7. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

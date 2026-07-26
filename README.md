@@ -81,11 +81,11 @@ This project uses agent skills to keep complex workflows consistent. Invoke them
 
 ### `/pr-creation`
 
-Use whenever creating a PR. It creates a branch, analyzes security and performance, runs the full CI gate (`scripts/github/ci.sh`), validates docs, and writes the PR description. See [`.commandcode/skills/pr-creation/SKILL.md`](.commandcode/skills/pr-creation/SKILL.md).
+Use whenever creating a PR. It creates a branch, analyzes security and performance, runs the full CI gate (`scripts/github/ci.sh`), validates docs, and writes the PR description. See [`.agents/skills/pr-creation/SKILL.md`](.agents/skills/pr-creation/SKILL.md).
 
 ### `/guided-implementation`
 
-Use when asked to implement a plan that may be ambiguous, cross-cutting, or architectural. It reads the plan, `docs/ARCHITECTURE.md`, and `docs/TEST_STRATEGY.md`; analyzes the plan critically; proposes a step-by-step implementation; and waits for your confirmation before deviating from the plan or making architecture changes. See [`.commandcode/skills/guided-implementation/SKILL.md`](.commandcode/skills/guided-implementation/SKILL.md).
+Use when asked to implement a plan that may be ambiguous, cross-cutting, or architectural. It reads the plan, `docs/ARCHITECTURE.md`, and `docs/TEST_STRATEGY.md`; analyzes the plan critically; proposes a step-by-step implementation; and waits for your confirmation before deviating from the plan or making architecture changes. See [`.agents/skills/guided-implementation/SKILL.md`](.agents/skills/guided-implementation/SKILL.md).
 
 ---
 

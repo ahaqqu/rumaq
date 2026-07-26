@@ -134,9 +134,7 @@ describe('hashPassword / verifyPassword', () => {
 
   it('verifyPassword rejects a malformed hash', async () => {
     expect(await verifyPassword('password123', 'not-a-valid-hash')).toBe(false)
-    expect(await verifyPassword('password123', 'sha256$100000$abc$def')).toBe(
-      false
-    )
+    expect(await verifyPassword('password123', 'sha256$100000$abc$def')).toBe(false)
   })
 
   it('produces different hashes for the same password (random salt)', async () => {
@@ -273,10 +271,9 @@ describe('authApp Hono routes', () => {
         return new Response(JSON.stringify({ access_token: 'tok' }), {
           status: 200,
         }) as any
-      return new Response(
-        JSON.stringify({ sub: 'g123', email: 'a@b.com', name: 'Alice' }),
-        { status: 200 }
-      ) as any
+      return new Response(JSON.stringify({ sub: 'g123', email: 'a@b.com', name: 'Alice' }), {
+        status: 200,
+      }) as any
     }
     const mockDb = {
       prepare: (sql: string) => {
@@ -318,12 +315,8 @@ describe('authApp Hono routes', () => {
       env as any
     )
     expect(res.status).toBe(302)
-    const insertLocations = sqlStatements.filter((s) =>
-      s.includes('INSERT INTO locations')
-    )
-    const insertStores = sqlStatements.filter((s) =>
-      s.includes('INSERT INTO stores')
-    )
+    const insertLocations = sqlStatements.filter((s) => s.includes('INSERT INTO locations'))
+    const insertStores = sqlStatements.filter((s) => s.includes('INSERT INTO stores'))
     expect(insertLocations).toHaveLength(4)
     expect(insertStores).toHaveLength(3)
   })

@@ -16,9 +16,7 @@ import {
 } from 'valibot'
 
 export const settingsPatchSchema = strictObject({
-  ai_provider: optional(
-    picklist(['opencode', 'openai', 'anthropic', 'gemini'])
-  ),
+  ai_provider: optional(picklist(['opencode', 'openai', 'anthropic', 'gemini'])),
   ai_key: optional(pipe(string(), minLength(1))),
   persona_user_role: optional(string()),
   persona_ai_role: optional(string()),

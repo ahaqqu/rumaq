@@ -39,14 +39,9 @@ export function Login() {
       <div className="login__card">
         <BrandMark size={48} />
         <h1 className="login__title">RumaQ</h1>
-        <p className="login__desc">
-          {t('login.desc', 'Household shopping & inventory assistant')}
-        </p>
+        <p className="login__desc">{t('login.desc', 'Household shopping & inventory assistant')}</p>
 
-        <button
-          className="btn btn--primary btn--block login__btn"
-          onClick={login}
-        >
+        <button className="btn btn--primary btn--block login__btn" onClick={login}>
           {t('login.signIn', 'Sign in with Google')}
         </button>
 

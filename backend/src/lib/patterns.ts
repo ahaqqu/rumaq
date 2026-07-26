@@ -37,10 +37,7 @@ export async function computePatterns(
 
   if (!rows.results || rows.results.length === 0) return []
 
-  const byItem = new Map<
-    string,
-    { name: string; dates: number[]; qtySum: number; count: number }
-  >()
+  const byItem = new Map<string, { name: string; dates: number[]; qtySum: number; count: number }>()
   for (const r of rows.results) {
     if (!r.item_id) continue
     const entry = byItem.get(r.item_id) ?? {
@@ -67,8 +64,7 @@ export async function computePatterns(
         intervals += 1
       }
     }
-    const avgInterval =
-      intervals > 0 ? Math.round(intervalSum / intervals) : null
+    const avgInterval = intervals > 0 ? Math.round(intervalSum / intervals) : null
     const avgQty = entry.count > 0 ? round1(entry.qtySum / entry.count) : 0
     const lastDate = sortedDates[sortedDates.length - 1]
     patterns.push({
@@ -76,9 +72,7 @@ export async function computePatterns(
       name: entry.name,
       avg_interval_days: avgInterval,
       avg_qty: avgQty,
-      last_purchase_date: lastDate
-        ? new Date(lastDate).toISOString().slice(0, 10)
-        : null,
+      last_purchase_date: lastDate ? new Date(lastDate).toISOString().slice(0, 10) : null,
       pattern:
         avgInterval != null
           ? `every ${avgInterval} day${avgInterval === 1 ? '' : 's'}`

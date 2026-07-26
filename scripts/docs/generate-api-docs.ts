@@ -37,8 +37,7 @@ type PathEntry = {
 }
 
 function getQueryParams(operation: any): string {
-  if (!operation.parameters || operation.parameters.length === 0)
-    return '\u2014'
+  if (!operation.parameters || operation.parameters.length === 0) return '\u2014'
   return operation.parameters
     .map((p: any) => {
       const suffix = p.required ? '' : '?'
@@ -75,9 +74,7 @@ function extractEntries(paths: Record<string, any>): PathEntry[] {
       })
     }
   }
-  entries.sort(
-    (a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method)
-  )
+  entries.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
   return entries
 }
 

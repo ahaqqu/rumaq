@@ -1,9 +1,5 @@
 import { describe, test as it, beforeEach, expect } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
@@ -83,8 +79,7 @@ defineFeature(feature, (test) => {
           unit: row.unit,
         }
         if (row.store_id) item.store_id = row.store_id
-        if (row.price_estimate)
-          item.price_estimate = parseInt(row.price_estimate, 10)
+        if (row.price_estimate) item.price_estimate = parseInt(row.price_estimate, 10)
         if (row.why) item.why = row.why
         return item
       })
@@ -108,12 +103,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('GET /api/plans returns the active plan', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('GET /api/plans returns the active plan', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -188,11 +178,9 @@ defineFeature(feature, (test) => {
     })
 
     when(/I mark the first plan item as "([^"]+)"/, async (status) => {
-      await ctx.sendRequestWithBody(
-        'PATCH',
-        `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`,
-        { status }
-      )
+      await ctx.sendRequestWithBody('PATCH', `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`, {
+        status,
+      })
     })
 
     then('the response status should be 200', () => {
@@ -204,12 +192,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Marking an item skipped does not update stock', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Marking an item skipped does not update stock', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -237,11 +220,9 @@ defineFeature(feature, (test) => {
     })
 
     when(/I mark the first plan item as "([^"]+)"/, async (status) => {
-      await ctx.sendRequestWithBody(
-        'PATCH',
-        `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`,
-        { status }
-      )
+      await ctx.sendRequestWithBody('PATCH', `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`, {
+        status,
+      })
     })
 
     then('the response status should be 200', () => {
@@ -253,12 +234,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Replacing an active plan archives the old one', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Replacing an active plan archives the old one', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -288,31 +264,20 @@ defineFeature(feature, (test) => {
       ctx.expectStatus(201)
     })
 
-    and(
-      /GET \/api\/plans with status active returns the new plan/,
-      async () => {
-        await ctx.sendRequest('GET', '/api/plans?status=active')
-        expect(ctx.responseBody.plans.length).toBe(1)
-        expect(ctx.responseBody.plans[0].items.length).toBe(1)
-        expect(ctx.responseBody.plans[0].items[0].item_name).toBe('Rice')
-      }
-    )
+    and(/GET \/api\/plans with status active returns the new plan/, async () => {
+      await ctx.sendRequest('GET', '/api/plans?status=active')
+      expect(ctx.responseBody.plans.length).toBe(1)
+      expect(ctx.responseBody.plans[0].items.length).toBe(1)
+      expect(ctx.responseBody.plans[0].items[0].item_name).toBe('Rice')
+    })
 
-    and(
-      /GET \/api\/plans with status archived returns the old plan/,
-      async () => {
-        await ctx.sendRequest('GET', '/api/plans?status=archived')
-        expect(ctx.responseBody.plans.length).toBe(1)
-      }
-    )
+    and(/GET \/api\/plans with status archived returns the old plan/, async () => {
+      await ctx.sendRequest('GET', '/api/plans?status=archived')
+      expect(ctx.responseBody.plans.length).toBe(1)
+    })
   })
 
-  test('Modifying a non-existent plan item returns 404', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Modifying a non-existent plan item returns 404', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -330,12 +295,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Modifying an item on an archived plan returns 400', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Modifying an item on an archived plan returns 400', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -373,11 +333,9 @@ defineFeature(feature, (test) => {
     })
 
     and(/I mark the first plan item as "([^"]+)"/, async (status) => {
-      await ctx.sendRequestWithBody(
-        'PATCH',
-        `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`,
-        { status }
-      )
+      await ctx.sendRequestWithBody('PATCH', `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`, {
+        status,
+      })
     })
 
     then('the response status should be 400', () => {
@@ -385,12 +343,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Marking an item bought twice does not duplicate stock', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Marking an item bought twice does not duplicate stock', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -426,31 +379,24 @@ defineFeature(feature, (test) => {
     })
 
     when(/I mark the first plan item as "([^"]+)"/, async (status) => {
-      await ctx.sendRequestWithBody(
-        'PATCH',
-        `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`,
-        { status }
-      )
+      await ctx.sendRequestWithBody('PATCH', `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`, {
+        status,
+      })
     })
 
     and(/I mark the first plan item as "([^"]+)"/, async (status) => {
-      await ctx.sendRequestWithBody(
-        'PATCH',
-        `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`,
-        { status }
-      )
+      await ctx.sendRequestWithBody('PATCH', `/api/plans/${ctx.__planId}/items/${ctx.__itemId}`, {
+        status,
+      })
     })
 
     then('the response status should be 200', () => {
       ctx.expectStatus(200)
     })
 
-    and(
-      /GET \/api\/stock shows "([^"]+)" with qty ([\d.]+)/,
-      async (name, qty) => {
-        await ctx.sendRequest('GET', '/api/stock')
-        ctx.expectStockForItem(name, parseFloat(qty))
-      }
-    )
+    and(/GET \/api\/stock shows "([^"]+)" with qty ([\d.]+)/, async (name, qty) => {
+      await ctx.sendRequest('GET', '/api/stock')
+      ctx.expectStockForItem(name, parseFloat(qty))
+    })
   })
 })

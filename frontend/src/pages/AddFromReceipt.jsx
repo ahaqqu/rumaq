@@ -39,8 +39,7 @@ export function AddFromReceipt({ onDone }) {
   const [creating, setCreating] = useState(false)
 
   const isNoKeyError =
-    error &&
-    (error.includes('AI provider not configured') || error.includes('Settings'))
+    error && (error.includes('AI provider not configured') || error.includes('Settings'))
 
   function triggerFileInput(captureMode) {
     if (fileInputRef.current) {
@@ -95,10 +94,7 @@ export function AddFromReceipt({ onDone }) {
       }
 
       try {
-        const [storesData, itemsData] = await Promise.all([
-          getStores(),
-          getItems(),
-        ])
+        const [storesData, itemsData] = await Promise.all([getStores(), getItems()])
         setStores(storesData.stores || [])
         setItemCatalog(itemsData.items || [])
       } catch {
@@ -114,9 +110,7 @@ export function AddFromReceipt({ onDone }) {
   }
 
   function updateItem(id, field, value) {
-    setItems((prev) =>
-      prev.map((it) => (it._id === id ? { ...it, [field]: value } : it))
-    )
+    setItems((prev) => prev.map((it) => (it._id === id ? { ...it, [field]: value } : it)))
   }
 
   function selectItemMatch(id, catalogItemId) {
@@ -126,9 +120,7 @@ export function AddFromReceipt({ onDone }) {
       if (match) {
         setItems((prev) =>
           prev.map((it) =>
-            it._id === id
-              ? { ...it, name: match.name, unit: match.unit || it.unit }
-              : it
+            it._id === id ? { ...it, name: match.name, unit: match.unit || it.unit } : it
           )
         )
       }
@@ -196,14 +188,9 @@ export function AddFromReceipt({ onDone }) {
               alignItems: 'flex-start',
             }}
           >
-            <IconWarning
-              size={18}
-              style={{ color: 'var(--error)', flexShrink: 0, marginTop: 2 }}
-            />
+            <IconWarning size={18} style={{ color: 'var(--error)', flexShrink: 0, marginTop: 2 }} />
             <div>
-              <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--error)' }}>
-                {error}
-              </p>
+              <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--error)' }}>{error}</p>
               {isNoKeyError && (
                 <button
                   className="btn btn--ghost"
@@ -274,10 +261,7 @@ export function AddFromReceipt({ onDone }) {
       )}
 
       {phase === 'scanning' && (
-        <div
-          className="panel"
-          style={{ padding: 'var(--sp-9)', textAlign: 'center' }}
-        >
+        <div className="panel" style={{ padding: 'var(--sp-9)', textAlign: 'center' }}>
           <div style={{ margin: '0 auto var(--sp-5)', color: 'var(--accent)' }}>
             <IconBolt size={32} className="spin" />
           </div>
@@ -305,16 +289,13 @@ export function AddFromReceipt({ onDone }) {
             {selectedStore && (
               <span className="chip chip--loc">
                 <IconShop size={14} />{' '}
-                {stores.find((s) => s.id === selectedStore)?.label ||
-                  selectedStore}
+                {stores.find((s) => s.id === selectedStore)?.label || selectedStore}
               </span>
             )}
             <span className="chip">
               <IconCalendarBlank size={14} /> {date}
             </span>
-            <span className="chip">
-              {t('addReceipt.itemsRead', { count: items.length })}
-            </span>
+            <span className="chip">{t('addReceipt.itemsRead', { count: items.length })}</span>
             <span style={{ flex: 1 }} />
             <span
               className="chip"
@@ -371,9 +352,7 @@ export function AddFromReceipt({ onDone }) {
                   onChange={(e) => setSelectedStore(e.target.value || null)}
                   style={{ width: '100%' }}
                 >
-                  <option value="">
-                    {t('addReceipt.selectStore') || 'Select store...'}
-                  </option>
+                  <option value="">{t('addReceipt.selectStore') || 'Select store...'}</option>
                   {stores.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.label}
@@ -424,15 +403,11 @@ export function AddFromReceipt({ onDone }) {
                   >
                     <select
                       value={selectedItemIds[it._id] || ''}
-                      onChange={(e) =>
-                        selectItemMatch(it._id, e.target.value || null)
-                      }
+                      onChange={(e) => selectItemMatch(it._id, e.target.value || null)}
                       style={{ flex: 1, minWidth: 120 }}
                       aria-label="Match to existing item"
                     >
-                      <option value="">
-                        {t('addReceipt.keepNew') || '— New item —'}
-                      </option>
+                      <option value="">{t('addReceipt.keepNew') || '— New item —'}</option>
                       {itemCatalog.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}
@@ -441,9 +416,7 @@ export function AddFromReceipt({ onDone }) {
                     </select>
                     <input
                       value={it.name}
-                      onChange={(e) =>
-                        updateItem(it._id, 'name', e.target.value)
-                      }
+                      onChange={(e) => updateItem(it._id, 'name', e.target.value)}
                       aria-label={t('history.item')}
                       style={{ flex: 2, minWidth: 120 }}
                       placeholder={t('addReceipt.itemName') || 'Item name'}
@@ -468,9 +441,7 @@ export function AddFromReceipt({ onDone }) {
                     type="number"
                     min="0"
                     value={it.price}
-                    onChange={(e) =>
-                      updateItem(it._id, 'price', e.target.value)
-                    }
+                    onChange={(e) => updateItem(it._id, 'price', e.target.value)}
                     aria-label={t('history.price')}
                     style={{ width: 90 }}
                   />
@@ -486,23 +457,13 @@ export function AddFromReceipt({ onDone }) {
                 }}
               >
                 {t('addReceipt.total')}{' '}
-                <strong style={{ color: 'var(--text)' }}>
-                  {formatRp(lineTotal)}
-                </strong>
+                <strong style={{ color: 'var(--text)' }}>{formatRp(lineTotal)}</strong>
               </div>
               <button className="btn btn--ghost" onClick={handleRetake}>
                 <IconArrowLeft size={18} /> {t('addReceipt.retake')}
               </button>
-              <button
-                className="btn btn--primary"
-                onClick={handleConfirm}
-                disabled={creating}
-              >
-                {creating ? (
-                  <IconBolt size={18} className="spin" />
-                ) : (
-                  <IconCheck size={18} />
-                )}{' '}
+              <button className="btn btn--primary" onClick={handleConfirm} disabled={creating}>
+                {creating ? <IconBolt size={18} className="spin" /> : <IconCheck size={18} />}{' '}
                 {t('addReceipt.confirmAdd')}
               </button>
             </div>
@@ -511,10 +472,7 @@ export function AddFromReceipt({ onDone }) {
       )}
 
       {phase === 'done' && (
-        <div
-          className="panel"
-          style={{ padding: 'var(--sp-9)', textAlign: 'center' }}
-        >
+        <div className="panel" style={{ padding: 'var(--sp-9)', textAlign: 'center' }}>
           <div style={{ margin: '0 auto var(--sp-5)', color: 'var(--ok)' }}>
             <div
               style={{
@@ -565,14 +523,9 @@ export function AddFromReceipt({ onDone }) {
 
 function SkeletonLines() {
   return (
-    <div
-      style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}
-    >
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
       {Array.from({ length: 4 }).map((_, i) => (
-        <div
-          key={i}
-          style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center' }}
-        >
+        <div key={i} style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center' }}>
           <div className="skeleton" style={{ height: 14, flex: 1 }} />
           <div className="skeleton" style={{ height: 14, width: 60 }} />
           <div className="skeleton" style={{ height: 14, width: 70 }} />

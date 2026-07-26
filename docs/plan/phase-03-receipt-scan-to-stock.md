@@ -26,7 +26,7 @@ This phase touches R2, AI provider proxy, multi-table D1 writes, and the full Ad
 7. All endpoints use Valibot validation and household-scoped queries.
 8. API integration tests cover scan endpoint, purchase creation, and R2 upload handling.
 9. Frontend tests cover the 4-phase flow and review edits.
-10. `npm test` and `npx tsc --noEmit` pass.
+10. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

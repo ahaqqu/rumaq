@@ -88,9 +88,9 @@ async function pagesBindings() {
   const prod = project.deployment_configs?.production || {}
   const preview = project.deployment_configs?.preview || {}
 
-  const d1Databases = { ...(prod.d1_databases || {}), DB: { id: db.uuid } }
+  const d1Databases = { ...prod.d1_databases, DB: { id: db.uuid } }
   const r2Buckets = {
-    ...(prod.r2_buckets || {}),
+    ...prod.r2_buckets,
     RECEIPTS: { name: bucketName },
   }
 
@@ -120,9 +120,7 @@ async function main() {
         await pagesBindings()
         break
       default:
-        console.error(
-          `Usage: deploy-cf.js <d1-setup|r2-ensure|put-secrets|pages-bindings>`
-        )
+        console.error(`Usage: deploy-cf.js <d1-setup|r2-ensure|put-secrets|pages-bindings>`)
         process.exit(1)
     }
   } catch (e) {

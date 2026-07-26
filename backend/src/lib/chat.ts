@@ -53,8 +53,7 @@ export function buildChatSystemPrompt(ctx: ChatContext): string {
   const expiringLines =
     ctx.expiring
       .map(
-        (s) =>
-          `- ${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, expires: ${s.expiry_date})`
+        (s) => `- ${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, expires: ${s.expiry_date})`
       )
       .join('\n') || '- None'
   const planLines =
@@ -100,8 +99,6 @@ export async function sendChatMessage(
     .slice(-10)
     .map((m) => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.content}`)
     .join('\n')
-  const userPrompt = conversation
-    ? `${conversation}\nUser: ${message}`
-    : message
+  const userPrompt = conversation ? `${conversation}\nUser: ${message}` : message
   return completeText(provider, apiKey, systemPrompt, userPrompt)
 }

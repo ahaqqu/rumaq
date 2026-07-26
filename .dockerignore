@@ -19,3 +19,4 @@ scripts
 **/__pycache__
 .agents
 AGENTS.md
+bun.lockb

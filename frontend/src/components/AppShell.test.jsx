@@ -39,55 +39,35 @@ function renderWithProviders(ui) {
 describe('AppShell', () => {
   it('renders app shell', () => {
     const { container } = renderWithProviders(
-      React.createElement(
-        AppShell,
-        null,
-        React.createElement('div', null, 'content')
-      )
+      React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
     expect(container.querySelector('.app')).toBeTruthy()
   })
 
   it('renders rail navigation', () => {
     const { container } = renderWithProviders(
-      React.createElement(
-        AppShell,
-        null,
-        React.createElement('div', null, 'content')
-      )
+      React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
     expect(container.querySelector('.rail')).toBeTruthy()
   })
 
   it('renders children', () => {
     const { container } = renderWithProviders(
-      React.createElement(
-        AppShell,
-        null,
-        React.createElement('div', { id: 'test-child' })
-      )
+      React.createElement(AppShell, null, React.createElement('div', { id: 'test-child' }))
     )
     expect(container.querySelector('#test-child')).toBeTruthy()
   })
 
   it('renders bottom bar navigation', () => {
     const { container } = renderWithProviders(
-      React.createElement(
-        AppShell,
-        null,
-        React.createElement('div', null, 'content')
-      )
+      React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
     expect(container.querySelector('.bottombar')).toBeTruthy()
   })
 
   it('renders topbar', () => {
     const { container } = renderWithProviders(
-      React.createElement(
-        AppShell,
-        null,
-        React.createElement('div', null, 'content')
-      )
+      React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
     expect(container.querySelector('.topbar')).toBeTruthy()
   })

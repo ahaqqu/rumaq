@@ -26,7 +26,7 @@ This phase also introduces the first household-level state that other phases dep
 7. All endpoints use Valibot validation and household-scoped queries.
 8. API integration tests cover stock queries, run-out calculation, and PATCH validation.
 9. Frontend tests cover Inventory filters, sorting, and updates.
-10. `npm test` and `npx tsc --noEmit` pass.
+10. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

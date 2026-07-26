@@ -5,9 +5,11 @@
   "type": "module",
   "scripts": {
     "dev": "wrangler dev --config wrangler.local.toml",
+    "build": "vite build",
+    "preview": "vite preview",
     "deploy": "wrangler deploy --config wrangler.cloudflare.toml",
     "deploy:prod": "wrangler deploy --config wrangler.cloudflare.toml --env production",
-    "db:create": "node ../scripts/deploy/setup-db.js",
+    "db:create": "bun ../scripts/deploy/setup-db.js",
     "db:migrate": "wrangler d1 migrations apply rumaq",
     "test": "vitest run",
     "test:watch": "vitest"
@@ -19,10 +21,12 @@
     "valibot": "^1.4.2"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.47.0",
     "@cloudflare/workers-types": "^5.20260708.1",
     "@vitest/coverage-v8": "^4.1.10",
     "tsx": "^4.23.1",
     "typescript": "^7.0.2",
+    "vite": "^8.1.5",
     "vitest": "^4.1.10",
     "wrangler": "^4.114.0"
   }

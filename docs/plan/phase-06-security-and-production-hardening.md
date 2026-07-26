@@ -26,7 +26,7 @@ This phase is both a prerequisite for P0 features (AI key encryption, R2 signed 
 7. Every D1 query that reads or writes household-scoped data includes `household_id = ?` (or equivalent user_id filter).
 8. Rate limiting is implemented per user for AI endpoints and API endpoints.
 9. A security checklist is added to `docs/ARCHITECTURE.md` or a separate `docs/SECURITY.md` and all items are marked complete.
-10. `npm test` and `npx tsc --noEmit` pass.
+10. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

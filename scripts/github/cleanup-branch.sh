@@ -18,7 +18,7 @@ echo "==> Cleaning up branch: ${BRANCH_NAME}"
 echo "    Worker: ${WORKER_NAME}"
 
 # Delete the branch-specific Worker
-if npx wrangler delete --name "$WORKER_NAME" 2> /dev/null; then
+if bunx wrangler delete --name "$WORKER_NAME" 2> /dev/null; then
   echo "  ok  Deleted Worker: ${WORKER_NAME}"
 else
   echo "  -   Worker ${WORKER_NAME} not found or already deleted"

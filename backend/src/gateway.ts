@@ -31,11 +31,7 @@ function missingSecrets(env: Env['Bindings']): string[] {
 }
 
 export const gateway = {
-  async fetch(
-    request: Request,
-    env: Env['Bindings'],
-    ctx: ExecutionContext
-  ): Promise<Response> {
+  async fetch(request: Request, env: Env['Bindings'], ctx: ExecutionContext): Promise<Response> {
     const missing = missingSecrets(env)
     if (missing.length > 0) {
       return new Response(

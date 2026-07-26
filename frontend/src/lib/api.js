@@ -168,15 +168,7 @@ export function getReceiptUrl(purchaseId) {
   return `${BASE}/api/purchases/${purchaseId}/receipt`
 }
 
-export function getPurchases({
-  store,
-  from,
-  to,
-  q,
-  groupBy,
-  limit,
-  cursor,
-} = {}) {
+export function getPurchases({ store, from, to, q, groupBy, limit, cursor } = {}) {
   const params = new URLSearchParams()
   if (store) params.set('store', store)
   if (from) params.set('from', from)

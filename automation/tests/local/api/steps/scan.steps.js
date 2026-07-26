@@ -1,9 +1,5 @@
 import { describe, test as it, beforeEach } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
@@ -31,12 +27,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Scan returns parsed items with AI key configured', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Scan returns parsed items with AI key configured', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -89,32 +80,24 @@ defineFeature(feature, (test) => {
       })
     })
 
-    when(
-      /I send a (POST) request to (\S+) with a test image/,
-      async (method, path) => {
-        const img = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
-        await ctx.sendMultipart(
-          'POST',
-          '/api/purchases/scan',
-          'image',
-          img,
-          'receipt.jpg',
-          'image/jpeg'
-        )
-      }
-    )
+    when(/I send a (POST) request to (\S+) with a test image/, async (method, path) => {
+      const img = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
+      await ctx.sendMultipart(
+        'POST',
+        '/api/purchases/scan',
+        'image',
+        img,
+        'receipt.jpg',
+        'image/jpeg'
+      )
+    })
 
     then('the response status should be 402', () => {
       ctx.expectStatus(402)
     })
   })
 
-  test('Scan with usage limit exceeded returns 429', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Scan with usage limit exceeded returns 429', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -131,20 +114,17 @@ defineFeature(feature, (test) => {
       })
     })
 
-    when(
-      /I send a (POST) request to (\S+) with a test image/,
-      async (method, path) => {
-        const img = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
-        await ctx.sendMultipart(
-          'POST',
-          '/api/purchases/scan',
-          'image',
-          img,
-          'receipt.jpg',
-          'image/jpeg'
-        )
-      }
-    )
+    when(/I send a (POST) request to (\S+) with a test image/, async (method, path) => {
+      const img = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
+      await ctx.sendMultipart(
+        'POST',
+        '/api/purchases/scan',
+        'image',
+        img,
+        'receipt.jpg',
+        'image/jpeg'
+      )
+    })
 
     then('the response status should be 429', () => {
       ctx.expectStatus(429)
@@ -162,14 +142,7 @@ defineFeature(feature, (test) => {
 
     when('I upload a non-image file for scanning', async () => {
       const txt = new Uint8Array([0x48, 0x65, 0x6c, 0x6c, 0x6f])
-      await ctx.sendMultipart(
-        'POST',
-        '/api/purchases/scan',
-        'image',
-        txt,
-        'test.txt',
-        'text/plain'
-      )
+      await ctx.sendMultipart('POST', '/api/purchases/scan', 'image', txt, 'test.txt', 'text/plain')
     })
 
     then('the response status should be 400', () => {

@@ -1,16 +1,10 @@
 import { describe, test as it, beforeEach } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
 
-const feature = loadFeature(
-  'automation/tests/local/api/features/ai-usage.feature'
-)
+const feature = loadFeature('automation/tests/local/api/features/ai-usage.feature')
 
 defineFeature(feature, (test) => {
   let ctx
@@ -31,12 +25,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('GET usage returns defaults for a new user', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('GET usage returns defaults for a new user', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

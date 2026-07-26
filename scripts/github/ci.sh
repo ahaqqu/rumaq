@@ -17,7 +17,7 @@ echo "=== CI: backend tests ==="
 "$ROOT_DIR/scripts/test.sh" unit backend --coverage
 
 echo "=== CI: audit ==="
-npm audit --omit=dev --audit-level=critical
+bun audit --audit-level=critical
 
 echo "=== CI: build ==="
 bash "$ROOT_DIR/scripts/build.sh"

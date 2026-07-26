@@ -35,7 +35,7 @@ function runCapture(command, args = []) {
 console.log(`Setting up RumaQ D1 database: ${DB_NAME}\n`)
 
 if (runCapture('wrangler', ['--version']).status !== 0) {
-  console.error('wrangler CLI is not installed. Run: npm install -g wrangler')
+  console.error('wrangler CLI is not installed. Run: bun add -g wrangler')
   process.exit(1)
 }
 
@@ -54,24 +54,15 @@ if (!existsSync(WRANGLER_TOML)) {
 
 const list = runCapture('wrangler', ['d1', 'list', '--config', WRANGLER_TOML])
 if (list.status !== 0) {
-  console.error(
-    'Unable to list D1 databases. Are you logged in? (wrangler login)'
-  )
+  console.error('Unable to list D1 databases. Are you logged in? (wrangler login)')
   process.exit(1)
 }
 
-const hasDb =
-  list.stdout.includes(`"${DB_NAME}"`) || list.stdout.includes(`'${DB_NAME}'`)
+const hasDb = list.stdout.includes(`"${DB_NAME}"`) || list.stdout.includes(`'${DB_NAME}'`)
 
 if (!hasDb) {
   console.log(`Creating D1 database "${DB_NAME}"...`)
-  const create = runCapture('wrangler', [
-    'd1',
-    'create',
-    DB_NAME,
-    '--config',
-    WRANGLER_TOML,
-  ])
+  const create = runCapture('wrangler', ['d1', 'create', DB_NAME, '--config', WRANGLER_TOML])
   if (create.status !== 0) {
     console.error('Failed to create database:')
     console.error(create.stderr)
@@ -87,12 +78,10 @@ if (!hasDb) {
 
 console.log('Applying migrations...')
 const LOCAL_TOML = resolve('backend', 'wrangler.local.toml')
-run(
-  'wrangler',
-  ['d1', 'migrations', 'apply', DB_NAME, '--local', '--config', LOCAL_TOML],
-  { cwd: resolve('backend') }
-)
+run('wrangler', ['d1', 'migrations', 'apply', DB_NAME, '--local', '--config', LOCAL_TOML], {
+  cwd: resolve('backend'),
+})
 
 const CLOUDFLARE_TOML = resolve('backend', 'wrangler.cloudflare.toml')
 console.log('\nDone. Run the following to apply to production:')
-console.log(`  npm run db:migrate -w backend`)
+console.log(`  vp run db:migrate --filter backend`)

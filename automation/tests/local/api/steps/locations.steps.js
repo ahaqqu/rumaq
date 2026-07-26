@@ -1,16 +1,10 @@
 import { describe, test as it, beforeEach, expect } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
 
-const feature = loadFeature(
-  'automation/tests/local/api/features/locations.feature'
-)
+const feature = loadFeature('automation/tests/local/api/features/locations.feature')
 
 defineFeature(feature, (test) => {
   let ctx
@@ -31,12 +25,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Authenticated access returns locations', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Authenticated access returns locations', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -61,12 +50,9 @@ defineFeature(feature, (test) => {
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
-    when(
-      /I send a (POST) request to (\S+) with body/,
-      async (method, path, body) => {
-        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
-      }
-    )
+    when(/I send a (POST) request to (\S+) with body/, async (method, path, body) => {
+      await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+    })
     then('the response status should be 201', () => {
       ctx.expectStatus(201)
     })
@@ -75,12 +61,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Delete a location not referenced by stock', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Delete a location not referenced by stock', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -95,12 +76,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Delete a location referenced by stock returns 409', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Delete a location referenced by stock returns 409', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -115,12 +91,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Delete nonexistent location returns 404', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Delete nonexistent location returns 404', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

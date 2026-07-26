@@ -88,9 +88,7 @@ function renderWithProviders(ui) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false, gcTime: 0 } },
   })
-  return render(
-    React.createElement(QueryClientProvider, { client: queryClient }, ui)
-  )
+  return render(React.createElement(QueryClientProvider, { client: queryClient }, ui))
 }
 
 describe('History', () => {
@@ -133,12 +131,8 @@ describe('History', () => {
 
   it('renders make plan button that calls askAssistant', () => {
     const askAssistant = vi.fn()
-    const { container } = renderWithProviders(
-      React.createElement(History, { askAssistant })
-    )
-    const sectionBtn = container.querySelector(
-      'section.section button.btn--ghost'
-    )
+    const { container } = renderWithProviders(React.createElement(History, { askAssistant }))
+    const sectionBtn = container.querySelector('section.section button.btn--ghost')
     expect(sectionBtn).toBeTruthy()
     fireEvent.click(sectionBtn)
     expect(askAssistant).toHaveBeenCalled()

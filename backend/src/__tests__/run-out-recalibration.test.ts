@@ -22,9 +22,7 @@ describe('computeRunOutDays — recalibration from full history', () => {
   it('uses full history when more than 5 purchases exist', async () => {
     const purchases = Array.from({ length: 8 }, (_, i) => ({
       qty: 1,
-      date: new Date(Date.parse('2026-07-21') - (7 - i) * 7 * 86400000)
-        .toISOString()
-        .slice(0, 10),
+      date: new Date(Date.parse('2026-07-21') - (7 - i) * 7 * 86400000).toISOString().slice(0, 10),
     }))
     const db = mockDb(purchases)
     const result = await computeRunOutDays('h1', 'i1', 1, db)
@@ -64,18 +62,8 @@ describe('computeRunOutDays — recalibration from full history', () => {
       { qty: 2, date: '2026-06-21' },
       { qty: 1, date: '2026-07-21' },
     ]
-    const increasing = await computeRunOutDays(
-      'h1',
-      'i1',
-      3,
-      mockDb(increasingRecent)
-    )
-    const decreasing = await computeRunOutDays(
-      'h1',
-      'i1',
-      3,
-      mockDb(decreasingRecent)
-    )
+    const increasing = await computeRunOutDays('h1', 'i1', 3, mockDb(increasingRecent))
+    const decreasing = await computeRunOutDays('h1', 'i1', 3, mockDb(decreasingRecent))
     expect(increasing.run_out_days).toBeLessThan(decreasing.run_out_days ?? 0)
     expect(increasing.basis).toBe('history')
     expect(decreasing.basis).toBe('history')

@@ -26,7 +26,7 @@ This phase delivers the first fully functional settings backend and removes the 
 7. All new endpoints use Valibot validation and return consistent JSON errors through the existing `app.onError` handler.
 8. API integration tests cover settings CRUD, encryption round-trip, location/store CRUD, and AI usage counter.
 9. Unit tests cover the encryption helpers and Valibot schemas.
-10. `npm test` and `npx tsc --noEmit` pass before the PR is opened.
+10. `vp test` and `vp check --no-fmt --no-lint` pass before the PR is opened.
 
 ---
 
@@ -214,6 +214,6 @@ Add to `automation/tests/local/api/`:
 1. Start with the crypto helpers and unit tests. They are pure and safe to write without touching the UI.
 2. Then implement the backend endpoints with Valibot validation and integration tests.
 3. Then wire the frontend Settings page to the new endpoints.
-4. Finally, run the full test suite (`npm test`, `./scripts/test.sh unit frontend`, `./scripts/test.sh automation-local`) and open the PR.
+4. Finally, run the full test suite (`vp test`, `./scripts/test.sh unit frontend`, `./scripts/test.sh automation-local`) and open the PR.
 
 After this phase, the user should be able to configure their AI key and household lookup lists and see the changes persist across page reloads.

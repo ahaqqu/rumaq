@@ -43,9 +43,7 @@ const baseProps = (overrides = {}) => ({
 
 describe('Assistant', () => {
   it('renders FAB button', () => {
-    const { container } = renderWithProviders(
-      React.createElement(Assistant, baseProps())
-    )
+    const { container } = renderWithProviders(React.createElement(Assistant, baseProps()))
     expect(container.querySelector('.fab')).toBeTruthy()
   })
 
@@ -65,10 +63,16 @@ describe('Assistant', () => {
 
   it('shows body when aiKey is present', () => {
     const { container } = renderWithProviders(
-      React.createElement(
-        Assistant,
-        baseProps({ open: true, aiKey: 'sk-test' })
-      )
+      React.createElement(Assistant, baseProps({ open: true, aiKey: 'sk-test' }))
+    )
+    expect(container.querySelector('.assistant__body')).toBeTruthy()
+    expect(container.querySelector('.assistant__action')).toBeTruthy()
+  })
+
+  it('shows body when backend has_ai_key is true even without local aiKey', () => {
+    mockUseSettings.mockReturnValue({ data: { has_ai_key: true } })
+    const { container } = renderWithProviders(
+      React.createElement(Assistant, baseProps({ open: true }))
     )
     expect(container.querySelector('.assistant__body')).toBeTruthy()
     expect(container.querySelector('.assistant__action')).toBeTruthy()
@@ -85,10 +89,7 @@ describe('Assistant', () => {
 
   it('renders chat input when aiKey present', () => {
     const { container } = renderWithProviders(
-      React.createElement(
-        Assistant,
-        baseProps({ open: true, aiKey: 'sk-test' })
-      )
+      React.createElement(Assistant, baseProps({ open: true, aiKey: 'sk-test' }))
     )
     const input = container.querySelector('input[type="text"]')
     expect(input).toBeTruthy()
@@ -99,14 +100,9 @@ describe('Assistant', () => {
     const onClose = vi.fn()
     const onNavigate = vi.fn()
     const { container } = renderWithProviders(
-      React.createElement(
-        Assistant,
-        baseProps({ open: true, onClose, onNavigate })
-      )
+      React.createElement(Assistant, baseProps({ open: true, onClose, onNavigate }))
     )
-    const settingsBtn = container.querySelector(
-      '.assistant__keystate .btn--primary'
-    )
+    const settingsBtn = container.querySelector('.assistant__keystate .btn--primary')
     if (settingsBtn) {
       fireEvent.click(settingsBtn)
       expect(onClose).toHaveBeenCalled()
@@ -117,10 +113,7 @@ describe('Assistant', () => {
   it('calls onClose when scrim is clicked', () => {
     const onClose = vi.fn()
     const { container } = renderWithProviders(
-      React.createElement(
-        Assistant,
-        baseProps({ open: true, onClose, aiKey: 'sk-test' })
-      )
+      React.createElement(Assistant, baseProps({ open: true, onClose, aiKey: 'sk-test' }))
     )
     const scrim = container.querySelector('.scrim')
     if (scrim) {
@@ -132,10 +125,7 @@ describe('Assistant', () => {
   it('displays reply after triggering a quick action', async () => {
     mutateAsync.mockResolvedValueOnce({ reply: 'Buy milk tomorrow.' })
     const { container } = renderWithProviders(
-      React.createElement(
-        Assistant,
-        baseProps({ open: true, aiKey: 'sk-test' })
-      )
+      React.createElement(Assistant, baseProps({ open: true, aiKey: 'sk-test' }))
     )
     const actionBtns = container.querySelectorAll('.assistant__action')
     expect(actionBtns.length).toBeGreaterThan(0)
@@ -146,14 +136,9 @@ describe('Assistant', () => {
   })
 
   it('displays usage-limit message on usage error', async () => {
-    mutateAsync.mockRejectedValueOnce(
-      new Error('AI usage limit reached for today.')
-    )
+    mutateAsync.mockRejectedValueOnce(new Error('AI usage limit reached for today.'))
     const { container } = renderWithProviders(
-      React.createElement(
-        Assistant,
-        baseProps({ open: true, aiKey: 'sk-test' })
-      )
+      React.createElement(Assistant, baseProps({ open: true, aiKey: 'sk-test' }))
     )
     const input = container.querySelector('input[type="text"]')
     fireEvent.change(input, { target: { value: 'hi' } })

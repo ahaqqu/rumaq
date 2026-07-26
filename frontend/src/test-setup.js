@@ -12,10 +12,7 @@ vi.mock('react-i18next', () => {
       const moodKey = parts[parts.length - 1]
       const template = en.persona?.mood?.[moodKey]
       if (template && opts) {
-        return template.replace(
-          /\{\{(\w+)\}\}/g,
-          (_, name) => opts[name] ?? `{{${name}}}`
-        )
+        return template.replace(/\{\{(\w+)\}\}/g, (_, name) => opts[name] ?? `{{${name}}}`)
       }
     }
     return key
@@ -59,11 +56,7 @@ vi.mock('@tanstack/react-router', async () => {
     useMatches: () => [{ routeId: '/', pathname: '/' }],
     useNavigate: () => vi.fn(),
     Link: ({ children, to, className, ...props }) =>
-      React.createElement(
-        'a',
-        { ...props, className, href: to, 'data-testid': 'link' },
-        children
-      ),
+      React.createElement('a', { ...props, className, href: to, 'data-testid': 'link' }, children),
     Outlet: () => null,
   }
 })

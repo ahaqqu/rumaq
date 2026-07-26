@@ -25,7 +25,7 @@ This phase complements Phase 05 (final deployment) and Phase 06 (security/secret
 6. GitHub Actions CI remains green and includes lint, typecheck, unit tests, and build.
 7. A test automation workflow can deploy to a preview environment and run integration tests against it.
 8. `docs/ARCHITECTURE.md` and `README.md` are updated with the latest deployment steps.
-9. `npm test` and `npx tsc --noEmit` pass.
+9. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

@@ -1,15 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import {
-  encryptAiKey,
-  decryptAiKey,
-  base64UrlEncode,
-  base64UrlDecode,
-} from '../lib/crypto.js'
+import { encryptAiKey, decryptAiKey, base64UrlEncode, base64UrlDecode } from '../lib/crypto.js'
 
 const TEST_KEY = 'abcdefghijklmnopqrstuvwxyz123456'
 const SHORT_KEY = 'short'
-const LONG_HEX_KEY =
-  'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'
+const LONG_HEX_KEY = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789'
 const LONG_ASCII_KEY = 'a'.repeat(64)
 
 describe('base64UrlEncode / base64UrlDecode', () => {
@@ -48,9 +42,7 @@ describe('encryptAiKey / decryptAiKey', () => {
   it('throws on wrong decryption key', async () => {
     const plain = 'secret-value'
     const encrypted = await encryptAiKey(plain, TEST_KEY)
-    await expect(
-      decryptAiKey(encrypted, 'wrong-key-that-is-also-32-bytes!!')
-    ).rejects.toThrow()
+    await expect(decryptAiKey(encrypted, 'wrong-key-that-is-also-32-bytes!!')).rejects.toThrow()
   })
 
   it('throws on tampered ciphertext', async () => {
@@ -67,9 +59,7 @@ describe('encryptAiKey / decryptAiKey', () => {
   })
 
   it('throws on empty string without version', async () => {
-    await expect(decryptAiKey('', TEST_KEY)).rejects.toThrow(
-      'Unsupported encryption version'
-    )
+    await expect(decryptAiKey('', TEST_KEY)).rejects.toThrow('Unsupported encryption version')
   })
 
   it('handles empty plain text key', async () => {

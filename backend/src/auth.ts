@@ -13,18 +13,11 @@ export function base64UrlEncode(buffer: ArrayBuffer | Uint8Array) {
 
 export function base64UrlDecode(str: string): ArrayBuffer {
   const normalized = str.replace(/-/g, '+').replace(/_/g, '/')
-  const padded = normalized.padEnd(
-    normalized.length + ((4 - (normalized.length % 4)) % 4),
-    '='
-  )
-  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))
-    .buffer as ArrayBuffer
+  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)).buffer as ArrayBuffer
 }
 
-export async function signJwt(
-  payload: Record<string, unknown>,
-  secret: string
-) {
+export async function signJwt(payload: Record<string, unknown>, secret: string) {
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
     'raw',
@@ -63,11 +56,7 @@ export async function verifyJwt(token: string, secret: string) {
 
   const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(p)))
 
-  if (
-    payload.exp &&
-    typeof payload.exp === 'number' &&
-    Date.now() > payload.exp
-  ) {
+  if (payload.exp && typeof payload.exp === 'number' && Date.now() > payload.exp) {
     return null
   }
 
@@ -100,10 +89,7 @@ export async function hashPassword(password: string): Promise<string> {
   return `${HASH_PREFIX}$${PBKDF2_ITERATIONS}$${saltB64}$${hashB64}`
 }
 
-export async function verifyPassword(
-  password: string,
-  stored: string
-): Promise<boolean> {
+export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const parts = stored.split('$')
   if (parts.length !== 4 || parts[0] !== HASH_PREFIX) return false
   const iterations = parseInt(parts[1], 10)
@@ -158,9 +144,7 @@ export const propsAuthMiddleware = createMiddleware<Env>(async (c, next) => {
   const householdId =
     user?.active_household_id ||
     (
-      await c.env.DB.prepare(
-        'SELECT household_id FROM household_members WHERE user_id = ? LIMIT 1'
-      )
+      await c.env.DB.prepare('SELECT household_id FROM household_members WHERE user_id = ? LIMIT 1')
         .bind(payload.sub)
         .first<{ household_id: string }>()
     )?.household_id
