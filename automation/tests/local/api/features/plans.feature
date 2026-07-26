@@ -78,6 +78,33 @@ Feature: Shopping Plans
     And I mark the first plan item as "bought"
     Then the response status should be 400
 
+  Scenario: Invalid status query returns 400
+    Given the database has seed data
+    And I am authenticated as a test user
+    When I send a GET request to /api/plans?status=invalid
+    Then the response status should be 400
+
+  Scenario: GET /api/plans?status=active returns active plans
+    Given the database has seed data
+    And I am authenticated as a test user
+    And there is an active plan
+    When I send a GET request to /api/plans?status=active
+    Then the response status should be 200
+    And the response should have plans array
+    And the first plan should have items
+
+  Scenario: GET /api/plans?status=archived returns archived plans
+    Given the database has seed data
+    And I am authenticated as a test user
+    And there is an active plan
+    When I create a new plan with items
+      | name | qty | unit |
+      | Rice | 1   | kg   |
+    And I send a GET request to /api/plans?status=archived
+    Then the response status should be 200
+    And the response should have plans array
+    And the first plan should be archived
+
   Scenario: Marking an item bought twice does not duplicate stock
     Given the database has seed data
     And I am authenticated as a test user

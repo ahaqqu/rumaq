@@ -1745,6 +1745,9 @@ apiApp.get(
   sValidator('query', plansQuery),
   async (c) => {
     const householdId = c.get('householdId')
+    if (!householdId) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
     const status = c.req.valid('query').status || 'active'
 
     let planSql = `SELECT id, household_id, status, total_estimate, created_at, updated_at

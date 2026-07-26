@@ -343,6 +343,110 @@ defineFeature(feature, (test) => {
     })
   })
 
+  test('Invalid status query returns 400', ({ given, when, then, and }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    when(/I send a (GET) request to (\S+)/, async (method, path) => {
+      await ctx.sendRequest(method, path)
+    })
+
+    then('the response status should be 400', () => {
+      ctx.expectStatus(400)
+    })
+  })
+
+  test('GET /api/plans?status=active returns active plans', ({ given, when, then, and }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    and('there is an active plan', async () => {
+      await ctx.sendRequestWithBody('POST', '/api/plans', {
+        items: [
+          { name: 'Milk', qty: 2, unit: 'L' },
+          { name: 'Eggs', qty: 12, unit: 'pcs' },
+        ],
+      })
+      expect(ctx.responseBody?.plan?.status).toBe('active')
+    })
+
+    when(/I send a (GET) request to (\S+)/, async (method, path) => {
+      await ctx.sendRequest(method, path)
+    })
+
+    then('the response status should be 200', () => {
+      ctx.expectStatus(200)
+    })
+
+    and('the response should have plans array', () => {
+      expect(ctx.responseBody).toHaveProperty('plans')
+      expect(Array.isArray(ctx.responseBody.plans)).toBe(true)
+    })
+
+    and('the first plan should have items', () => {
+      expect(ctx.responseBody.plans.length).toBeGreaterThan(0)
+      expect(ctx.responseBody.plans[0]).toHaveProperty('items')
+      expect(ctx.responseBody.plans[0].items.length).toBeGreaterThan(0)
+    })
+  })
+
+  test('GET /api/plans?status=archived returns archived plans', ({ given, when, then, and }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+
+    and('there is an active plan', async () => {
+      await ctx.sendRequestWithBody('POST', '/api/plans', {
+        items: [
+          { name: 'Milk', qty: 2, unit: 'L' },
+          { name: 'Eggs', qty: 12, unit: 'pcs' },
+        ],
+      })
+      expect(ctx.responseBody?.plan?.status).toBe('active')
+    })
+
+    when(/I create a new plan with items/, async (itemsTable) => {
+      const items = itemsTable.map((row) => ({
+        name: row.name,
+        qty: parseFloat(row.qty),
+        unit: row.unit,
+      }))
+      await ctx.sendRequestWithBody('POST', '/api/plans', { items })
+    })
+
+    and(/I send a (GET) request to (\S+)/, async (method, path) => {
+      await ctx.sendRequest(method, path)
+    })
+
+    then('the response status should be 200', () => {
+      ctx.expectStatus(200)
+    })
+
+    and('the response should have plans array', () => {
+      expect(ctx.responseBody).toHaveProperty('plans')
+      expect(Array.isArray(ctx.responseBody.plans)).toBe(true)
+    })
+
+    and('the first plan should be archived', () => {
+      expect(ctx.responseBody.plans.length).toBeGreaterThan(0)
+      expect(ctx.responseBody.plans[0].status).toBe('archived')
+    })
+  })
+
   test('Marking an item bought twice does not duplicate stock', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
