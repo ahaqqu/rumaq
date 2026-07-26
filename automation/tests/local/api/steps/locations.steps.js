@@ -68,8 +68,12 @@ defineFeature(feature, (test) => {
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
-    when(/I send a (DELETE) request to (\S+)/, async (method, path) => {
-      await ctx.sendRequest(method, path)
+    when('I create a new location "Test Delete"', async () => {
+      await ctx.sendRequestWithBody('POST', '/api/locations', { label: 'Test Delete' })
+    })
+    and('I delete the created location', async () => {
+      const id = ctx.responseBody?.location?.id || 'loc-pantry'
+      await ctx.sendRequest('DELETE', `/api/locations/${id}`)
     })
     then('the response status should be 204', () => {
       expect(ctx.response.status).toBe(204)

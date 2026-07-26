@@ -36,6 +36,13 @@ defineFeature(feature, (test) => {
       await ctx.authenticate()
     })
 
+    and('the user has an AI key configured', async () => {
+      await ctx.sendRequestWithBody('PATCH', '/api/settings', {
+        ai_key: 'sk-test-key-12345',
+        ai_provider: 'gemini',
+      })
+    })
+
     when(/I send a (POST) request to (\S+)/, async (method, path) => {
       await ctx.sendRequest(method, path)
     })

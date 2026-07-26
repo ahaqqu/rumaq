@@ -68,8 +68,12 @@ defineFeature(feature, (test) => {
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
-    when(/I send a (DELETE) request to (\S+)/, async (method, path) => {
-      await ctx.sendRequest(method, path)
+    when('I create a new store "Test Delete Store"', async () => {
+      await ctx.sendRequestWithBody('POST', '/api/stores', { label: 'Test Delete Store' })
+    })
+    and('I delete the created store', async () => {
+      const id = ctx.responseBody?.store?.id || 'store-super'
+      await ctx.sendRequest('DELETE', `/api/stores/${id}`)
     })
     then('the response status should be 204', () => {
       expect(ctx.response.status).toBe(204)

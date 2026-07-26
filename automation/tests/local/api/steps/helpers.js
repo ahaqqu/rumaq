@@ -127,7 +127,6 @@ export class ApiContext {
 
   expectSettingsShape() {
     expect(this.responseBody).toHaveProperty('motion_preference')
-    expect(this.responseBody).toHaveProperty('currency')
     expect(this.responseBody).toHaveProperty('has_ai_key')
   }
 

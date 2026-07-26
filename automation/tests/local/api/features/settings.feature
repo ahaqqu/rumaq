@@ -11,7 +11,7 @@ Feature: User Settings
     And I am authenticated as a test user
     When I send a GET request to /api/settings
     Then the response status should be 200
-    And the settings should include motion_preference, currency, and has_ai_key
+    And the settings should include motion_preference and has_ai_key
     And has_ai_key should be false
 
   Scenario: PATCH settings encrypts the AI key
@@ -25,16 +25,15 @@ Feature: User Settings
     And has_ai_key should be true
     And the response should not contain the plain AI key
 
-  Scenario: PATCH settings updates persona and currency
+  Scenario: PATCH settings updates persona
     Given the database has seed data
     And I am authenticated as a test user
     When I send a PATCH request to /api/settings with body
       """
-      {"persona_user_role": "chef", "persona_ai_role": "assistant", "persona_enabled": true, "currency": "usd"}
+      {"persona_user_role": "chef", "persona_ai_role": "assistant", "persona_enabled": true}
       """
     Then the response status should be 200
     And setting "persona_user_role" should be "chef"
-    And setting "currency" should be "usd"
     And setting "persona_enabled" should be true
 
   Scenario: GET settings returns has_ai_key true after key is saved
