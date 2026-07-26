@@ -9,6 +9,18 @@ export default defineConfig({
     fmt: true,
     lint: true,
   },
+  fmt: {
+    semi: false,
+    singleQuote: true,
+    trailingComma: 'es5',
+    ignorePatterns: ['.agents/**'],
+    overrides: [
+      {
+        files: ['**/*.sh'],
+        formatter: 'prettier',
+      },
+    ],
+  },
   lint: {
     options: {
       // Keep linting close to the previous ESLint setup while we migrate.
@@ -34,17 +46,6 @@ export default defineConfig({
           'import/no-default-export': 'off',
           'import/no-anonymous-default-export': 'off',
         },
-      },
-    ],
-  },
-  fmt: {
-    semi: false,
-    singleQuote: true,
-    trailingComma: 'es5',
-    overrides: [
-      {
-        files: ['**/*.sh'],
-        formatter: 'prettier',
       },
     ],
   },
