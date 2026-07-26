@@ -2,11 +2,33 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const AppContext = createContext(null)
 
+const AI_KEY_STORAGE_KEY = 'rumaq_ai_key'
+
 export function AppProvider({ children }) {
-  const [aiKey, setAiKey] = useState(null)
+  const [aiKey, setAiKeyState] = useState(() => {
+    try {
+      return window.localStorage.getItem(AI_KEY_STORAGE_KEY) || null
+    } catch {
+      return null
+    }
+  })
   const [motion, setMotion] = useState('standard')
   const [assistantOpen, setAssistantOpen] = useState(false)
   const [assistantProposal, setAssistantProposal] = useState(null)
+
+  const setAiKey = (value) => {
+    const next = value || null
+    setAiKeyState(next)
+    try {
+      if (next) {
+        window.localStorage.setItem(AI_KEY_STORAGE_KEY, next)
+      } else {
+        window.localStorage.removeItem(AI_KEY_STORAGE_KEY)
+      }
+    } catch {
+      // Storage may be disabled or full; in-memory state still works.
+    }
+  }
 
   useEffect(() => {
     document.documentElement.dataset.motion = motion
