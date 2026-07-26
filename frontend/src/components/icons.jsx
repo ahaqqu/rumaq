@@ -26,7 +26,7 @@ import {
   ArrowLeft as IconArrowLeft,
   CalendarBlank as IconCalendarBlank,
   WifiSlash as IconOffline,
-} from '@phosphor-icons/react'
+} from "@phosphor-icons/react";
 
 export {
   IconHome,
@@ -55,7 +55,7 @@ export {
   IconArrowLeft,
   IconCalendarBlank,
   IconOffline,
-}
+};
 
 export function BrandMark({ size = 32 }) {
   return (
@@ -76,5 +76,5 @@ export function BrandMark({ size = 32 }) {
         </linearGradient>
       </defs>
     </svg>
-  )
+  );
 }

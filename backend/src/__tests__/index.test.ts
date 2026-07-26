@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest'
-import { apiApp } from '../apps/api.js'
+import { describe, it, expect, vi } from "vitest";
+import { apiApp } from "../apps/api.js";
 
 function createMockEnv() {
   return {
@@ -11,135 +11,135 @@ function createMockEnv() {
       batch: vi.fn().mockResolvedValue([]),
     },
     RECEIPTS: {},
-    GOOGLE_CLIENT_ID: 'test-client-id',
-    GOOGLE_CLIENT_SECRET: 'test-client-secret',
-    WORKER_JWT_SECRET: 'test-secret',
-    WORKER_ENCRYPTION_KEY: 'test-enc-key',
-    PAGES_ORIGIN: 'http://localhost:5173',
-  }
+    GOOGLE_CLIENT_ID: "test-client-id",
+    GOOGLE_CLIENT_SECRET: "test-client-secret",
+    WORKER_JWT_SECRET: "test-secret",
+    WORKER_ENCRYPTION_KEY: "test-enc-key",
+    PAGES_ORIGIN: "http://localhost:5173",
+  };
 }
 
-describe('apiApp (cached routes)', () => {
-  it('/api/health returns ok with public cache headers', async () => {
-    const res = await apiApp.request('/api/health', {}, createMockEnv())
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body).toEqual({ ok: true })
-    expect(res.headers.get('Cache-Control')).toMatch(/public/)
-    expect(res.headers.get('Cache-Control')).toMatch(/max-age=60/)
-  })
+describe("apiApp (cached routes)", () => {
+  it("/api/health returns ok with public cache headers", async () => {
+    const res = await apiApp.request("/api/health", {}, createMockEnv());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ ok: true });
+    expect(res.headers.get("Cache-Control")).toMatch(/public/);
+    expect(res.headers.get("Cache-Control")).toMatch(/max-age=60/);
+  });
 
-  it('/api/me returns 401 without props', async () => {
-    const res = await apiApp.request('/api/me', {}, createMockEnv())
-    expect(res.status).toBe(401)
-  })
+  it("/api/me returns 401 without props", async () => {
+    const res = await apiApp.request("/api/me", {}, createMockEnv());
+    expect(res.status).toBe(401);
+  });
 
-  it('/api/stock returns 401 without props', async () => {
-    const res = await apiApp.request('/api/stock', {}, createMockEnv())
-    expect(res.status).toBe(401)
-  })
+  it("/api/stock returns 401 without props", async () => {
+    const res = await apiApp.request("/api/stock", {}, createMockEnv());
+    expect(res.status).toBe(401);
+  });
 
-  it('/api/auth/email-status returns public cache headers', async () => {
-    const env = createMockEnv()
-    env.EMAIL_AUTH_ENABLED = 'false'
-    const res = await apiApp.request('/api/auth/email-status', {}, env)
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body).toEqual({ enabled: false })
-    expect(res.headers.get('Cache-Control')).toMatch(/public/)
-    expect(res.headers.get('Cache-Control')).toMatch(/max-age=60/)
-  })
+  it("/api/auth/email-status returns public cache headers", async () => {
+    const env = createMockEnv();
+    env.EMAIL_AUTH_ENABLED = "false";
+    const res = await apiApp.request("/api/auth/email-status", {}, env);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toEqual({ enabled: false });
+    expect(res.headers.get("Cache-Control")).toMatch(/public/);
+    expect(res.headers.get("Cache-Control")).toMatch(/max-age=60/);
+  });
 
-  it('/api/me returns user data with valid props', async () => {
-    const env = createMockEnv()
-    env.props = { userId: 'user-123', householdId: 'house-456' }
-    env.DB.prepare = vi.fn().mockReturnThis()
-    env.DB.bind = vi.fn().mockReturnThis()
+  it("/api/me returns user data with valid props", async () => {
+    const env = createMockEnv();
+    env.props = { userId: "user-123", householdId: "house-456" };
+    env.DB.prepare = vi.fn().mockReturnThis();
+    env.DB.bind = vi.fn().mockReturnThis();
     env.DB.first = vi.fn().mockResolvedValueOnce({
-      id: 'user-123',
-      email: 'a@b.com',
-      name: 'Alice',
+      id: "user-123",
+      email: "a@b.com",
+      name: "Alice",
       picture: null,
-    })
+    });
 
-    const res = await apiApp.request('/api/me', {}, env)
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.user.email).toBe('a@b.com')
-    expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
-  })
+    const res = await apiApp.request("/api/me", {}, env);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.user.email).toBe("a@b.com");
+    expect(res.headers.get("Cache-Control")).toMatch(/private, no-cache/);
+  });
 
-  it('/api/stock returns stock list with valid props', async () => {
-    const env = createMockEnv()
-    env.props = { userId: 'user-123', householdId: 'house-456' }
-    env.DB.prepare = vi.fn().mockReturnThis()
-    env.DB.bind = vi.fn().mockReturnThis()
-    env.DB.all = vi.fn().mockResolvedValue({ results: [{ id: 's1', name: 'Test' }] })
+  it("/api/stock returns stock list with valid props", async () => {
+    const env = createMockEnv();
+    env.props = { userId: "user-123", householdId: "house-456" };
+    env.DB.prepare = vi.fn().mockReturnThis();
+    env.DB.bind = vi.fn().mockReturnThis();
+    env.DB.all = vi.fn().mockResolvedValue({ results: [{ id: "s1", name: "Test" }] });
 
-    const res = await apiApp.request('/api/stock', {}, env)
-    expect(res.status).toBe(200)
-    const body = await res.json()
-    expect(body.stock).toHaveLength(1)
-    expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
-  })
+    const res = await apiApp.request("/api/stock", {}, env);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.stock).toHaveLength(1);
+    expect(res.headers.get("Cache-Control")).toMatch(/private, no-cache/);
+  });
 
-  it('/api/stock filters by location and query', async () => {
-    const env = createMockEnv()
-    env.props = { userId: 'user-123', householdId: 'house-456' }
-    env.DB.prepare = vi.fn().mockReturnThis()
-    env.DB.bind = vi.fn().mockReturnThis()
-    env.DB.all = vi.fn().mockResolvedValue({ results: [] })
+  it("/api/stock filters by location and query", async () => {
+    const env = createMockEnv();
+    env.props = { userId: "user-123", householdId: "house-456" };
+    env.DB.prepare = vi.fn().mockReturnThis();
+    env.DB.bind = vi.fn().mockReturnThis();
+    env.DB.all = vi.fn().mockResolvedValue({ results: [] });
 
-    const res = await apiApp.request('/api/stock?location=kulkas&q=susu', {}, env)
-    expect(res.status).toBe(200)
-  })
+    const res = await apiApp.request("/api/stock?location=kulkas&q=susu", {}, env);
+    expect(res.status).toBe(200);
+  });
 
-  it('cors allows localhost origin', async () => {
+  it("cors allows localhost origin", async () => {
     const res = await apiApp.request(
-      '/api/health',
+      "/api/health",
       {
-        headers: { Origin: 'http://localhost:5173' },
+        headers: { Origin: "http://localhost:5173" },
       },
-      createMockEnv()
-    )
-    expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
-  })
+      createMockEnv(),
+    );
+    expect(res.headers.get("access-control-allow-origin")).toBe("http://localhost:5173");
+  });
 
-  it('cors uses configured PAGES_ORIGIN for unknown origins', async () => {
-    const env = createMockEnv()
-    env.PAGES_ORIGIN = 'https://custom.pages.dev'
+  it("cors uses configured PAGES_ORIGIN for unknown origins", async () => {
+    const env = createMockEnv();
+    env.PAGES_ORIGIN = "https://custom.pages.dev";
     const res = await apiApp.request(
-      '/api/health',
+      "/api/health",
       {
-        headers: { Origin: 'https://evil.com' },
+        headers: { Origin: "https://evil.com" },
       },
-      env
-    )
-    expect(res.headers.get('access-control-allow-origin')).toBe('https://custom.pages.dev')
-  })
+      env,
+    );
+    expect(res.headers.get("access-control-allow-origin")).toBe("https://custom.pages.dev");
+  });
 
-  it('cors uses default origin when PAGES_ORIGIN is not set', async () => {
-    const env = createMockEnv()
-    delete env.PAGES_ORIGIN
+  it("cors uses default origin when PAGES_ORIGIN is not set", async () => {
+    const env = createMockEnv();
+    delete env.PAGES_ORIGIN;
     const res = await apiApp.request(
-      '/api/health',
+      "/api/health",
       {
-        headers: { Origin: 'https://test.com' },
+        headers: { Origin: "https://test.com" },
       },
-      env
-    )
-    expect(res.headers.get('access-control-allow-origin')).toBe('https://rumaq.pages.dev')
-  })
+      env,
+    );
+    expect(res.headers.get("access-control-allow-origin")).toBe("https://rumaq.pages.dev");
+  });
 
-  it('error responses have private no-cache Cache-Control', async () => {
-    const env = createMockEnv()
-    env.props = { userId: 'user-123', householdId: 'house-456' }
-    env.DB.prepare = vi.fn().mockReturnThis()
-    env.DB.bind = vi.fn().mockReturnThis()
-    env.DB.first = vi.fn().mockRejectedValue(new Error('DB error'))
+  it("error responses have private no-cache Cache-Control", async () => {
+    const env = createMockEnv();
+    env.props = { userId: "user-123", householdId: "house-456" };
+    env.DB.prepare = vi.fn().mockReturnThis();
+    env.DB.bind = vi.fn().mockReturnThis();
+    env.DB.first = vi.fn().mockRejectedValue(new Error("DB error"));
 
-    const res = await apiApp.request('/api/me', {}, env)
-    expect(res.status).toBe(500)
-    expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
-  })
-})
+    const res = await apiApp.request("/api/me", {}, env);
+    expect(res.status).toBe(500);
+    expect(res.headers.get("Cache-Control")).toMatch(/private, no-cache/);
+  });
+});

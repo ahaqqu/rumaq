@@ -4,4 +4,4 @@ export const ctx = {
   cookie: null,
   response: null,
   body: null,
-}
+};

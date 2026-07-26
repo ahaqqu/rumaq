@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   getMe,
   getStock,
@@ -8,176 +8,176 @@ import {
   isAuthenticated,
   emailAuthStatus,
   emailLogin,
-} from './api.js'
+} from "./api.js";
 
 beforeEach(() => {
-  globalThis.fetch = vi.fn()
-})
+  globalThis.fetch = vi.fn();
+});
 
-describe('api', () => {
-  it('getMe calls /api/me', async () => {
+describe("api", () => {
+  it("getMe calls /api/me", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ user: { id: '1', email: 'a@b.com' } }),
-    })
-    const result = await getMe()
-    expect(result).toEqual({ user: { id: '1', email: 'a@b.com' } })
+      json: () => Promise.resolve({ user: { id: "1", email: "a@b.com" } }),
+    });
+    const result = await getMe();
+    expect(result).toEqual({ user: { id: "1", email: "a@b.com" } });
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      '/api/me',
+      "/api/me",
       expect.objectContaining({
-        credentials: 'include',
-      })
-    )
-  })
+        credentials: "include",
+      }),
+    );
+  });
 
-  it('getStock without params', async () => {
+  it("getStock without params", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ stock: [] }),
-    })
-    const result = await getStock()
-    expect(result).toEqual({ stock: [] })
-    expect(globalThis.fetch).toHaveBeenCalledWith('/api/stock', expect.anything())
-  })
+    });
+    const result = await getStock();
+    expect(result).toEqual({ stock: [] });
+    expect(globalThis.fetch).toHaveBeenCalledWith("/api/stock", expect.anything());
+  });
 
-  it('getStock with location and q params', async () => {
+  it("getStock with location and q params", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ stock: [] }),
-    })
-    await getStock({ location: 'kulkas', q: 'susu' })
-    const url = globalThis.fetch.mock.calls[0][0]
-    expect(url).toContain('location=kulkas')
-    expect(url).toContain('q=susu')
-  })
+    });
+    await getStock({ location: "kulkas", q: "susu" });
+    const url = globalThis.fetch.mock.calls[0][0];
+    expect(url).toContain("location=kulkas");
+    expect(url).toContain("q=susu");
+  });
 
-  it('getHealth calls /api/health', async () => {
+  it("getHealth calls /api/health", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ ok: true }),
-    })
-    const result = await getHealth()
-    expect(result).toEqual({ ok: true })
-  })
+    });
+    const result = await getHealth();
+    expect(result).toEqual({ ok: true });
+  });
 
-  it('throws on failed request', async () => {
+  it("throws on failed request", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: false,
       status: 500,
-      statusText: 'Internal Server Error',
-      json: () => Promise.resolve({ error: 'Server error' }),
-    })
-    await expect(getMe()).rejects.toThrow('Server error')
-  })
+      statusText: "Internal Server Error",
+      json: () => Promise.resolve({ error: "Server error" }),
+    });
+    await expect(getMe()).rejects.toThrow("Server error");
+  });
 
-  it('throws with status text when json fails', async () => {
+  it("throws with status text when json fails", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: false,
       status: 500,
-      statusText: 'Internal Server Error',
-      json: () => Promise.reject(new Error('parse error')),
-    })
-    await expect(getMe()).rejects.toThrow('Internal Server Error')
-  })
+      statusText: "Internal Server Error",
+      json: () => Promise.reject(new Error("parse error")),
+    });
+    await expect(getMe()).rejects.toThrow("Internal Server Error");
+  });
 
-  it('throws fallback error when body has no error property', async () => {
+  it("throws fallback error when body has no error property", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: false,
       status: 504,
-      statusText: 'Gateway Timeout',
+      statusText: "Gateway Timeout",
       json: () => Promise.resolve({}),
-    })
-    await expect(getMe()).rejects.toThrow('Request failed: 504')
-  })
+    });
+    await expect(getMe()).rejects.toThrow("Request failed: 504");
+  });
 
-  it('login constructs correct redirect URL', () => {
-    const origLocation = window.location
-    const setter = vi.fn()
-    const mockLocation = {}
-    Object.defineProperty(mockLocation, 'href', { set: setter, get: () => '' })
-    Object.defineProperty(window, 'location', {
+  it("login constructs correct redirect URL", () => {
+    const origLocation = window.location;
+    const setter = vi.fn();
+    const mockLocation = {};
+    Object.defineProperty(mockLocation, "href", { set: setter, get: () => "" });
+    Object.defineProperty(window, "location", {
       value: mockLocation,
       configurable: true,
       writable: true,
-    })
-    login()
-    expect(setter).toHaveBeenCalledWith(expect.stringContaining('/api/auth/login'))
-    Object.defineProperty(window, 'location', {
+    });
+    login();
+    expect(setter).toHaveBeenCalledWith(expect.stringContaining("/api/auth/login"));
+    Object.defineProperty(window, "location", {
       value: origLocation,
       configurable: true,
       writable: true,
-    })
-  })
+    });
+  });
 
-  it('logout navigates to /api/auth/logout', () => {
-    const origLocation = window.location
-    const setter = vi.fn()
-    const mockLocation = {}
-    Object.defineProperty(mockLocation, 'href', { set: setter, get: () => '' })
-    Object.defineProperty(window, 'location', {
+  it("logout navigates to /api/auth/logout", () => {
+    const origLocation = window.location;
+    const setter = vi.fn();
+    const mockLocation = {};
+    Object.defineProperty(mockLocation, "href", { set: setter, get: () => "" });
+    Object.defineProperty(window, "location", {
       value: mockLocation,
       configurable: true,
       writable: true,
-    })
-    logout()
-    expect(setter).toHaveBeenCalledWith(expect.stringContaining('/api/auth/logout'))
-    Object.defineProperty(window, 'location', {
+    });
+    logout();
+    expect(setter).toHaveBeenCalledWith(expect.stringContaining("/api/auth/logout"));
+    Object.defineProperty(window, "location", {
       value: origLocation,
       configurable: true,
       writable: true,
-    })
-  })
+    });
+  });
 
-  it('isAuthenticated returns true when getMe succeeds', async () => {
+  it("isAuthenticated returns true when getMe succeeds", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ user: { id: '1' } }),
-    })
-    expect(await isAuthenticated()).toBe(true)
-  })
+      json: () => Promise.resolve({ user: { id: "1" } }),
+    });
+    expect(await isAuthenticated()).toBe(true);
+  });
 
-  it('isAuthenticated returns false when getMe fails', async () => {
+  it("isAuthenticated returns false when getMe fails", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: false,
       status: 401,
-      json: () => Promise.resolve({ error: 'Unauthorized' }),
-    })
-    expect(await isAuthenticated()).toBe(false)
-  })
+      json: () => Promise.resolve({ error: "Unauthorized" }),
+    });
+    expect(await isAuthenticated()).toBe(false);
+  });
 
-  it('emailAuthStatus calls /api/auth/email-status', async () => {
+  it("emailAuthStatus calls /api/auth/email-status", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ enabled: true }),
-    })
-    const result = await emailAuthStatus()
-    expect(result).toEqual({ enabled: true })
+    });
+    const result = await emailAuthStatus();
+    expect(result).toEqual({ enabled: true });
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/auth/email-status'),
-      expect.anything()
-    )
-  })
+      expect.stringContaining("/api/auth/email-status"),
+      expect.anything(),
+    );
+  });
 
-  it('emailAuthStatus returns disabled on error', async () => {
+  it("emailAuthStatus returns disabled on error", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: false,
       status: 500,
-      json: () => Promise.resolve({ error: 'fail' }),
-    })
-    const result = await emailAuthStatus()
-    expect(result).toEqual({ enabled: false })
-  })
+      json: () => Promise.resolve({ error: "fail" }),
+    });
+    const result = await emailAuthStatus();
+    expect(result).toEqual({ enabled: false });
+  });
 
-  it('emailLogin posts credentials to /api/auth/email-login', async () => {
+  it("emailLogin posts credentials to /api/auth/email-login", async () => {
     globalThis.fetch.mockResolvedValue({
       ok: true,
       json: () => Promise.resolve({ ok: true }),
-    })
-    const result = await emailLogin('test@rumaq.dev', 'password123')
-    expect(result).toEqual({ ok: true })
-    const [url, opts] = globalThis.fetch.mock.calls[0]
-    expect(url).toContain('/api/auth/email-login')
-    expect(opts.method).toBe('POST')
-    expect(opts.body).toBe(JSON.stringify({ email: 'test@rumaq.dev', password: 'password123' }))
-  })
-})
+    });
+    const result = await emailLogin("test@rumaq.dev", "password123");
+    expect(result).toEqual({ ok: true });
+    const [url, opts] = globalThis.fetch.mock.calls[0];
+    expect(url).toContain("/api/auth/email-login");
+    expect(opts.method).toBe("POST");
+    expect(opts.body).toBe(JSON.stringify({ email: "test@rumaq.dev", password: "password123" }));
+  });
+});

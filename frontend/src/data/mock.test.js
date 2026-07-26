@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect, beforeAll } from "vitest";
 import {
   STORES,
   STOCK,
@@ -10,109 +10,109 @@ import {
   relUpdated,
   usageState,
   AI_USAGE,
-} from './mock.js'
-import { i18n } from '../i18n/index.js'
+} from "./mock.js";
+import { i18n } from "../i18n/index.js";
 
-describe('static data', () => {
-  it('exports STORES array', () => {
-    expect(Array.isArray(STORES)).toBe(true)
-  })
-  it('exports STOCK array', () => {
-    expect(Array.isArray(STOCK)).toBe(true)
-  })
-  it('exports PLAN array', () => {
-    expect(Array.isArray(PLAN)).toBe(true)
-  })
-  it('exports HISTORY array', () => {
-    expect(Array.isArray(HISTORY)).toBe(true)
-  })
-  it('exports PARSED_RECEIPT', () => {
-    expect(PARSED_RECEIPT.store).toBe('indomaret')
-  })
-})
+describe("static data", () => {
+  it("exports STORES array", () => {
+    expect(Array.isArray(STORES)).toBe(true);
+  });
+  it("exports STOCK array", () => {
+    expect(Array.isArray(STOCK)).toBe(true);
+  });
+  it("exports PLAN array", () => {
+    expect(Array.isArray(PLAN)).toBe(true);
+  });
+  it("exports HISTORY array", () => {
+    expect(Array.isArray(HISTORY)).toBe(true);
+  });
+  it("exports PARSED_RECEIPT", () => {
+    expect(PARSED_RECEIPT.store).toBe("indomaret");
+  });
+});
 
-describe('formatRp', () => {
-  it('formats number as IDR currency', () => {
-    const result = formatRp(18500)
-    expect(result).toContain('IDR')
-    expect(result).toContain('18')
-    expect(result).toContain('500')
-  })
+describe("formatRp", () => {
+  it("formats number as IDR currency", () => {
+    const result = formatRp(18500);
+    expect(result).toContain("IDR");
+    expect(result).toContain("18");
+    expect(result).toContain("500");
+  });
 
-  it('handles zero', () => {
-    expect(formatRp(0)).toContain('0')
-  })
+  it("handles zero", () => {
+    expect(formatRp(0)).toContain("0");
+  });
 
-  it('formats with id-ID locale', () => {
-    const origLang = i18n.language
-    i18n.language = 'id'
-    const result = formatRp(18500)
-    expect(result).toBeTruthy()
-    i18n.language = origLang
-  })
-})
+  it("formats with id-ID locale", () => {
+    const origLang = i18n.language;
+    i18n.language = "id";
+    const result = formatRp(18500);
+    expect(result).toBeTruthy();
+    i18n.language = origLang;
+  });
+});
 
-describe('storeLabel', () => {
-  it('returns label for known store', () => {
-    const label = storeLabel('indomaret')
-    expect(typeof label).toBe('string')
-    expect(label.length).toBeGreaterThan(0)
-  })
+describe("storeLabel", () => {
+  it("returns label for known store", () => {
+    const label = storeLabel("indomaret");
+    expect(typeof label).toBe("string");
+    expect(label.length).toBeGreaterThan(0);
+  });
 
-  it('returns id for unknown store', () => {
-    expect(storeLabel('unknown')).toBe('unknown')
-  })
-})
+  it("returns id for unknown store", () => {
+    expect(storeLabel("unknown")).toBe("unknown");
+  });
+});
 
-describe('relUpdated', () => {
+describe("relUpdated", () => {
   it('returns "today" for today', () => {
-    expect(relUpdated('2026-06-29')).toBe('today')
-  })
+    expect(relUpdated("2026-06-29")).toBe("today");
+  });
 
-  it('returns translated today with t function', () => {
-    const t = (key) => key
-    expect(relUpdated('2026-06-29', t)).toBe('common.today')
-    expect(relUpdated('2026-06-28', t)).toBe('common.yesterday')
-  })
+  it("returns translated today with t function", () => {
+    const t = (key) => key;
+    expect(relUpdated("2026-06-29", t)).toBe("common.today");
+    expect(relUpdated("2026-06-28", t)).toBe("common.yesterday");
+  });
 
   it('returns "yesterday" for yesterday', () => {
-    expect(relUpdated('2026-06-28')).toBe('yesterday')
-  })
+    expect(relUpdated("2026-06-28")).toBe("yesterday");
+  });
 
-  it('returns days ago', () => {
-    expect(relUpdated('2026-06-20')).toBe('9 days ago')
-  })
-})
+  it("returns days ago", () => {
+    expect(relUpdated("2026-06-20")).toBe("9 days ago");
+  });
+});
 
-describe('usageState', () => {
-  it('returns correct pct and flags for normal usage', () => {
-    const state = usageState({ provider: 'Gemini', used: 5, limit: 20 })
-    expect(state.pct).toBe(25)
-    expect(state.remaining).toBe(15)
-    expect(state.warn).toBe(false)
-    expect(state.danger).toBe(false)
-  })
+describe("usageState", () => {
+  it("returns correct pct and flags for normal usage", () => {
+    const state = usageState({ provider: "Gemini", used: 5, limit: 20 });
+    expect(state.pct).toBe(25);
+    expect(state.remaining).toBe(15);
+    expect(state.warn).toBe(false);
+    expect(state.danger).toBe(false);
+  });
 
-  it('returns warn flag when near limit', () => {
-    const state = usageState({ used: 17, limit: 20 })
-    expect(state.warn).toBe(true)
-    expect(state.danger).toBe(false)
-  })
+  it("returns warn flag when near limit", () => {
+    const state = usageState({ used: 17, limit: 20 });
+    expect(state.warn).toBe(true);
+    expect(state.danger).toBe(false);
+  });
 
-  it('returns danger flag at limit', () => {
-    const state = usageState({ used: 20, limit: 20 })
-    expect(state.danger).toBe(true)
-    expect(state.warn).toBe(false)
-    expect(state.remaining).toBe(0)
-  })
+  it("returns danger flag at limit", () => {
+    const state = usageState({ used: 20, limit: 20 });
+    expect(state.danger).toBe(true);
+    expect(state.warn).toBe(false);
+    expect(state.remaining).toBe(0);
+  });
 
-  it('caps pct at 100', () => {
-    const state = usageState({ used: 25, limit: 20 })
-    expect(state.pct).toBe(100)
-  })
+  it("caps pct at 100", () => {
+    const state = usageState({ used: 25, limit: 20 });
+    expect(state.pct).toBe(100);
+  });
 
-  it('uses AI_USAGE default', () => {
-    const state = usageState()
-    expect(state.pct).toBeGreaterThanOrEqual(0)
-  })
-})
+  it("uses AI_USAGE default", () => {
+    const state = usageState();
+    expect(state.pct).toBeGreaterThanOrEqual(0);
+  });
+});

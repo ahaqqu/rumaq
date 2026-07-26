@@ -1,11 +1,11 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   test: {
-    include: ['src/**/*.test.ts'],
+    include: ["src/**/*.test.ts"],
     server: {
       deps: {
-        inline: ['cloudflare:workers'],
+        inline: ["cloudflare:workers"],
       },
     },
   },
@@ -17,4 +17,4 @@ export default defineConfig({
       lines: 90,
     },
   },
-})
+});

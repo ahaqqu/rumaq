@@ -1,4 +1,4 @@
-import { useRegisterSW } from 'virtual:pwa-register/react'
+import { useRegisterSW } from "virtual:pwa-register/react";
 
 export function PwaUpdatePrompt() {
   const {
@@ -6,34 +6,34 @@ export function PwaUpdatePrompt() {
     updateServiceWorker,
   } = useRegisterSW({
     onRegistered(r) {
-      console.log('SW registered:', r)
+      console.log("SW registered:", r);
     },
     onRegisterError(error) {
-      console.log('SW registration error:', error)
+      console.log("SW registration error:", error);
     },
-  })
+  });
 
-  if (!needRefresh) return null
+  if (!needRefresh) return null;
 
   return (
     <div
       style={{
-        position: 'fixed',
+        position: "fixed",
         bottom: 16,
-        left: '50%',
-        transform: 'translateX(-50%)',
+        left: "50%",
+        transform: "translateX(-50%)",
         zIndex: 9999,
-        background: 'var(--surface-raised)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--r-md)',
-        padding: '12px 20px',
-        display: 'flex',
+        background: "var(--surface-raised)",
+        border: "1px solid var(--border)",
+        borderRadius: "var(--r-md)",
+        padding: "12px 20px",
+        display: "flex",
         gap: 12,
-        alignItems: 'center',
-        boxShadow: 'var(--shadow-lg)',
+        alignItems: "center",
+        boxShadow: "var(--shadow-lg)",
       }}
     >
-      <span style={{ fontSize: 'var(--fs-sm)' }}>Update available</span>
+      <span style={{ fontSize: "var(--fs-sm)" }}>Update available</span>
       <button className="btn btn--primary btn--sm" onClick={() => updateServiceWorker(true)}>
         Update
       </button>
@@ -41,5 +41,5 @@ export function PwaUpdatePrompt() {
         Dismiss
       </button>
     </div>
-  )
+  );
 }

@@ -1,24 +1,24 @@
-import { Hono } from 'hono'
-import { logger } from 'hono/logger'
+import { Hono } from "hono";
+import { logger } from "hono/logger";
 
-import { sValidator } from '@hono/standard-validator'
-import { openAPIRouteHandler, describeRoute } from 'hono-openapi'
-import { object, string, optional, picklist, number, integer, minValue, pipe } from 'valibot'
-import type { Env } from '../types.js'
-import { createCors } from '../cors.js'
-import { propsAuthMiddleware } from '../auth.js'
-import { encryptAiKey, decryptAiKey } from '../lib/crypto.js'
-import { computeRunOutDays } from '../lib/stock.js'
-import { computePatterns } from '../lib/patterns.js'
+import { sValidator } from "@hono/standard-validator";
+import { openAPIRouteHandler, describeRoute } from "hono-openapi";
+import { object, string, optional, picklist, number, integer, minValue, pipe } from "valibot";
+import type { Env } from "../types.js";
+import { createCors } from "../cors.js";
+import { propsAuthMiddleware } from "../auth.js";
+import { encryptAiKey, decryptAiKey } from "../lib/crypto.js";
+import { computeRunOutDays } from "../lib/stock.js";
+import { computePatterns } from "../lib/patterns.js";
 import {
   validateImage,
   buildKey,
   uploadReceipt,
   getSignedUrl,
   extFromType,
-} from '../lib/receipts.js'
-import { extractReceiptItems } from '../lib/ai.js'
-import { sendChatMessage } from '../lib/chat.js'
+} from "../lib/receipts.js";
+import { extractReceiptItems } from "../lib/ai.js";
+import { sendChatMessage } from "../lib/chat.js";
 import {
   settingsPatchSchema,
   locationSchema,
@@ -27,95 +27,95 @@ import {
   stockPatchSchema,
   purchaseCreateSchema,
   chatSchema,
-} from '../schemas.js'
+} from "../schemas.js";
 import {
   planItemPatchSchema,
   planCreateSchema,
   generateAiPlan,
   normalizeItemName,
-} from '../lib/plans.js'
+} from "../lib/plans.js";
 
 const stockQuery = object({
   location: optional(string()),
   q: optional(string()),
-})
+});
 
 const plansQuery = object({
-  status: optional(picklist(['active', 'archived', 'completed', 'all'])),
-})
+  status: optional(picklist(["active", "archived", "completed", "all"])),
+});
 
 const purchasesQuery = object({
   store: optional(string()),
   from: optional(string()),
   to: optional(string()),
   q: optional(string()),
-  group_by: optional(picklist(['month', 'store'])),
+  group_by: optional(picklist(["month", "store"])),
   limit: optional(pipe(number(), integer(), minValue(1))),
   cursor: optional(string()),
-})
+});
 
-const apiApp = new Hono<Env>()
+const apiApp = new Hono<Env>();
 
-apiApp.use(logger())
-apiApp.use('*', createCors())
+apiApp.use(logger());
+apiApp.use("*", createCors());
 
 apiApp.onError((err, c) => {
-  console.error(err)
-  c.res.headers.set('Cache-Control', 'private, no-cache')
-  return c.json({ error: err.message || 'Internal server error' }, 500)
-})
+  console.error(err);
+  c.res.headers.set("Cache-Control", "private, no-cache");
+  return c.json({ error: err.message || "Internal server error" }, 500);
+});
 
 apiApp.get(
-  '/api/openapi.json',
+  "/api/openapi.json",
   openAPIRouteHandler(apiApp, {
     documentation: {
-      info: { title: 'RumaQ API', version: '0.1.0' },
+      info: { title: "RumaQ API", version: "0.1.0" },
       components: {
         securitySchemes: {
           cookieAuth: {
-            type: 'apiKey',
-            in: 'cookie',
-            name: 'rumaq_session',
+            type: "apiKey",
+            in: "cookie",
+            name: "rumaq_session",
           },
         },
       },
     },
-  })
-)
+  }),
+);
 
 apiApp.get(
-  '/api/health',
+  "/api/health",
   describeRoute({
-    description: 'Public health check.',
+    description: "Public health check.",
     responses: {
       200: {
-        description: 'OK',
+        description: "OK",
         content: {
-          'application/json': {
-            schema: { type: 'object', properties: { ok: { type: 'boolean' } } },
+          "application/json": {
+            schema: { type: "object", properties: { ok: { type: "boolean" } } },
           },
         },
       },
     },
   }),
   (c) => {
-    c.res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
-    return c.json({ ok: true })
-  }
-)
+    c.res.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    return c.json({ ok: true });
+  },
+);
 
 apiApp.get(
-  '/api/auth/email-status',
+  "/api/auth/email-status",
   describeRoute({
-    description: 'Reports whether email/password auth is enabled.',
+    description: "Reports whether email/password auth is enabled.",
     responses: {
       200: {
-        description: 'OK',
+        description: "OK",
         content: {
-          'application/json': {
+          "application/json": {
             schema: {
-              type: 'object',
-              properties: { enabled: { type: 'boolean' } },
+              type: "object",
+              properties: { enabled: { type: "boolean" } },
             },
           },
         },
@@ -123,51 +123,51 @@ apiApp.get(
     },
   }),
   (c) => {
-    c.res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
-    return c.json({ enabled: c.env.EMAIL_AUTH_ENABLED === 'true' })
-  }
-)
+    c.res.headers.set("Cache-Control", "public, max-age=60, stale-while-revalidate=300");
+    return c.json({ enabled: c.env.EMAIL_AUTH_ENABLED === "true" });
+  },
+);
 
-apiApp.use('/api/me', propsAuthMiddleware)
-apiApp.use('/api/stock', propsAuthMiddleware)
-apiApp.use('/api/stock/:id', propsAuthMiddleware)
-apiApp.use('/api/home', propsAuthMiddleware)
-apiApp.use('/api/settings', propsAuthMiddleware)
-apiApp.use('/api/ai/usage', propsAuthMiddleware)
-apiApp.use('/api/locations', propsAuthMiddleware)
-apiApp.use('/api/locations/:id', propsAuthMiddleware)
-apiApp.use('/api/items', propsAuthMiddleware)
-apiApp.use('/api/stores', propsAuthMiddleware)
-apiApp.use('/api/stores/:id', propsAuthMiddleware)
-apiApp.use('/api/purchases', propsAuthMiddleware)
-apiApp.use('/api/purchases/scan', propsAuthMiddleware)
-apiApp.use('/api/purchases/patterns', propsAuthMiddleware)
-apiApp.use('/api/purchases/:id', propsAuthMiddleware)
-apiApp.use('/api/purchases/:id/receipt', propsAuthMiddleware)
-apiApp.use('/api/ai/chat', propsAuthMiddleware)
-apiApp.use('/api/plans*', propsAuthMiddleware)
-apiApp.use('/api/ai-key/*', propsAuthMiddleware)
+apiApp.use("/api/me", propsAuthMiddleware);
+apiApp.use("/api/stock", propsAuthMiddleware);
+apiApp.use("/api/stock/:id", propsAuthMiddleware);
+apiApp.use("/api/home", propsAuthMiddleware);
+apiApp.use("/api/settings", propsAuthMiddleware);
+apiApp.use("/api/ai/usage", propsAuthMiddleware);
+apiApp.use("/api/locations", propsAuthMiddleware);
+apiApp.use("/api/locations/:id", propsAuthMiddleware);
+apiApp.use("/api/items", propsAuthMiddleware);
+apiApp.use("/api/stores", propsAuthMiddleware);
+apiApp.use("/api/stores/:id", propsAuthMiddleware);
+apiApp.use("/api/purchases", propsAuthMiddleware);
+apiApp.use("/api/purchases/scan", propsAuthMiddleware);
+apiApp.use("/api/purchases/patterns", propsAuthMiddleware);
+apiApp.use("/api/purchases/:id", propsAuthMiddleware);
+apiApp.use("/api/purchases/:id/receipt", propsAuthMiddleware);
+apiApp.use("/api/ai/chat", propsAuthMiddleware);
+apiApp.use("/api/plans*", propsAuthMiddleware);
+apiApp.use("/api/ai-key/*", propsAuthMiddleware);
 
 apiApp.get(
-  '/api/me',
+  "/api/me",
   describeRoute({
-    description: 'Returns the current authenticated user.',
+    description: "Returns the current authenticated user.",
     security: [{ cookieAuth: [] }],
     responses: {
       200: {
-        description: 'OK',
+        description: "OK",
         content: {
-          'application/json': {
+          "application/json": {
             schema: {
-              type: 'object',
+              type: "object",
               properties: {
                 user: {
-                  type: 'object',
+                  type: "object",
                   properties: {
-                    id: { type: 'string' },
-                    email: { type: 'string' },
-                    name: { type: 'string', nullable: true },
-                    picture: { type: 'string', nullable: true },
+                    id: { type: "string" },
+                    email: { type: "string" },
+                    name: { type: "string", nullable: true },
+                    picture: { type: "string", nullable: true },
                   },
                 },
               },
@@ -175,234 +175,234 @@ apiApp.get(
           },
         },
       },
-      401: { description: 'Unauthorized' },
+      401: { description: "Unauthorized" },
     },
   }),
   async (c) => {
-    const user = await c.env.DB.prepare('SELECT id, email, name, picture FROM users WHERE id = ?')
-      .bind(c.get('userId'))
-      .first()
-    const res = c.json({ user })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    const user = await c.env.DB.prepare("SELECT id, email, name, picture FROM users WHERE id = ?")
+      .bind(c.get("userId"))
+      .first();
+    const res = c.json({ user });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.get(
-  '/api/stock',
+  "/api/stock",
   describeRoute({
-    description: 'Current inventory for the active household.',
+    description: "Current inventory for the active household.",
     security: [{ cookieAuth: [] }],
     responses: {
       200: {
-        description: 'OK',
+        description: "OK",
         content: {
-          'application/json': {
+          "application/json": {
             schema: {
-              type: 'object',
+              type: "object",
               properties: {
                 stock: {
-                  type: 'array',
-                  items: { type: 'object' },
+                  type: "array",
+                  items: { type: "object" },
                 },
               },
             },
           },
         },
       },
-      401: { description: 'Unauthorized' },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('query', stockQuery),
+  sValidator("query", stockQuery),
   async (c) => {
-    const { location, q } = c.req.valid('query')
+    const { location, q } = c.req.valid("query");
 
     let sql = `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
        FROM stock s
        JOIN items i ON i.id = s.item_id
        LEFT JOIN locations l ON l.id = s.location_id
-       WHERE s.household_id = ?`
-    const params: unknown[] = [c.get('householdId')]
+       WHERE s.household_id = ?`;
+    const params: unknown[] = [c.get("householdId")];
 
     if (location) {
-      sql += ' AND l.id = ?'
-      params.push(location)
+      sql += " AND l.id = ?";
+      params.push(location);
     }
     if (q) {
-      sql += ' AND i.name LIKE ?'
-      params.push(`%${q}%`)
+      sql += " AND i.name LIKE ?";
+      params.push(`%${q}%`);
     }
 
-    sql += ' ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date'
+    sql += " ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date";
 
     const { results } = await c.env.DB.prepare(sql)
       .bind(...params)
-      .all()
-    const res = c.json({ stock: results })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+      .all();
+    const res = c.json({ stock: results });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.patch(
-  '/api/stock/:id',
+  "/api/stock/:id",
   describeRoute({
-    description: 'Updates a stock item.',
+    description: "Updates a stock item.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
-      404: { description: 'Not found' },
+      200: { description: "OK" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
+      404: { description: "Not found" },
     },
   }),
-  sValidator('json', stockPatchSchema),
+  sValidator("json", stockPatchSchema),
   async (c) => {
-    const stockId = c.req.param('id')
-    const householdId = c.get('householdId')
-    const body = c.req.valid('json')
+    const stockId = c.req.param("id");
+    const householdId = c.get("householdId");
+    const body = c.req.valid("json");
 
     const stockRow = await c.env.DB.prepare(
-      'SELECT s.*, i.name AS item_name FROM stock s JOIN items i ON i.id = s.item_id WHERE s.id = ? AND s.household_id = ?'
+      "SELECT s.*, i.name AS item_name FROM stock s JOIN items i ON i.id = s.item_id WHERE s.id = ? AND s.household_id = ?",
     )
       .bind(stockId, householdId)
       .first<{
-        id: string
-        item_id: string
-        qty: number
-        unit: string | null
-        location_id: string | null
-        expiry_date: string | null
-        item_name: string
-      }>()
+        id: string;
+        item_id: string;
+        qty: number;
+        unit: string | null;
+        location_id: string | null;
+        expiry_date: string | null;
+        item_name: string;
+      }>();
 
     if (!stockRow) {
-      return c.json({ error: 'Stock item not found' }, 404)
+      return c.json({ error: "Stock item not found" }, 404);
     }
 
     if (body.location_id !== undefined) {
       const loc = await c.env.DB.prepare(
-        'SELECT id FROM locations WHERE id = ? AND household_id = ?'
+        "SELECT id FROM locations WHERE id = ? AND household_id = ?",
       )
         .bind(body.location_id, householdId)
-        .first()
+        .first();
       if (!loc) {
-        return c.json({ error: 'Location not found in this household' }, 400)
+        return c.json({ error: "Location not found in this household" }, 400);
       }
     }
 
-    let itemId = stockRow.item_id
+    let itemId = stockRow.item_id;
     if (body.name !== undefined) {
-      const trimmed = body.name.trim()
+      const trimmed = body.name.trim();
       if (trimmed.length > 0) {
         const existing = await c.env.DB.prepare(
-          'SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
+          "SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)",
         )
           .bind(householdId, trimmed)
-          .first<{ id: string }>()
+          .first<{ id: string }>();
 
         if (existing) {
-          itemId = existing.id
+          itemId = existing.id;
         } else {
-          itemId = crypto.randomUUID()
-          await c.env.DB.prepare('INSERT INTO items (id, household_id, name) VALUES (?, ?, ?)')
+          itemId = crypto.randomUUID();
+          await c.env.DB.prepare("INSERT INTO items (id, household_id, name) VALUES (?, ?, ?)")
             .bind(itemId, householdId, trimmed)
-            .run()
+            .run();
         }
       }
     }
 
-    const updates: string[] = []
-    const params: unknown[] = []
+    const updates: string[] = [];
+    const params: unknown[] = [];
 
     if (body.qty !== undefined) {
-      updates.push('qty = ?')
-      params.push(body.qty)
+      updates.push("qty = ?");
+      params.push(body.qty);
     }
     if (body.unit !== undefined) {
-      updates.push('unit = ?')
-      params.push(body.unit)
+      updates.push("unit = ?");
+      params.push(body.unit);
     }
     if (body.location_id !== undefined) {
-      updates.push('location_id = ?')
-      params.push(body.location_id)
+      updates.push("location_id = ?");
+      params.push(body.location_id);
     }
     if (body.expiry_date !== undefined) {
-      updates.push('expiry_date = ?')
-      params.push(body.expiry_date)
+      updates.push("expiry_date = ?");
+      params.push(body.expiry_date);
     }
     if (body.name !== undefined) {
-      updates.push('item_id = ?')
-      params.push(itemId)
+      updates.push("item_id = ?");
+      params.push(itemId);
     }
 
-    const finalQty = body.qty ?? stockRow.qty
-    const runOut = await computeRunOutDays(householdId, itemId, finalQty, c.env.DB)
-    updates.push('run_out_days = ?', 'basis = ?')
-    params.push(runOut.run_out_days, runOut.basis)
+    const finalQty = body.qty ?? stockRow.qty;
+    const runOut = await computeRunOutDays(householdId, itemId, finalQty, c.env.DB);
+    updates.push("run_out_days = ?", "basis = ?");
+    params.push(runOut.run_out_days, runOut.basis);
 
-    params.push(stockId)
+    params.push(stockId);
     await c.env.DB.prepare(
-      `UPDATE stock SET ${updates.join(', ')}, updated_at = datetime('now') WHERE id = ?`
+      `UPDATE stock SET ${updates.join(", ")}, updated_at = datetime('now') WHERE id = ?`,
     )
       .bind(...params)
-      .run()
+      .run();
 
     const updated = await c.env.DB.prepare(
       `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
        FROM stock s
        JOIN items i ON i.id = s.item_id
        LEFT JOIN locations l ON l.id = s.location_id
-       WHERE s.id = ?`
+       WHERE s.id = ?`,
     )
       .bind(stockId)
-      .first()
+      .first();
 
-    const res = c.json({ stock: updated })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    const res = c.json({ stock: updated });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.get(
-  '/api/home',
+  "/api/home",
   describeRoute({
-    description: 'Home dashboard stats for the active household.',
+    description: "Home dashboard stats for the active household.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
   async (c) => {
-    const householdId = c.get('householdId')
+    const householdId = c.get("householdId");
 
     const totalResult = await c.env.DB.prepare(
-      'SELECT COUNT(*) AS cnt FROM stock WHERE household_id = ? AND qty > 0'
+      "SELECT COUNT(*) AS cnt FROM stock WHERE household_id = ? AND qty > 0",
     )
       .bind(householdId)
-      .first<{ cnt: number }>()
-    const totalItems = totalResult?.cnt ?? 0
+      .first<{ cnt: number }>();
+    const totalItems = totalResult?.cnt ?? 0;
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = new Date().toISOString().slice(0, 10);
 
     const expiringResult = await c.env.DB.prepare(
       `SELECT COUNT(*) AS cnt FROM stock
        WHERE household_id = ? AND qty > 0 AND expiry_date IS NOT NULL
-       AND expiry_date >= ? AND expiry_date <= date(?, '+7 days')`
+       AND expiry_date >= ? AND expiry_date <= date(?, '+7 days')`,
     )
       .bind(householdId, today, today)
-      .first<{ cnt: number }>()
-    const expiring7d = expiringResult?.cnt ?? 0
+      .first<{ cnt: number }>();
+    const expiring7d = expiringResult?.cnt ?? 0;
 
     const runningOutResult = await c.env.DB.prepare(
       `SELECT COUNT(*) AS cnt FROM stock
        WHERE household_id = ? AND qty > 0
-       AND COALESCE(run_out_days, 999) <= 7`
+       AND COALESCE(run_out_days, 999) <= 7`,
     )
       .bind(householdId)
-      .first<{ cnt: number }>()
-    const runningOut7d = runningOutResult?.cnt ?? 0
+      .first<{ cnt: number }>();
+    const runningOut7d = runningOutResult?.cnt ?? 0;
 
     const lowStock = await c.env.DB.prepare(
       `SELECT s.id, i.name, s.qty, s.unit, s.expiry_date, s.run_out_days, s.basis, l.label AS location
@@ -413,10 +413,10 @@ apiApp.get(
        AND (COALESCE(s.run_out_days, 999) <= 7
          OR (s.expiry_date IS NOT NULL AND s.expiry_date <= date(?, '+7 days')))
        ORDER BY COALESCE(s.run_out_days, 999), s.expiry_date
-       LIMIT 20`
+       LIMIT 20`,
     )
       .bind(householdId, today)
-      .all()
+      .all();
 
     const res = c.json({
       total_items: totalItems,
@@ -425,20 +425,20 @@ apiApp.get(
       low_stock: lowStock.results ?? [],
       expiring_soon: [],
       next_trip: null,
-    })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.get(
-  '/api/settings',
+  "/api/settings",
   describeRoute({
-    description: 'Returns the current authenticated user settings.',
+    description: "Returns the current authenticated user settings.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
   async (c) => {
@@ -446,29 +446,29 @@ apiApp.get(
       `SELECT motion_preference, language, ai_provider, persona_user_role,
                persona_ai_role, persona_enabled, theme_hue, active_household_id,
                encrypted_ai_key
-       FROM user_settings WHERE user_id = ?`
+       FROM user_settings WHERE user_id = ?`,
     )
-      .bind(c.get('userId'))
+      .bind(c.get("userId"))
       .first<{
-        motion_preference: string
-        currency: string
-        ai_provider: string | null
-        persona_user_role: string | null
-        persona_ai_role: string | null
-        persona_enabled: number
-        theme_hue: number | null
-        active_household_id: string | null
-        encrypted_ai_key: string | null
-      }>()
+        motion_preference: string;
+        currency: string;
+        ai_provider: string | null;
+        persona_user_role: string | null;
+        persona_ai_role: string | null;
+        persona_enabled: number;
+        theme_hue: number | null;
+        active_household_id: string | null;
+        encrypted_ai_key: string | null;
+      }>();
 
     const household = settings?.active_household_id
-      ? await c.env.DB.prepare('SELECT name FROM households WHERE id = ?')
+      ? await c.env.DB.prepare("SELECT name FROM households WHERE id = ?")
           .bind(settings.active_household_id)
           .first<{ name: string }>()
-      : null
+      : null;
 
     const res = c.json({
-      motion_preference: settings?.motion_preference ?? 'standard',
+      motion_preference: settings?.motion_preference ?? "standard",
       language: settings?.language ?? null,
       ai_provider: settings?.ai_provider ?? null,
       persona_user_role: settings?.persona_user_role ?? null,
@@ -477,355 +477,355 @@ apiApp.get(
       theme_hue: settings?.theme_hue ?? null,
       active_household_id: settings?.active_household_id ?? null,
       active_household_name: household?.name ?? null,
-      has_ai_key: settings?.encrypted_ai_key != null && settings.encrypted_ai_key !== '',
-    })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+      has_ai_key: settings?.encrypted_ai_key != null && settings.encrypted_ai_key !== "",
+    });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.patch(
-  '/api/settings',
+  "/api/settings",
   describeRoute({
-    description: 'Updates the current user settings.',
+    description: "Updates the current user settings.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('json', settingsPatchSchema),
+  sValidator("json", settingsPatchSchema),
   async (c) => {
-    const body = c.req.valid('json')
-    const updates: string[] = []
-    const params: unknown[] = []
+    const body = c.req.valid("json");
+    const updates: string[] = [];
+    const params: unknown[] = [];
 
     if (body.ai_key !== undefined) {
-      const normalized = typeof body.ai_key === 'string' ? body.ai_key.trim() : ''
+      const normalized = typeof body.ai_key === "string" ? body.ai_key.trim() : "";
       if (normalized.length === 0) {
-        updates.push('encrypted_ai_key = NULL')
+        updates.push("encrypted_ai_key = NULL");
       } else {
-        const encrypted = await encryptAiKey(normalized, c.env.WORKER_ENCRYPTION_KEY)
-        updates.push('encrypted_ai_key = ?')
-        params.push(encrypted)
+        const encrypted = await encryptAiKey(normalized, c.env.WORKER_ENCRYPTION_KEY);
+        updates.push("encrypted_ai_key = ?");
+        params.push(encrypted);
       }
     }
-    const fields = body
+    const fields = body;
     if (fields.ai_provider !== undefined) {
-      updates.push('ai_provider = ?')
-      params.push(fields.ai_provider)
+      updates.push("ai_provider = ?");
+      params.push(fields.ai_provider);
     }
     if (fields.persona_user_role !== undefined) {
-      updates.push('persona_user_role = ?')
-      params.push(fields.persona_user_role)
+      updates.push("persona_user_role = ?");
+      params.push(fields.persona_user_role);
     }
     if (fields.persona_ai_role !== undefined) {
-      updates.push('persona_ai_role = ?')
-      params.push(fields.persona_ai_role)
+      updates.push("persona_ai_role = ?");
+      params.push(fields.persona_ai_role);
     }
     if (fields.persona_enabled !== undefined) {
-      updates.push('persona_enabled = ?')
-      params.push(fields.persona_enabled ? 1 : 0)
+      updates.push("persona_enabled = ?");
+      params.push(fields.persona_enabled ? 1 : 0);
     }
     if (fields.motion_preference !== undefined) {
-      updates.push('motion_preference = ?')
-      params.push(fields.motion_preference)
+      updates.push("motion_preference = ?");
+      params.push(fields.motion_preference);
     }
     if (fields.language !== undefined) {
-      updates.push('language = ?')
-      params.push(fields.language)
+      updates.push("language = ?");
+      params.push(fields.language);
     }
     if (fields.theme_hue !== undefined) {
-      updates.push('theme_hue = ?')
-      params.push(fields.theme_hue)
+      updates.push("theme_hue = ?");
+      params.push(fields.theme_hue);
     }
 
     if (updates.length > 0) {
-      params.push(c.get('userId'))
+      params.push(c.get("userId"));
       await c.env.DB.prepare(
-        `UPDATE user_settings SET ${updates.join(', ')}, updated_at = datetime('now') WHERE user_id = ?`
+        `UPDATE user_settings SET ${updates.join(", ")}, updated_at = datetime('now') WHERE user_id = ?`,
       )
         .bind(...params.map((p) => (p === undefined || p === null ? null : p)))
-        .run()
+        .run();
     }
 
     const settings = await c.env.DB.prepare(
       `SELECT motion_preference, language, ai_provider, persona_user_role,
               persona_ai_role, persona_enabled, theme_hue, encrypted_ai_key
-       FROM user_settings WHERE user_id = ?`
+       FROM user_settings WHERE user_id = ?`,
     )
-      .bind(c.get('userId'))
+      .bind(c.get("userId"))
       .first<{
-        motion_preference: string
-        language: string | null
-        ai_provider: string | null
-        persona_user_role: string | null
-        persona_ai_role: string | null
-        persona_enabled: number
-        theme_hue: number | null
-        encrypted_ai_key: string | null
-      }>()
+        motion_preference: string;
+        language: string | null;
+        ai_provider: string | null;
+        persona_user_role: string | null;
+        persona_ai_role: string | null;
+        persona_enabled: number;
+        theme_hue: number | null;
+        encrypted_ai_key: string | null;
+      }>();
 
     const res = c.json({
-      motion_preference: settings?.motion_preference ?? 'standard',
+      motion_preference: settings?.motion_preference ?? "standard",
       language: settings?.language ?? null,
       ai_provider: settings?.ai_provider ?? null,
       persona_user_role: settings?.persona_user_role ?? null,
       persona_ai_role: settings?.persona_ai_role ?? null,
       persona_enabled: settings?.persona_enabled === 1,
       theme_hue: settings?.theme_hue ?? null,
-      has_ai_key: settings?.encrypted_ai_key != null && settings.encrypted_ai_key !== '',
-    })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+      has_ai_key: settings?.encrypted_ai_key != null && settings.encrypted_ai_key !== "",
+    });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.post(
-  '/api/ai-key/test',
+  "/api/ai-key/test",
   describeRoute({
-    description: 'Validates an AI provider API key.',
+    description: "Validates an AI provider API key.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK - key is valid' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK - key is valid" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('json', aiKeyTestSchema),
+  sValidator("json", aiKeyTestSchema),
   async (c) => {
-    const body = c.req.valid('json')
-    const provider = body.provider
-    const providedKey = body.key
-    let apiKey: string | undefined
+    const body = c.req.valid("json");
+    const provider = body.provider;
+    const providedKey = body.key;
+    let apiKey: string | undefined;
 
     if (providedKey !== undefined && providedKey.trim().length > 0) {
-      apiKey = providedKey.trim()
+      apiKey = providedKey.trim();
     }
 
     if (apiKey === undefined) {
       const settings = await c.env.DB.prepare(
-        'SELECT encrypted_ai_key FROM user_settings WHERE user_id = ?'
+        "SELECT encrypted_ai_key FROM user_settings WHERE user_id = ?",
       )
-        .bind(c.get('userId'))
-        .first<{ encrypted_ai_key: string | null }>()
+        .bind(c.get("userId"))
+        .first<{ encrypted_ai_key: string | null }>();
 
       if (!settings?.encrypted_ai_key) {
-        return c.json({ error: 'No API key saved' }, 400)
+        return c.json({ error: "No API key saved" }, 400);
       }
 
-      apiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY)
+      apiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY);
     }
 
     try {
       switch (provider) {
-        case 'gemini': {
+        case "gemini": {
           const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`
-          )
-          if (!res.ok) throw new Error()
-          break
+            `https://generativelanguage.googleapis.com/v1/models?key=${apiKey}`,
+          );
+          if (!res.ok) throw new Error();
+          break;
         }
-        case 'anthropic': {
-          const res = await fetch('https://api.anthropic.com/v1/models', {
+        case "anthropic": {
+          const res = await fetch("https://api.anthropic.com/v1/models", {
             headers: {
-              'x-api-key': apiKey,
-              'anthropic-version': '2023-06-01',
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01",
             },
-          })
-          if (!res.ok) throw new Error()
-          break
+          });
+          if (!res.ok) throw new Error();
+          break;
         }
-        case 'openai': {
-          const res = await fetch('https://api.openai.com/v1/models', {
+        case "openai": {
+          const res = await fetch("https://api.openai.com/v1/models", {
             headers: { Authorization: `Bearer ${apiKey}` },
-          })
-          if (!res.ok) throw new Error()
-          break
+          });
+          if (!res.ok) throw new Error();
+          break;
         }
-        case 'opencode':
+        case "opencode":
         default: {
-          const res = await fetch('https://api.opencode.ai/v1/models', {
+          const res = await fetch("https://api.opencode.ai/v1/models", {
             headers: { Authorization: `Bearer ${apiKey}` },
-          })
-          if (!res.ok) throw new Error()
-          break
+          });
+          if (!res.ok) throw new Error();
+          break;
         }
       }
 
-      return c.json({ ok: true })
+      return c.json({ ok: true });
     } catch {
-      return c.json({ error: 'Invalid API key' }, 400)
+      return c.json({ error: "Invalid API key" }, 400);
     }
-  }
-)
+  },
+);
 
 apiApp.get(
-  '/api/ai/usage',
+  "/api/ai/usage",
   describeRoute({
-    description: 'Returns today AI usage for the current user.',
+    description: "Returns today AI usage for the current user.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
   async (c) => {
-    const userId = c.get('userId')
-    const today = new Date().toISOString().slice(0, 10)
+    const userId = c.get("userId");
+    const today = new Date().toISOString().slice(0, 10);
 
     const existing = await c.env.DB.prepare(
-      'SELECT id, used, daily_limit, provider FROM ai_usage WHERE user_id = ? AND date = ?'
+      "SELECT id, used, daily_limit, provider FROM ai_usage WHERE user_id = ? AND date = ?",
     )
       .bind(userId, today)
       .first<{
-        id: string
-        used: number
-        daily_limit: number
-        provider: string | null
-      }>()
+        id: string;
+        used: number;
+        daily_limit: number;
+        provider: string | null;
+      }>();
 
     if (!existing) {
       const settings = await c.env.DB.prepare(
-        'SELECT ai_provider FROM user_settings WHERE user_id = ?'
+        "SELECT ai_provider FROM user_settings WHERE user_id = ?",
       )
         .bind(userId)
-        .first<{ ai_provider: string | null }>()
+        .first<{ ai_provider: string | null }>();
 
-      const id = crypto.randomUUID()
+      const id = crypto.randomUUID();
       await c.env.DB.prepare(
-        'INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)'
+        "INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)",
       )
         .bind(id, userId, today, settings?.ai_provider || null)
-        .run()
+        .run();
 
       const res = c.json({
         used: 0,
         daily_limit: 20,
         provider: settings?.ai_provider || null,
-      })
-      res.headers.set('Cache-Control', 'private, no-cache')
-      return res
+      });
+      res.headers.set("Cache-Control", "private, no-cache");
+      return res;
     }
 
     const res = c.json({
       used: existing.used,
       daily_limit: existing.daily_limit,
       provider: existing.provider,
-    })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.post(
-  '/api/ai/chat',
+  "/api/ai/chat",
   describeRoute({
-    description: 'Send a message to the household-scoped assistant and receive a reply.',
+    description: "Send a message to the household-scoped assistant and receive a reply.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'Reply' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
-      402: { description: 'AI key not configured' },
-      429: { description: 'AI usage limit exceeded' },
-      502: { description: 'AI provider error' },
+      200: { description: "Reply" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
+      402: { description: "AI key not configured" },
+      429: { description: "AI usage limit exceeded" },
+      502: { description: "AI provider error" },
     },
   }),
-  sValidator('json', chatSchema),
+  sValidator("json", chatSchema),
   async (c) => {
-    const userId = c.get('userId')
-    const householdId = c.get('householdId')
-    const { message, history } = c.req.valid('json')
+    const userId = c.get("userId");
+    const householdId = c.get("householdId");
+    const { message, history } = c.req.valid("json");
 
     const settings = await c.env.DB.prepare(
       `SELECT ai_provider, encrypted_ai_key,
               persona_enabled, persona_user_role, persona_ai_role
-         FROM user_settings WHERE user_id = ?`
+         FROM user_settings WHERE user_id = ?`,
     )
       .bind(userId)
       .first<{
-        ai_provider: string | null
-        encrypted_ai_key: string | null
-        persona_enabled: number | null
-        persona_user_role: string | null
-        persona_ai_role: string | null
-      }>()
+        ai_provider: string | null;
+        encrypted_ai_key: string | null;
+        persona_enabled: number | null;
+        persona_user_role: string | null;
+        persona_ai_role: string | null;
+      }>();
 
     if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
       return c.json(
         {
-          error: 'AI provider not configured. Go to Settings to set up your AI key.',
+          error: "AI provider not configured. Go to Settings to set up your AI key.",
         },
-        402
-      )
+        402,
+      );
     }
 
-    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY)
+    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY);
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = new Date().toISOString().slice(0, 10);
     let usageRow = await c.env.DB.prepare(
-      'SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?'
+      "SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?",
     )
       .bind(userId, today)
-      .first<{ id: string; used: number; daily_limit: number }>()
+      .first<{ id: string; used: number; daily_limit: number }>();
 
     if (!usageRow) {
-      const id = crypto.randomUUID()
+      const id = crypto.randomUUID();
       await c.env.DB.prepare(
-        'INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)'
+        "INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)",
       )
         .bind(id, userId, today, settings.ai_provider)
-        .run()
-      usageRow = { id, used: 0, daily_limit: 20 }
+        .run();
+      usageRow = { id, used: 0, daily_limit: 20 };
     }
 
     if (usageRow.used >= usageRow.daily_limit) {
       return c.json(
         {
-          error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+          error: "AI usage limit reached for today. Upgrade or wait until tomorrow.",
         },
-        429
-      )
+        429,
+      );
     }
 
-    let reply: string
-    if (c.env.TEST_MODE === 'true') {
-      reply = `(test) You asked: "${message}". Based on your household stock, consider checking your low items soon.`
+    let reply: string;
+    if (c.env.TEST_MODE === "true") {
+      reply = `(test) You asked: "${message}". Based on your household stock, consider checking your low items soon.`;
     } else {
       const lowStock = await c.env.DB.prepare(
         `SELECT i.name, s.qty, s.unit, s.run_out_days, s.expiry_date
            FROM stock s JOIN items i ON i.id = s.item_id
           WHERE s.household_id = ? AND s.qty > 0
-            AND (COALESCE(s.run_out_days, 999) <= 7 OR s.run_out_days IS NULL)`
+            AND (COALESCE(s.run_out_days, 999) <= 7 OR s.run_out_days IS NULL)`,
       )
         .bind(householdId)
         .all<{
-          name: string
-          qty: number
-          unit: string | null
-          run_out_days: number | null
-          expiry_date: string | null
-        }>()
+          name: string;
+          qty: number;
+          unit: string | null;
+          run_out_days: number | null;
+          expiry_date: string | null;
+        }>();
 
-      const sevenDaysFromNow = new Date()
-      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
-      const expiryCutoff = sevenDaysFromNow.toISOString().slice(0, 10)
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      const expiryCutoff = sevenDaysFromNow.toISOString().slice(0, 10);
 
       const expiring = await c.env.DB.prepare(
         `SELECT i.name, s.qty, s.unit, s.expiry_date
            FROM stock s JOIN items i ON i.id = s.item_id
           WHERE s.household_id = ? AND s.qty > 0
-            AND s.expiry_date IS NOT NULL AND s.expiry_date <= ?`
+            AND s.expiry_date IS NOT NULL AND s.expiry_date <= ?`,
       )
         .bind(householdId, expiryCutoff)
         .all<{
-          name: string
-          qty: number
-          unit: string | null
-          expiry_date: string | null
-        }>()
+          name: string;
+          qty: number;
+          unit: string | null;
+          expiry_date: string | null;
+        }>();
 
       const recentPurchases = await c.env.DB.prepare(
         `SELECT DISTINCT i.name, s.label AS store_label
@@ -834,10 +834,10 @@ apiApp.post(
            JOIN items i ON i.id = pi.item_id
            LEFT JOIN stores s ON s.id = p.store_id
           WHERE p.household_id = ? AND p.date >= ?
-          ORDER BY i.name`
+          ORDER BY i.name`,
       )
         .bind(householdId, expiryCutoff)
-        .all<{ name: string; store_label: string | null }>()
+        .all<{ name: string; store_label: string | null }>();
 
       const activePlan = await c.env.DB.prepare(
         `SELECT pi.qty, pi.unit, i.name, s.label AS store_label
@@ -846,15 +846,15 @@ apiApp.post(
            JOIN items i ON i.id = pi.item_id
            LEFT JOIN stores s ON s.id = pi.store_id
           WHERE p.household_id = ? AND p.status = 'active' AND pi.status = 'pending'
-          ORDER BY pi.created_at`
+          ORDER BY pi.created_at`,
       )
         .bind(householdId)
         .all<{
-          name: string
-          qty: number
-          unit: string
-          store_label: string | null
-        }>()
+          name: string;
+          qty: number;
+          unit: string;
+          store_label: string | null;
+        }>();
 
       try {
         reply = await sendChatMessage(
@@ -872,167 +872,167 @@ apiApp.post(
             recentPurchases: recentPurchases.results || [],
           },
           message,
-          history || []
-        )
+          history || [],
+        );
       } catch (err) {
         return c.json(
           {
-            error: `AI chat failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+            error: `AI chat failed: ${err instanceof Error ? err.message : "Unknown error"}`,
           },
-          502
-        )
+          502,
+        );
       }
     }
 
-    await c.env.DB.prepare('UPDATE ai_usage SET used = used + 1 WHERE id = ?')
+    await c.env.DB.prepare("UPDATE ai_usage SET used = used + 1 WHERE id = ?")
       .bind(usageRow.id)
-      .run()
+      .run();
 
-    const res = c.json({ reply })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    const res = c.json({ reply });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.post(
-  '/api/purchases/scan',
+  "/api/purchases/scan",
   describeRoute({
-    description: 'Upload a receipt image, scan with AI OCR, return parsed items.',
+    description: "Upload a receipt image, scan with AI OCR, return parsed items.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'Scan complete' },
-      400: { description: 'Invalid input' },
-      401: { description: 'Unauthorized' },
-      402: { description: 'AI key not configured' },
-      429: { description: 'AI usage limit exceeded' },
+      200: { description: "Scan complete" },
+      400: { description: "Invalid input" },
+      401: { description: "Unauthorized" },
+      402: { description: "AI key not configured" },
+      429: { description: "AI usage limit exceeded" },
     },
   }),
   async (c) => {
-    const userId = c.get('userId')
-    const householdId = c.get('householdId')
+    const userId = c.get("userId");
+    const householdId = c.get("householdId");
 
-    const contentType = c.req.header('Content-Type') || ''
-    if (!contentType.includes('multipart/form-data')) {
-      return c.json({ error: 'Expected multipart/form-data' }, 400)
+    const contentType = c.req.header("Content-Type") || "";
+    if (!contentType.includes("multipart/form-data")) {
+      return c.json({ error: "Expected multipart/form-data" }, 400);
     }
 
-    let file: { name: string; data: ArrayBuffer; type: string } | undefined
+    let file: { name: string; data: ArrayBuffer; type: string } | undefined;
     try {
-      const formData = await c.req.parseBody()
-      const uploaded = formData['image']
-      if (uploaded && typeof uploaded !== 'string' && 'arrayBuffer' in uploaded) {
+      const formData = await c.req.parseBody();
+      const uploaded = formData["image"];
+      if (uploaded && typeof uploaded !== "string" && "arrayBuffer" in uploaded) {
         file = {
           name: uploaded.name,
           data: await uploaded.arrayBuffer(),
           type: uploaded.type,
-        }
+        };
       }
     } catch {
-      return c.json({ error: 'Failed to parse upload' }, 400)
+      return c.json({ error: "Failed to parse upload" }, 400);
     }
 
     if (!file) {
-      return c.json({ error: 'No image file provided. Use field name "image".' }, 400)
+      return c.json({ error: 'No image file provided. Use field name "image".' }, 400);
     }
 
-    const fileObj = { type: file.type, size: file.data.byteLength }
-    const validationError = validateImage(fileObj)
+    const fileObj = { type: file.type, size: file.data.byteLength };
+    const validationError = validateImage(fileObj);
     if (validationError) {
-      return c.json({ error: validationError }, 400)
+      return c.json({ error: validationError }, 400);
     }
 
     const settings = await c.env.DB.prepare(
-      `SELECT ai_provider, encrypted_ai_key FROM user_settings WHERE user_id = ?`
+      `SELECT ai_provider, encrypted_ai_key FROM user_settings WHERE user_id = ?`,
     )
       .bind(userId)
-      .first<{ ai_provider: string | null; encrypted_ai_key: string | null }>()
+      .first<{ ai_provider: string | null; encrypted_ai_key: string | null }>();
 
     if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
       return c.json(
         {
-          error: 'AI provider not configured. Go to Settings to set up your AI key.',
+          error: "AI provider not configured. Go to Settings to set up your AI key.",
         },
-        402
-      )
+        402,
+      );
     }
 
-    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY)
+    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY);
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = new Date().toISOString().slice(0, 10);
     let usageRow = await c.env.DB.prepare(
-      'SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?'
+      "SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?",
     )
       .bind(userId, today)
-      .first<{ id: string; used: number; daily_limit: number }>()
+      .first<{ id: string; used: number; daily_limit: number }>();
 
     if (!usageRow) {
-      const id = crypto.randomUUID()
+      const id = crypto.randomUUID();
       await c.env.DB.prepare(
-        'INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)'
+        "INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)",
       )
         .bind(id, userId, today, settings.ai_provider)
-        .run()
-      usageRow = { id, used: 0, daily_limit: 20 }
+        .run();
+      usageRow = { id, used: 0, daily_limit: 20 };
     }
 
     if (usageRow.used >= usageRow.daily_limit) {
       return c.json(
         {
-          error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+          error: "AI usage limit reached for today. Upgrade or wait until tomorrow.",
         },
-        429
-      )
+        429,
+      );
     }
 
-    const ext = extFromType(file.type)
-    const key = buildKey(householdId, userId, ext)
+    const ext = extFromType(file.type);
+    const key = buildKey(householdId, userId, ext);
 
     try {
-      await uploadReceipt(c.env.RECEIPTS, file.data, key, file.type)
+      await uploadReceipt(c.env.RECEIPTS, file.data, key, file.type);
     } catch {
-      return c.json({ error: 'Failed to upload receipt image' }, 500)
+      return c.json({ error: "Failed to upload receipt image" }, 500);
     }
 
-    let scanResult
-    if (c.env.TEST_MODE === 'true') {
+    let scanResult;
+    if (c.env.TEST_MODE === "true") {
       scanResult = {
-        store_name: 'Indomaret',
+        store_name: "Indomaret",
         date: new Date().toISOString().slice(0, 10),
         items: [
-          { name: 'Susu cair 1L', qty: 1, unit: 'L', price: 18500 },
-          { name: 'Roti tawar', qty: 1, unit: 'pack', price: 15000 },
-          { name: 'Telur 10pcs', qty: 1, unit: 'pkg', price: 32000 },
+          { name: "Susu cair 1L", qty: 1, unit: "L", price: 18500 },
+          { name: "Roti tawar", qty: 1, unit: "pack", price: 15000 },
+          { name: "Telur 10pcs", qty: 1, unit: "pkg", price: 32000 },
         ],
-      }
+      };
     } else {
       try {
-        scanResult = await extractReceiptItems(file.data, file.type, settings.ai_provider, aiKey)
+        scanResult = await extractReceiptItems(file.data, file.type, settings.ai_provider, aiKey);
       } catch (err) {
         return c.json(
           {
-            error: `AI scan failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+            error: `AI scan failed: ${err instanceof Error ? err.message : "Unknown error"}`,
             imageKey: key,
           },
-          502
-        )
+          502,
+        );
       }
     }
 
-    await c.env.DB.prepare('UPDATE ai_usage SET used = used + 1 WHERE id = ?')
+    await c.env.DB.prepare("UPDATE ai_usage SET used = used + 1 WHERE id = ?")
       .bind(usageRow.id)
-      .run()
+      .run();
 
-    const imageUrl: string | null = getSignedUrl()
+    const imageUrl: string | null = getSignedUrl();
 
-    let storeGuess: { id: string; label: string } | null = null
+    let storeGuess: { id: string; label: string } | null = null;
     if (scanResult.store_name) {
       const match = await c.env.DB.prepare(
-        'SELECT id, label FROM stores WHERE household_id = ? AND LOWER(label) = LOWER(?)'
+        "SELECT id, label FROM stores WHERE household_id = ? AND LOWER(label) = LOWER(?)",
       )
         .bind(householdId, scanResult.store_name)
-        .first<{ id: string; label: string }>()
+        .first<{ id: string; label: string }>();
       if (match) {
-        storeGuess = match
+        storeGuess = match;
       }
     }
 
@@ -1042,161 +1042,161 @@ apiApp.post(
       imageUrl,
       storeGuess,
       dateGuess: scanResult.date || null,
-    })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.post(
-  '/api/purchases',
+  "/api/purchases",
   describeRoute({
-    description: 'Create a purchase with items, updating stock and purchase history.',
+    description: "Create a purchase with items, updating stock and purchase history.",
     security: [{ cookieAuth: [] }],
     responses: {
-      201: { description: 'Purchase created' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
+      201: { description: "Purchase created" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('json', purchaseCreateSchema),
+  sValidator("json", purchaseCreateSchema),
   async (c) => {
-    const userId = c.get('userId')
-    const householdId = c.get('householdId')
-    const body = c.req.valid('json')
+    const userId = c.get("userId");
+    const householdId = c.get("householdId");
+    const body = c.req.valid("json");
 
     if (body.store_id) {
       const store = await c.env.DB.prepare(
-        'SELECT id FROM stores WHERE id = ? AND household_id = ?'
+        "SELECT id FROM stores WHERE id = ? AND household_id = ?",
       )
         .bind(body.store_id, householdId)
-        .first()
+        .first();
       if (!store) {
-        return c.json({ error: 'Store not found in this household' }, 400)
+        return c.json({ error: "Store not found in this household" }, 400);
       }
     }
 
     const defaultLocation = await c.env.DB.prepare(
-      'SELECT id FROM locations WHERE household_id = ? ORDER BY sort_order LIMIT 1'
+      "SELECT id FROM locations WHERE household_id = ? ORDER BY sort_order LIMIT 1",
     )
       .bind(householdId)
-      .first<{ id: string }>()
+      .first<{ id: string }>();
 
-    const purchaseId = crypto.randomUUID()
-    const now = new Date().toISOString()
+    const purchaseId = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    const statements: D1PreparedStatement[] = []
+    const statements: D1PreparedStatement[] = [];
 
     statements.push(
       c.env.DB.prepare(
-        'INSERT INTO purchases (id, household_id, store_id, date, receipt_image_key, created_at) VALUES (?, ?, ?, ?, ?, ?)'
+        "INSERT INTO purchases (id, household_id, store_id, date, receipt_image_key, created_at) VALUES (?, ?, ?, ?, ?, ?)",
       ).bind(
         purchaseId,
         householdId,
         body.store_id || null,
         body.date,
         body.receipt_image_key || null,
-        now
-      )
-    )
+        now,
+      ),
+    );
 
-    const itemIds: string[] = []
+    const itemIds: string[] = [];
 
     for (const item of body.items) {
-      let itemId = item.item_id || null
+      let itemId = item.item_id || null;
 
       if (!itemId) {
-        const trimmed = item.name.trim().toLowerCase()
+        const trimmed = item.name.trim().toLowerCase();
         const existing = await c.env.DB.prepare(
-          'SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
+          "SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)",
         )
           .bind(householdId, trimmed)
-          .first<{ id: string }>()
+          .first<{ id: string }>();
 
         if (existing) {
-          itemId = existing.id
+          itemId = existing.id;
         } else {
-          itemId = crypto.randomUUID()
+          itemId = crypto.randomUUID();
           statements.push(
             c.env.DB.prepare(
-              'INSERT INTO items (id, household_id, name, default_unit) VALUES (?, ?, ?, ?)'
-            ).bind(itemId, householdId, item.name.trim(), item.unit)
-          )
+              "INSERT INTO items (id, household_id, name, default_unit) VALUES (?, ?, ?, ?)",
+            ).bind(itemId, householdId, item.name.trim(), item.unit),
+          );
         }
       }
 
-      itemIds.push(itemId)
+      itemIds.push(itemId);
 
-      const purchaseItemId = crypto.randomUUID()
+      const purchaseItemId = crypto.randomUUID();
       statements.push(
         c.env.DB.prepare(
-          'INSERT INTO purchase_items (id, purchase_id, item_id, qty, unit, price, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        ).bind(purchaseItemId, purchaseId, itemId, item.qty, item.unit, item.price, now)
-      )
+          "INSERT INTO purchase_items (id, purchase_id, item_id, qty, unit, price, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        ).bind(purchaseItemId, purchaseId, itemId, item.qty, item.unit, item.price, now),
+      );
 
       const existingStock = await c.env.DB.prepare(
-        'SELECT id, qty FROM stock WHERE household_id = ? AND item_id = ?'
+        "SELECT id, qty FROM stock WHERE household_id = ? AND item_id = ?",
       )
         .bind(householdId, itemId)
-        .first<{ id: string; qty: number }>()
+        .first<{ id: string; qty: number }>();
 
       if (existingStock) {
-        const newQty = existingStock.qty + item.qty
-        const runOut = await computeRunOutDays(householdId, itemId, newQty, c.env.DB)
+        const newQty = existingStock.qty + item.qty;
+        const runOut = await computeRunOutDays(householdId, itemId, newQty, c.env.DB);
         statements.push(
           c.env.DB.prepare(
-            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`
-          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id)
-        )
+            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`,
+          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id),
+        );
       } else {
-        const stockId = crypto.randomUUID()
-        const locationId = defaultLocation?.id || null
+        const stockId = crypto.randomUUID();
+        const locationId = defaultLocation?.id || null;
         statements.push(
           c.env.DB.prepare(
-            'INSERT INTO stock (id, household_id, item_id, location_id, qty, unit, run_out_days, basis, updated_at) VALUES (?, ?, ?, ?, ?, ?, 30, ?, ?)'
-          ).bind(stockId, householdId, itemId, locationId, item.qty, item.unit, 'default', now)
-        )
+            "INSERT INTO stock (id, household_id, item_id, location_id, qty, unit, run_out_days, basis, updated_at) VALUES (?, ?, ?, ?, ?, ?, 30, ?, ?)",
+          ).bind(stockId, householdId, itemId, locationId, item.qty, item.unit, "default", now),
+        );
       }
     }
 
     try {
-      await c.env.DB.batch(statements)
+      await c.env.DB.batch(statements);
     } catch (err) {
       return c.json(
         {
-          error: `Failed to create purchase: ${err instanceof Error ? err.message : 'Unknown'}`,
+          error: `Failed to create purchase: ${err instanceof Error ? err.message : "Unknown"}`,
         },
-        500
-      )
+        500,
+      );
     }
 
     const purchase = await c.env.DB.prepare(
       `SELECT p.id, p.store_id, s.label AS store_label, p.date, p.total, p.receipt_image_key, p.created_at
        FROM purchases p
        LEFT JOIN stores s ON s.id = p.store_id
-       WHERE p.id = ?`
+       WHERE p.id = ?`,
     )
       .bind(purchaseId)
-      .first()
+      .first();
 
     const purchaseItems = await c.env.DB.prepare(
       `SELECT pi.id, pi.item_id, i.name, pi.qty, pi.unit, pi.price
        FROM purchase_items pi
        JOIN items i ON i.id = pi.item_id
-       WHERE pi.purchase_id = ?`
+       WHERE pi.purchase_id = ?`,
     )
       .bind(purchaseId)
-      .all()
+      .all();
 
     const updatedStock = await c.env.DB.prepare(
       `SELECT s.id, i.name, s.qty, s.unit, s.run_out_days, s.basis, l.label AS location
        FROM stock s
        JOIN items i ON i.id = s.item_id
        LEFT JOIN locations l ON l.id = s.location_id
-       WHERE s.item_id IN (${itemIds.map(() => '?').join(',')}) AND s.household_id = ?`
+       WHERE s.item_id IN (${itemIds.map(() => "?").join(",")}) AND s.household_id = ?`,
     )
       .bind(...itemIds, householdId)
-      .all()
+      .all();
 
     const res = c.json(
       {
@@ -1204,170 +1204,170 @@ apiApp.post(
         items: purchaseItems.results,
         stock: updatedStock.results,
       },
-      201
-    )
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+      201,
+    );
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.get(
-  '/api/purchases/:id/receipt',
+  "/api/purchases/:id/receipt",
   describeRoute({
-    description: 'Stream a receipt image from R2.',
+    description: "Stream a receipt image from R2.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'Image stream' },
-      401: { description: 'Unauthorized' },
-      404: { description: 'Not found' },
+      200: { description: "Image stream" },
+      401: { description: "Unauthorized" },
+      404: { description: "Not found" },
     },
   }),
   async (c) => {
-    const purchaseId = c.req.param('id')
-    const householdId = c.get('householdId')
+    const purchaseId = c.req.param("id");
+    const householdId = c.get("householdId");
 
     const purchase = await c.env.DB.prepare(
-      'SELECT receipt_image_key FROM purchases WHERE id = ? AND household_id = ?'
+      "SELECT receipt_image_key FROM purchases WHERE id = ? AND household_id = ?",
     )
       .bind(purchaseId, householdId)
-      .first<{ receipt_image_key: string | null }>()
+      .first<{ receipt_image_key: string | null }>();
 
     if (!purchase || !purchase.receipt_image_key) {
-      return c.json({ error: 'Receipt not found' }, 404)
+      return c.json({ error: "Receipt not found" }, 404);
     }
 
-    const object = await c.env.RECEIPTS.get(purchase.receipt_image_key)
+    const object = await c.env.RECEIPTS.get(purchase.receipt_image_key);
     if (!object) {
-      return c.json({ error: 'Receipt image not found in storage' }, 404)
+      return c.json({ error: "Receipt image not found in storage" }, 404);
     }
 
-    const headers = new Headers()
-    headers.set('Content-Type', object.httpMetadata?.contentType || 'image/jpeg')
-    headers.set('Cache-Control', 'private, no-cache')
+    const headers = new Headers();
+    headers.set("Content-Type", object.httpMetadata?.contentType || "image/jpeg");
+    headers.set("Cache-Control", "private, no-cache");
 
-    const body = await object.blob()
-    return new Response(body, { headers })
-  }
-)
+    const body = await object.blob();
+    return new Response(body, { headers });
+  },
+);
 
 apiApp.get(
-  '/api/purchases/patterns',
+  "/api/purchases/patterns",
   describeRoute({
-    description: 'Return top purchase patterns for the active household (avg interval, avg qty).',
+    description: "Return top purchase patterns for the active household (avg interval, avg qty).",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
   async (c) => {
-    const householdId = c.get('householdId')
-    const patterns = await computePatterns(householdId, c.env.DB)
-    const res = c.json({ patterns })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    const householdId = c.get("householdId");
+    const patterns = await computePatterns(householdId, c.env.DB);
+    const res = c.json({ patterns });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.get(
-  '/api/purchases',
+  "/api/purchases",
   describeRoute({
-    description: 'List purchase history for the active household with filters and pagination.',
+    description: "List purchase history for the active household with filters and pagination.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('query', purchasesQuery),
+  sValidator("query", purchasesQuery),
   async (c) => {
-    const householdId = c.get('householdId')
-    const { store, from, to, q, group_by, limit, cursor } = c.req.valid('query')
-    void group_by
+    const householdId = c.get("householdId");
+    const { store, from, to, q, group_by, limit, cursor } = c.req.valid("query");
+    void group_by;
 
-    const pageSize = Math.min(Math.max(Number(limit ?? 50), 1), 100)
+    const pageSize = Math.min(Math.max(Number(limit ?? 50), 1), 100);
 
     let sql =
-      'SELECT p.id, p.store_id, s.label AS store_label, p.date, p.total, p.receipt_image_key, p.created_at FROM purchases p LEFT JOIN stores s ON s.id = p.store_id WHERE p.household_id = ?'
-    const params: unknown[] = [householdId]
+      "SELECT p.id, p.store_id, s.label AS store_label, p.date, p.total, p.receipt_image_key, p.created_at FROM purchases p LEFT JOIN stores s ON s.id = p.store_id WHERE p.household_id = ?";
+    const params: unknown[] = [householdId];
     if (store) {
-      sql += ' AND p.store_id = ?'
-      params.push(store)
+      sql += " AND p.store_id = ?";
+      params.push(store);
     }
     if (from) {
-      sql += ' AND p.date >= ?'
-      params.push(from)
+      sql += " AND p.date >= ?";
+      params.push(from);
     }
     if (to) {
-      sql += ' AND p.date <= ?'
-      params.push(to)
+      sql += " AND p.date <= ?";
+      params.push(to);
     }
     if (q) {
       sql +=
-        ' AND p.id IN (SELECT pi.purchase_id FROM purchase_items pi JOIN items i ON i.id = pi.item_id WHERE i.name LIKE ?)'
-      params.push(`%${q}%`)
+        " AND p.id IN (SELECT pi.purchase_id FROM purchase_items pi JOIN items i ON i.id = pi.item_id WHERE i.name LIKE ?)";
+      params.push(`%${q}%`);
     }
     if (cursor) {
-      const sep = cursor.indexOf('|')
-      const cursorDate = sep >= 0 ? cursor.slice(0, sep) : cursor
-      const cursorCreated = sep >= 0 ? cursor.slice(sep + 1) : ''
-      sql += ' AND (p.date < ? OR (p.date = ? AND p.created_at < ?))'
-      params.push(cursorDate, cursorDate, cursorCreated)
+      const sep = cursor.indexOf("|");
+      const cursorDate = sep >= 0 ? cursor.slice(0, sep) : cursor;
+      const cursorCreated = sep >= 0 ? cursor.slice(sep + 1) : "";
+      sql += " AND (p.date < ? OR (p.date = ? AND p.created_at < ?))";
+      params.push(cursorDate, cursorDate, cursorCreated);
     }
-    sql += ' ORDER BY p.date DESC, p.created_at DESC LIMIT ?'
-    params.push(pageSize + 1)
+    sql += " ORDER BY p.date DESC, p.created_at DESC LIMIT ?";
+    params.push(pageSize + 1);
 
     const { results } = await c.env.DB.prepare(sql)
       .bind(...params)
       .all<{
-        id: string
-        store_id: string | null
-        store_label: string | null
-        date: string
-        total: number | null
-        receipt_image_key: string | null
-        created_at: string
-      }>()
+        id: string;
+        store_id: string | null;
+        store_label: string | null;
+        date: string;
+        total: number | null;
+        receipt_image_key: string | null;
+        created_at: string;
+      }>();
 
-    const hasMore = results.length > pageSize
-    const purchases = hasMore ? results.slice(0, pageSize) : results
+    const hasMore = results.length > pageSize;
+    const purchases = hasMore ? results.slice(0, pageSize) : results;
     const nextCursor =
       hasMore && purchases.length > 0
         ? `${purchases[purchases.length - 1].date}|${purchases[purchases.length - 1].created_at}`
-        : null
+        : null;
 
     const itemsByPurchase = new Map<
       string,
       Array<{
-        id: string
-        item_id: string | null
-        name: string | null
-        qty: number
-        unit: string | null
-        price: number | null
+        id: string;
+        item_id: string | null;
+        name: string | null;
+        qty: number;
+        unit: string | null;
+        price: number | null;
       }>
-    >()
+    >();
     if (purchases.length > 0) {
-      const placeholders = purchases.map(() => '?').join(',')
-      const purchaseIds = purchases.map((p) => p.id)
+      const placeholders = purchases.map(() => "?").join(",");
+      const purchaseIds = purchases.map((p) => p.id);
       const { results: items } = await c.env.DB.prepare(
         `SELECT pi.id, pi.purchase_id, pi.item_id, i.name, pi.qty, pi.unit, pi.price
            FROM purchase_items pi
            LEFT JOIN items i ON i.id = pi.item_id
-          WHERE pi.purchase_id IN (${placeholders})`
+          WHERE pi.purchase_id IN (${placeholders})`,
       )
         .bind(...purchaseIds)
         .all<{
-          purchase_id: string
-          id: string
-          item_id: string | null
-          name: string | null
-          qty: number
-          unit: string | null
-          price: number | null
-        }>()
+          purchase_id: string;
+          id: string;
+          item_id: string | null;
+          name: string | null;
+          qty: number;
+          unit: string | null;
+          price: number | null;
+        }>();
       for (const it of items) {
-        const list = itemsByPurchase.get(it.purchase_id) || []
+        const list = itemsByPurchase.get(it.purchase_id) || [];
         list.push({
           id: it.id,
           item_id: it.item_id,
@@ -1375,8 +1375,8 @@ apiApp.get(
           qty: it.qty,
           unit: it.unit,
           price: it.price,
-        })
-        itemsByPurchase.set(it.purchase_id, list)
+        });
+        itemsByPurchase.set(it.purchase_id, list);
       }
     }
 
@@ -1390,83 +1390,83 @@ apiApp.get(
       has_receipt: !!p.receipt_image_key,
       created_at: p.created_at,
       items: itemsByPurchase.get(p.id) || [],
-    }))
+    }));
 
     let monthSql =
-      "SELECT strftime('%Y-%m', p.date) AS month, COUNT(p.id) AS count, COALESCE(SUM(p.total), 0) AS total FROM purchases p WHERE p.household_id = ?"
-    const monthParams: unknown[] = [householdId]
+      "SELECT strftime('%Y-%m', p.date) AS month, COUNT(p.id) AS count, COALESCE(SUM(p.total), 0) AS total FROM purchases p WHERE p.household_id = ?";
+    const monthParams: unknown[] = [householdId];
     if (store) {
-      monthSql += ' AND p.store_id = ?'
-      monthParams.push(store)
+      monthSql += " AND p.store_id = ?";
+      monthParams.push(store);
     }
     if (from) {
-      monthSql += ' AND p.date >= ?'
-      monthParams.push(from)
+      monthSql += " AND p.date >= ?";
+      monthParams.push(from);
     }
     if (to) {
-      monthSql += ' AND p.date <= ?'
-      monthParams.push(to)
+      monthSql += " AND p.date <= ?";
+      monthParams.push(to);
     }
     if (q) {
       monthSql +=
-        ' AND p.id IN (SELECT pi.purchase_id FROM purchase_items pi JOIN items i ON i.id = pi.item_id WHERE i.name LIKE ?)'
-      monthParams.push(`%${q}%`)
+        " AND p.id IN (SELECT pi.purchase_id FROM purchase_items pi JOIN items i ON i.id = pi.item_id WHERE i.name LIKE ?)";
+      monthParams.push(`%${q}%`);
     }
-    monthSql += ' GROUP BY month ORDER BY month DESC'
+    monthSql += " GROUP BY month ORDER BY month DESC";
     const { results: monthTotals } = await c.env.DB.prepare(monthSql)
       .bind(...monthParams)
-      .all<{ month: string; count: number; total: number }>()
+      .all<{ month: string; count: number; total: number }>();
 
     const avgPerMonth =
       monthTotals.length > 0
         ? Math.round(monthTotals.reduce((sum, m) => sum + m.total, 0) / monthTotals.length)
-        : 0
+        : 0;
 
     const res = c.json({
       purchases: purchasesWithItems,
       next_cursor: nextCursor,
       month_totals: monthTotals,
       avg_per_month: avgPerMonth,
-    })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.get(
-  '/api/purchases/:id',
+  "/api/purchases/:id",
   describeRoute({
-    description: 'Return a single purchase with all its items.',
+    description: "Return a single purchase with all its items.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
-      404: { description: 'Not found' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
+      404: { description: "Not found" },
     },
   }),
   async (c) => {
-    const purchaseId = c.req.param('id')
-    const householdId = c.get('householdId')
+    const purchaseId = c.req.param("id");
+    const householdId = c.get("householdId");
 
     const purchase = await c.env.DB.prepare(
       `SELECT p.id, p.store_id, s.label AS store_label, p.date, p.total, p.receipt_image_key, p.created_at
          FROM purchases p
          LEFT JOIN stores s ON s.id = p.store_id
-        WHERE p.id = ? AND p.household_id = ?`
+        WHERE p.id = ? AND p.household_id = ?`,
     )
       .bind(purchaseId, householdId)
       .first<{
-        id: string
-        store_id: string | null
-        store_label: string | null
-        date: string
-        total: number | null
-        receipt_image_key: string | null
-        created_at: string
-      }>()
+        id: string;
+        store_id: string | null;
+        store_label: string | null;
+        date: string;
+        total: number | null;
+        receipt_image_key: string | null;
+        created_at: string;
+      }>();
 
     if (!purchase) {
-      return c.json({ error: 'Purchase not found' }, 404)
+      return c.json({ error: "Purchase not found" }, 404);
     }
 
     const { results: items } = await c.env.DB.prepare(
@@ -1474,17 +1474,17 @@ apiApp.get(
          FROM purchase_items pi
          LEFT JOIN items i ON i.id = pi.item_id
         WHERE pi.purchase_id = ?
-        ORDER BY pi.created_at`
+        ORDER BY pi.created_at`,
     )
       .bind(purchaseId)
       .all<{
-        id: string
-        item_id: string | null
-        name: string | null
-        qty: number
-        unit: string | null
-        price: number | null
-      }>()
+        id: string;
+        item_id: string | null;
+        name: string | null;
+        qty: number;
+        unit: string | null;
+        price: number | null;
+      }>();
 
     const res = c.json({
       purchase: {
@@ -1492,290 +1492,290 @@ apiApp.get(
         has_receipt: !!purchase.receipt_image_key,
       },
       items,
-    })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.get(
-  '/api/locations',
+  "/api/locations",
   describeRoute({
-    description: 'Lists locations for the active household.',
+    description: "Lists locations for the active household.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
   async (c) => {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, label, sort_order FROM locations WHERE household_id = ? ORDER BY sort_order, label'
+      "SELECT id, label, sort_order FROM locations WHERE household_id = ? ORDER BY sort_order, label",
     )
-      .bind(c.get('householdId'))
-      .all()
-    const res = c.json({ locations: results })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+      .bind(c.get("householdId"))
+      .all();
+    const res = c.json({ locations: results });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.post(
-  '/api/locations',
+  "/api/locations",
   describeRoute({
-    description: 'Creates a new location for the active household.',
+    description: "Creates a new location for the active household.",
     security: [{ cookieAuth: [] }],
     responses: {
-      201: { description: 'Created' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
+      201: { description: "Created" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('json', locationSchema),
+  sValidator("json", locationSchema),
   async (c) => {
-    const { label } = c.req.valid('json')
+    const { label } = c.req.valid("json");
 
-    const id = crypto.randomUUID()
+    const id = crypto.randomUUID();
     const sortOrder = await c.env.DB.prepare(
-      'SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM locations WHERE household_id = ?'
+      "SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM locations WHERE household_id = ?",
     )
-      .bind(c.get('householdId'))
-      .first<{ next: number }>()
+      .bind(c.get("householdId"))
+      .first<{ next: number }>();
 
     await c.env.DB.prepare(
-      'INSERT INTO locations (id, household_id, label, sort_order) VALUES (?, ?, ?, ?)'
+      "INSERT INTO locations (id, household_id, label, sort_order) VALUES (?, ?, ?, ?)",
     )
-      .bind(id, c.get('householdId'), label, sortOrder?.next ?? 1)
-      .run()
+      .bind(id, c.get("householdId"), label, sortOrder?.next ?? 1)
+      .run();
 
     const created = await c.env.DB.prepare(
-      'SELECT id, label, sort_order FROM locations WHERE id = ?'
+      "SELECT id, label, sort_order FROM locations WHERE id = ?",
     )
       .bind(id)
-      .first()
+      .first();
 
-    const res = c.json({ location: created }, 201)
-    return res
-  }
-)
+    const res = c.json({ location: created }, 201);
+    return res;
+  },
+);
 
 apiApp.delete(
-  '/api/locations/:id',
+  "/api/locations/:id",
   describeRoute({
-    description: 'Deletes a location if not referenced by stock.',
+    description: "Deletes a location if not referenced by stock.",
     security: [{ cookieAuth: [] }],
     responses: {
-      204: { description: 'Deleted' },
-      404: { description: 'Not found' },
-      409: { description: 'Conflict - location in use' },
+      204: { description: "Deleted" },
+      404: { description: "Not found" },
+      409: { description: "Conflict - location in use" },
     },
   }),
   async (c) => {
-    const locationId = c.req.param('id')
+    const locationId = c.req.param("id");
 
     const location = await c.env.DB.prepare(
-      'SELECT id FROM locations WHERE id = ? AND household_id = ?'
+      "SELECT id FROM locations WHERE id = ? AND household_id = ?",
     )
-      .bind(locationId, c.get('householdId'))
-      .first()
+      .bind(locationId, c.get("householdId"))
+      .first();
 
     if (!location) {
-      return c.json({ error: 'Location not found' }, 404)
+      return c.json({ error: "Location not found" }, 404);
     }
 
     const stockRef = await c.env.DB.prepare(
-      'SELECT COUNT(*) AS cnt FROM stock WHERE location_id = ?'
+      "SELECT COUNT(*) AS cnt FROM stock WHERE location_id = ?",
     )
       .bind(locationId)
-      .first<{ cnt: number }>()
+      .first<{ cnt: number }>();
 
     if (stockRef && stockRef.cnt > 0) {
-      return c.json({ error: 'Cannot delete location because it is used by stock items' }, 409)
+      return c.json({ error: "Cannot delete location because it is used by stock items" }, 409);
     }
 
-    await c.env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(locationId).run()
+    await c.env.DB.prepare("DELETE FROM locations WHERE id = ?").bind(locationId).run();
 
-    return c.newResponse(null, 204)
-  }
-)
+    return c.newResponse(null, 204);
+  },
+);
 
 apiApp.get(
-  '/api/items',
+  "/api/items",
   describeRoute({
-    description: 'Lists items for the active household.',
+    description: "Lists items for the active household.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
   async (c) => {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, name, default_unit AS unit, category FROM items WHERE household_id = ? ORDER BY name'
+      "SELECT id, name, default_unit AS unit, category FROM items WHERE household_id = ? ORDER BY name",
     )
-      .bind(c.get('householdId'))
-      .all()
-    const res = c.json({ items: results })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+      .bind(c.get("householdId"))
+      .all();
+    const res = c.json({ items: results });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.get(
-  '/api/stores',
+  "/api/stores",
   describeRoute({
-    description: 'Lists stores for the active household.',
+    description: "Lists stores for the active household.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
   async (c) => {
     const { results } = await c.env.DB.prepare(
-      'SELECT id, label FROM stores WHERE household_id = ? ORDER BY label'
+      "SELECT id, label FROM stores WHERE household_id = ? ORDER BY label",
     )
-      .bind(c.get('householdId'))
-      .all()
-    const res = c.json({ stores: results })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+      .bind(c.get("householdId"))
+      .all();
+    const res = c.json({ stores: results });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.post(
-  '/api/stores',
+  "/api/stores",
   describeRoute({
-    description: 'Creates a new store for the active household.',
+    description: "Creates a new store for the active household.",
     security: [{ cookieAuth: [] }],
     responses: {
-      201: { description: 'Created' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
+      201: { description: "Created" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('json', storeSchema),
+  sValidator("json", storeSchema),
   async (c) => {
-    const { label } = c.req.valid('json')
+    const { label } = c.req.valid("json");
 
-    const id = crypto.randomUUID()
-    await c.env.DB.prepare('INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)')
-      .bind(id, c.get('householdId'), label)
-      .run()
+    const id = crypto.randomUUID();
+    await c.env.DB.prepare("INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)")
+      .bind(id, c.get("householdId"), label)
+      .run();
 
-    const created = await c.env.DB.prepare('SELECT id, label FROM stores WHERE id = ?')
+    const created = await c.env.DB.prepare("SELECT id, label FROM stores WHERE id = ?")
       .bind(id)
-      .first()
+      .first();
 
-    const res = c.json({ store: created }, 201)
-    return res
-  }
-)
+    const res = c.json({ store: created }, 201);
+    return res;
+  },
+);
 
 apiApp.delete(
-  '/api/stores/:id',
+  "/api/stores/:id",
   describeRoute({
-    description: 'Deletes a store if not referenced by purchases or plans.',
+    description: "Deletes a store if not referenced by purchases or plans.",
     security: [{ cookieAuth: [] }],
     responses: {
-      204: { description: 'Deleted' },
-      404: { description: 'Not found' },
-      409: { description: 'Conflict - store in use' },
+      204: { description: "Deleted" },
+      404: { description: "Not found" },
+      409: { description: "Conflict - store in use" },
     },
   }),
   async (c) => {
-    const storeId = c.req.param('id')
+    const storeId = c.req.param("id");
 
-    const store = await c.env.DB.prepare('SELECT id FROM stores WHERE id = ? AND household_id = ?')
-      .bind(storeId, c.get('householdId'))
-      .first()
+    const store = await c.env.DB.prepare("SELECT id FROM stores WHERE id = ? AND household_id = ?")
+      .bind(storeId, c.get("householdId"))
+      .first();
 
     if (!store) {
-      return c.json({ error: 'Store not found' }, 404)
+      return c.json({ error: "Store not found" }, 404);
     }
 
     const purchaseRef = await c.env.DB.prepare(
-      'SELECT COUNT(*) AS cnt FROM purchases WHERE store_id = ?'
+      "SELECT COUNT(*) AS cnt FROM purchases WHERE store_id = ?",
     )
       .bind(storeId)
-      .first<{ cnt: number }>()
+      .first<{ cnt: number }>();
 
     if (purchaseRef && purchaseRef.cnt > 0) {
-      return c.json({ error: 'Cannot delete store because it is used by purchases' }, 409)
+      return c.json({ error: "Cannot delete store because it is used by purchases" }, 409);
     }
 
     const planRef = await c.env.DB.prepare(
-      'SELECT COUNT(*) AS cnt FROM plan_items WHERE store_id = ?'
+      "SELECT COUNT(*) AS cnt FROM plan_items WHERE store_id = ?",
     )
       .bind(storeId)
-      .first<{ cnt: number }>()
+      .first<{ cnt: number }>();
 
     if (planRef && planRef.cnt > 0) {
-      return c.json({ error: 'Cannot delete store because it is used by plan items' }, 409)
+      return c.json({ error: "Cannot delete store because it is used by plan items" }, 409);
     }
 
-    await c.env.DB.prepare('DELETE FROM stores WHERE id = ?').bind(storeId).run()
+    await c.env.DB.prepare("DELETE FROM stores WHERE id = ?").bind(storeId).run();
 
-    return c.newResponse(null, 204)
-  }
-)
+    return c.newResponse(null, 204);
+  },
+);
 
 apiApp.get(
-  '/api/plans',
+  "/api/plans",
   describeRoute({
-    description: 'List plans for the active household.',
+    description: "List plans for the active household.",
     security: [{ cookieAuth: [] }],
     parameters: [
       {
-        in: 'query',
-        name: 'status',
+        in: "query",
+        name: "status",
         required: false,
         schema: {
-          type: 'string',
-          enum: ['active', 'archived', 'completed', 'all'],
-          default: 'active',
+          type: "string",
+          enum: ["active", "archived", "completed", "all"],
+          default: "active",
         },
       },
     ],
     responses: {
-      200: { description: 'OK' },
-      401: { description: 'Unauthorized' },
+      200: { description: "OK" },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('query', plansQuery),
+  sValidator("query", plansQuery),
   async (c) => {
-    const householdId = c.get('householdId')
-    const status = c.req.valid('query').status || 'active'
+    const householdId = c.get("householdId");
+    const status = c.req.valid("query").status || "active";
 
     let planSql = `SELECT id, household_id, status, total_estimate, created_at, updated_at
-       FROM plans WHERE household_id = ?`
-    const planParams: unknown[] = [householdId]
+       FROM plans WHERE household_id = ?`;
+    const planParams: unknown[] = [householdId];
 
-    if (status !== 'all') {
-      planSql += ' AND status = ?'
-      planParams.push(status)
+    if (status !== "all") {
+      planSql += " AND status = ?";
+      planParams.push(status);
     }
-    planSql += ' ORDER BY created_at DESC'
+    planSql += " ORDER BY created_at DESC";
 
     const { results: plans } = await c.env.DB.prepare(planSql)
       .bind(...planParams)
       .all<{
-        id: string
-        household_id: string
-        status: string
-        total_estimate: number | null
-        created_at: string
-        updated_at: string
-      }>()
+        id: string;
+        household_id: string;
+        status: string;
+        total_estimate: number | null;
+        created_at: string;
+        updated_at: string;
+      }>();
 
     if (plans.length === 0) {
-      const res = c.json({ plans: [] })
-      res.headers.set('Cache-Control', 'private, no-cache')
-      return res
+      const res = c.json({ plans: [] });
+      res.headers.set("Cache-Control", "private, no-cache");
+      return res;
     }
 
-    const planIds = plans.map((p) => p.id)
-    const placeholders = planIds.map(() => '?').join(',')
+    const planIds = plans.map((p) => p.id);
+    const placeholders = planIds.map(() => "?").join(",");
 
     const { results: items } = await c.env.DB.prepare(
       `SELECT pi.id, pi.plan_id, pi.item_id, pi.store_id, i.name AS item_name,
@@ -1784,101 +1784,101 @@ apiApp.get(
        LEFT JOIN items i ON i.id = pi.item_id
        LEFT JOIN stores s ON s.id = pi.store_id
        WHERE pi.plan_id IN (${placeholders})
-       ORDER BY pi.created_at`
+       ORDER BY pi.created_at`,
     )
       .bind(...planIds)
       .all<{
-        id: string
-        plan_id: string
-        item_id: string | null
-        store_id: string | null
-        item_name: string | null
-        store_label: string | null
-        qty: number
-        unit: string | null
-        price_estimate: number | null
-        why: string | null
-        status: string
-        created_at: string
-      }>()
+        id: string;
+        plan_id: string;
+        item_id: string | null;
+        store_id: string | null;
+        item_name: string | null;
+        store_label: string | null;
+        qty: number;
+        unit: string | null;
+        price_estimate: number | null;
+        why: string | null;
+        status: string;
+        created_at: string;
+      }>();
 
-    const itemsByPlan: Record<string, typeof items> = {}
+    const itemsByPlan: Record<string, typeof items> = {};
     for (const item of items) {
-      if (!itemsByPlan[item.plan_id]) itemsByPlan[item.plan_id] = []
-      itemsByPlan[item.plan_id].push(item)
+      if (!itemsByPlan[item.plan_id]) itemsByPlan[item.plan_id] = [];
+      itemsByPlan[item.plan_id].push(item);
     }
 
     const result = plans.map((plan) => ({
       ...plan,
       items: itemsByPlan[plan.id] || [],
-    }))
+    }));
 
-    const res = c.json({ plans: result })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    const res = c.json({ plans: result });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.post(
-  '/api/plans/generate',
+  "/api/plans/generate",
   describeRoute({
-    description: 'Generate an AI shopping plan from household context.',
+    description: "Generate an AI shopping plan from household context.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'Plan generated' },
-      402: { description: 'AI key not configured' },
-      429: { description: 'AI usage limit exceeded' },
+      200: { description: "Plan generated" },
+      402: { description: "AI key not configured" },
+      429: { description: "AI usage limit exceeded" },
     },
   }),
   async (c) => {
-    const userId = c.get('userId')
-    const householdId = c.get('householdId')
+    const userId = c.get("userId");
+    const householdId = c.get("householdId");
 
     const settings = await c.env.DB.prepare(
-      `SELECT ai_provider, encrypted_ai_key, currency FROM user_settings WHERE user_id = ?`
+      `SELECT ai_provider, encrypted_ai_key, currency FROM user_settings WHERE user_id = ?`,
     )
       .bind(userId)
       .first<{
-        ai_provider: string | null
-        encrypted_ai_key: string | null
-        currency: string | null
-      }>()
+        ai_provider: string | null;
+        encrypted_ai_key: string | null;
+        currency: string | null;
+      }>();
 
     if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
       return c.json(
         {
-          error: 'AI provider not configured. Go to Settings to set up your AI key.',
+          error: "AI provider not configured. Go to Settings to set up your AI key.",
         },
-        402
-      )
+        402,
+      );
     }
 
-    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY)
+    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY);
 
-    const today = new Date().toISOString().slice(0, 10)
+    const today = new Date().toISOString().slice(0, 10);
     let usageRow = await c.env.DB.prepare(
-      'SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?'
+      "SELECT id, used, daily_limit FROM ai_usage WHERE user_id = ? AND date = ?",
     )
       .bind(userId, today)
-      .first<{ id: string; used: number; daily_limit: number }>()
+      .first<{ id: string; used: number; daily_limit: number }>();
 
     if (!usageRow) {
-      const id = crypto.randomUUID()
+      const id = crypto.randomUUID();
       await c.env.DB.prepare(
-        'INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)'
+        "INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES (?, ?, ?, ?, 0, 20)",
       )
         .bind(id, userId, today, settings.ai_provider)
-        .run()
-      usageRow = { id, used: 0, daily_limit: 20 }
+        .run();
+      usageRow = { id, used: 0, daily_limit: 20 };
     }
 
     if (usageRow.used >= usageRow.daily_limit) {
       return c.json(
         {
-          error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+          error: "AI usage limit reached for today. Upgrade or wait until tomorrow.",
         },
-        429
-      )
+        429,
+      );
     }
 
     const lowStock = await c.env.DB.prepare(
@@ -1886,39 +1886,39 @@ apiApp.post(
        FROM stock s
        JOIN items i ON i.id = s.item_id
        WHERE s.household_id = ? AND s.qty > 0
-       AND (COALESCE(s.run_out_days, 999) <= 7 OR s.run_out_days IS NULL)`
+       AND (COALESCE(s.run_out_days, 999) <= 7 OR s.run_out_days IS NULL)`,
     )
       .bind(householdId)
       .all<{
-        name: string
-        qty: number
-        unit: string | null
-        run_out_days: number | null
-        expiry_date: string | null
-      }>()
+        name: string;
+        qty: number;
+        unit: string | null;
+        run_out_days: number | null;
+        expiry_date: string | null;
+      }>();
 
-    const sevenDaysFromNow = new Date()
-    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7)
-    const expiryCutoff = sevenDaysFromNow.toISOString().slice(0, 10)
+    const sevenDaysFromNow = new Date();
+    sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+    const expiryCutoff = sevenDaysFromNow.toISOString().slice(0, 10);
 
     const expiring = await c.env.DB.prepare(
       `SELECT i.name, s.qty, s.unit, s.expiry_date
        FROM stock s
        JOIN items i ON i.id = s.item_id
        WHERE s.household_id = ? AND s.qty > 0
-       AND s.expiry_date IS NOT NULL AND s.expiry_date <= ?`
+       AND s.expiry_date IS NOT NULL AND s.expiry_date <= ?`,
     )
       .bind(householdId, expiryCutoff)
       .all<{
-        name: string
-        qty: number
-        unit: string | null
-        expiry_date: string | null
-      }>()
+        name: string;
+        qty: number;
+        unit: string | null;
+        expiry_date: string | null;
+      }>();
 
-    const thirtyDaysAgo = new Date()
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30)
-    const sinceDate = thirtyDaysAgo.toISOString().slice(0, 10)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sinceDate = thirtyDaysAgo.toISOString().slice(0, 10);
 
     const recentPurchases = await c.env.DB.prepare(
       `SELECT DISTINCT i.name, s.label AS store_label
@@ -1927,53 +1927,53 @@ apiApp.post(
        JOIN items i ON i.id = pi.item_id
        LEFT JOIN stores s ON s.id = p.store_id
        WHERE p.household_id = ? AND p.date >= ?
-       ORDER BY i.name`
+       ORDER BY i.name`,
     )
       .bind(householdId, sinceDate)
-      .all<{ name: string; store_label: string | null }>()
+      .all<{ name: string; store_label: string | null }>();
 
     const { results: stores } = await c.env.DB.prepare(
-      'SELECT id, label FROM stores WHERE household_id = ? ORDER BY label'
+      "SELECT id, label FROM stores WHERE household_id = ? ORDER BY label",
     )
       .bind(householdId)
-      .all<{ id: string; label: string }>()
+      .all<{ id: string; label: string }>();
 
     let generatedItems: Array<{
-      name: string
-      qty: number
-      unit: string
-      store_id: string | null
-      price_estimate: number | null
-      why: string
-    }>
+      name: string;
+      qty: number;
+      unit: string;
+      store_id: string | null;
+      price_estimate: number | null;
+      why: string;
+    }>;
 
-    if (c.env.TEST_MODE === 'true') {
+    if (c.env.TEST_MODE === "true") {
       generatedItems = [
         {
-          name: 'Susu cair 1L',
+          name: "Susu cair 1L",
           qty: 1,
-          unit: 'L',
+          unit: "L",
           store_id: stores[0]?.id || null,
           price_estimate: 18500,
-          why: 'running out in 2 days',
+          why: "running out in 2 days",
         },
         {
-          name: 'Roti tawar',
+          name: "Roti tawar",
           qty: 1,
-          unit: 'pack',
+          unit: "pack",
           store_id: stores[0]?.id || null,
           price_estimate: 15000,
-          why: 'expires in 2 days',
+          why: "expires in 2 days",
         },
         {
-          name: 'Telur',
+          name: "Telur",
           qty: 10,
-          unit: 'pcs',
+          unit: "pcs",
           store_id: stores[1]?.id || null,
           price_estimate: 28000,
-          why: 'running out in 3 days',
+          why: "running out in 3 days",
         },
-      ]
+      ];
     } else {
       try {
         generatedItems = await generateAiPlan(
@@ -1983,31 +1983,31 @@ apiApp.post(
           expiring.results || [],
           recentPurchases.results || [],
           stores || [],
-          settings.currency || 'IDR'
-        )
+          settings.currency || "IDR",
+        );
       } catch (err) {
         return c.json(
           {
-            error: `AI plan generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`,
+            error: `AI plan generation failed: ${err instanceof Error ? err.message : "Unknown error"}`,
           },
-          502
-        )
+          502,
+        );
       }
     }
 
-    await c.env.DB.prepare('UPDATE ai_usage SET used = used + 1 WHERE id = ?')
+    await c.env.DB.prepare("UPDATE ai_usage SET used = used + 1 WHERE id = ?")
       .bind(usageRow.id)
-      .run()
+      .run();
 
-    const storeLabels = new Map(stores.map((s) => [s.id, s.label]))
+    const storeLabels = new Map(stores.map((s) => [s.id, s.label]));
 
     const items = await Promise.all(
       generatedItems.map(async (item) => {
         const existingItem = await c.env.DB.prepare(
-          'SELECT id, name FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
+          "SELECT id, name FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)",
         )
           .bind(householdId, normalizeItemName(item.name))
-          .first<{ id: string; name: string }>()
+          .first<{ id: string; name: string }>();
 
         return {
           name: item.name,
@@ -2019,111 +2019,111 @@ apiApp.post(
           why: item.why,
           item_id: existingItem?.id || null,
           matched_item_name: existingItem?.name || null,
-        }
-      })
-    )
+        };
+      }),
+    );
 
-    const total_estimate = items.reduce((sum, it) => sum + (it.price_estimate || 0), 0)
+    const total_estimate = items.reduce((sum, it) => sum + (it.price_estimate || 0), 0);
 
     const res = c.json({
       items,
       total_estimate,
       generated_at: new Date().toISOString(),
-    })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.post(
-  '/api/plans',
+  "/api/plans",
   describeRoute({
-    description: 'Save a generated plan as active.',
+    description: "Save a generated plan as active.",
     security: [{ cookieAuth: [] }],
     responses: {
-      201: { description: 'Plan created' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
+      201: { description: "Plan created" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
     },
   }),
-  sValidator('json', planCreateSchema),
+  sValidator("json", planCreateSchema),
   async (c) => {
-    const householdId = c.get('householdId')
-    const body = c.req.valid('json')
+    const householdId = c.get("householdId");
+    const body = c.req.valid("json");
 
-    const statements: D1PreparedStatement[] = []
+    const statements: D1PreparedStatement[] = [];
 
     const existingActive = await c.env.DB.prepare(
-      'SELECT id, status FROM plans WHERE household_id = ? AND status = ?'
+      "SELECT id, status FROM plans WHERE household_id = ? AND status = ?",
     )
-      .bind(householdId, 'active')
-      .first<{ id: string; status: string }>()
+      .bind(householdId, "active")
+      .first<{ id: string; status: string }>();
 
     if (existingActive) {
       statements.push(
         c.env.DB.prepare(
-          "UPDATE plans SET status = 'archived', updated_at = datetime('now') WHERE id = ?"
-        ).bind(existingActive.id)
-      )
+          "UPDATE plans SET status = 'archived', updated_at = datetime('now') WHERE id = ?",
+        ).bind(existingActive.id),
+      );
     }
 
-    const planId = crypto.randomUUID()
-    const now = new Date().toISOString()
+    const planId = crypto.randomUUID();
+    const now = new Date().toISOString();
 
-    const totalEstimate = body.items.reduce((sum, it) => sum + (it.price_estimate || 0), 0)
+    const totalEstimate = body.items.reduce((sum, it) => sum + (it.price_estimate || 0), 0);
 
     statements.push(
       c.env.DB.prepare(
         `INSERT INTO plans (id, household_id, status, total_estimate, created_at, updated_at)
-         VALUES (?, ?, 'active', ?, ?, ?)`
-      ).bind(planId, householdId, totalEstimate, now, now)
-    )
+         VALUES (?, ?, 'active', ?, ?, ?)`,
+      ).bind(planId, householdId, totalEstimate, now, now),
+    );
 
-    const itemIdsByName = new Map<string, string>()
+    const itemIdsByName = new Map<string, string>();
 
     for (const item of body.items) {
-      let itemId: string | null = null
+      let itemId: string | null = null;
       if (item.store_id) {
         const store = await c.env.DB.prepare(
-          'SELECT id FROM stores WHERE id = ? AND household_id = ?'
+          "SELECT id FROM stores WHERE id = ? AND household_id = ?",
         )
           .bind(item.store_id, householdId)
-          .first<{ id: string }>()
+          .first<{ id: string }>();
         if (!store) {
-          return c.json({ error: `Store ${item.store_id} not found in this household` }, 400)
+          return c.json({ error: `Store ${item.store_id} not found in this household` }, 400);
         }
       }
 
-      const normalizedName = normalizeItemName(item.name)
-      const seenItemId = itemIdsByName.get(normalizedName)
+      const normalizedName = normalizeItemName(item.name);
+      const seenItemId = itemIdsByName.get(normalizedName);
 
       if (seenItemId) {
-        itemId = seenItemId
+        itemId = seenItemId;
       } else {
         const existingItem = await c.env.DB.prepare(
-          'SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)'
+          "SELECT id FROM items WHERE household_id = ? AND LOWER(name) = LOWER(?)",
         )
           .bind(householdId, normalizedName)
-          .first<{ id: string }>()
+          .first<{ id: string }>();
 
         if (existingItem) {
-          itemId = existingItem.id
+          itemId = existingItem.id;
         } else {
-          itemId = crypto.randomUUID()
+          itemId = crypto.randomUUID();
           statements.push(
             c.env.DB.prepare(
-              'INSERT INTO items (id, household_id, name, default_unit) VALUES (?, ?, ?, ?)'
-            ).bind(itemId, householdId, item.name.trim(), item.unit)
-          )
+              "INSERT INTO items (id, household_id, name, default_unit) VALUES (?, ?, ?, ?)",
+            ).bind(itemId, householdId, item.name.trim(), item.unit),
+          );
         }
-        itemIdsByName.set(normalizedName, itemId)
+        itemIdsByName.set(normalizedName, itemId);
       }
 
-      const planItemId = crypto.randomUUID()
+      const planItemId = crypto.randomUUID();
       statements.push(
         c.env.DB.prepare(
           `INSERT INTO plan_items (id, plan_id, item_id, store_id, qty, unit, price_estimate, why, status, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)`,
         ).bind(
           planItemId,
           planId,
@@ -2133,27 +2133,27 @@ apiApp.post(
           item.unit,
           item.price_estimate ?? null,
           item.why ?? null,
-          now
-        )
-      )
+          now,
+        ),
+      );
     }
 
     try {
-      await c.env.DB.batch(statements)
+      await c.env.DB.batch(statements);
     } catch (err) {
       return c.json(
         {
-          error: `Failed to save plan: ${err instanceof Error ? err.message : 'Unknown'}`,
+          error: `Failed to save plan: ${err instanceof Error ? err.message : "Unknown"}`,
         },
-        500
-      )
+        500,
+      );
     }
 
     const plan = await c.env.DB.prepare(
-      'SELECT id, household_id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ?'
+      "SELECT id, household_id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ?",
     )
       .bind(planId)
-      .first()
+      .first();
 
     const { results: planItems } = await c.env.DB.prepare(
       `SELECT pi.id, pi.item_id, pi.store_id, i.name AS item_name,
@@ -2162,110 +2162,110 @@ apiApp.post(
        LEFT JOIN items i ON i.id = pi.item_id
        LEFT JOIN stores s ON s.id = pi.store_id
        WHERE pi.plan_id = ?
-       ORDER BY pi.created_at`
+       ORDER BY pi.created_at`,
     )
       .bind(planId)
       .all<{
-        id: string
-        item_id: string | null
-        store_id: string | null
-        item_name: string | null
-        store_label: string | null
-        qty: number
-        unit: string | null
-        price_estimate: number | null
-        why: string | null
-        status: string
-      }>()
+        id: string;
+        item_id: string | null;
+        store_id: string | null;
+        item_name: string | null;
+        store_label: string | null;
+        qty: number;
+        unit: string | null;
+        price_estimate: number | null;
+        why: string | null;
+        status: string;
+      }>();
 
-    const res = c.json({ plan: { ...plan, items: planItems } }, 201)
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    const res = c.json({ plan: { ...plan, items: planItems } }, 201);
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.patch(
-  '/api/plans/:id/items/:itemId',
+  "/api/plans/:id/items/:itemId",
   describeRoute({
-    description: 'Mark a plan item as bought or skipped.',
+    description: "Mark a plan item as bought or skipped.",
     security: [{ cookieAuth: [] }],
     responses: {
-      200: { description: 'Updated' },
-      400: { description: 'Validation error' },
-      401: { description: 'Unauthorized' },
-      404: { description: 'Not found' },
+      200: { description: "Updated" },
+      400: { description: "Validation error" },
+      401: { description: "Unauthorized" },
+      404: { description: "Not found" },
     },
   }),
-  sValidator('json', planItemPatchSchema),
+  sValidator("json", planItemPatchSchema),
   async (c) => {
-    const householdId = c.get('householdId')
-    const planId = c.req.param('id')
-    const itemId = c.req.param('itemId')
-    const body = c.req.valid('json')
+    const householdId = c.get("householdId");
+    const planId = c.req.param("id");
+    const itemId = c.req.param("itemId");
+    const body = c.req.valid("json");
 
     const plan = await c.env.DB.prepare(
-      'SELECT id, status FROM plans WHERE id = ? AND household_id = ?'
+      "SELECT id, status FROM plans WHERE id = ? AND household_id = ?",
     )
       .bind(planId, householdId)
-      .first<{ id: string; status: string }>()
+      .first<{ id: string; status: string }>();
 
     if (!plan) {
-      return c.json({ error: 'Plan not found' }, 404)
+      return c.json({ error: "Plan not found" }, 404);
     }
 
     const planItem = await c.env.DB.prepare(
       `SELECT pi.id, pi.item_id, pi.store_id, pi.qty, pi.unit, pi.price_estimate, pi.status, pi.plan_id
-       FROM plan_items pi WHERE pi.id = ? AND pi.plan_id = ?`
+       FROM plan_items pi WHERE pi.id = ? AND pi.plan_id = ?`,
     )
       .bind(itemId, planId)
       .first<{
-        id: string
-        item_id: string | null
-        store_id: string | null
-        qty: number
-        unit: string | null
-        price_estimate: number | null
-        status: string
-        plan_id: string
-      }>()
+        id: string;
+        item_id: string | null;
+        store_id: string | null;
+        qty: number;
+        unit: string | null;
+        price_estimate: number | null;
+        status: string;
+        plan_id: string;
+      }>();
 
     if (!planItem) {
-      return c.json({ error: 'Plan item not found' }, 404)
+      return c.json({ error: "Plan item not found" }, 404);
     }
 
-    if (plan.status !== 'active') {
-      return c.json({ error: 'Plan is not active' }, 400)
+    if (plan.status !== "active") {
+      return c.json({ error: "Plan is not active" }, 400);
     }
 
-    const now = new Date().toISOString()
-    const statements: D1PreparedStatement[] = []
+    const now = new Date().toISOString();
+    const statements: D1PreparedStatement[] = [];
 
     statements.push(
       c.env.DB.prepare(
-        `UPDATE plan_items SET status = ?, updated_at = datetime('now') WHERE id = ?`
-      ).bind(body.status, itemId)
-    )
+        `UPDATE plan_items SET status = ?, updated_at = datetime('now') WHERE id = ?`,
+      ).bind(body.status, itemId),
+    );
 
-    if (body.status === 'bought' && planItem.item_id && planItem.status !== 'bought') {
+    if (body.status === "bought" && planItem.item_id && planItem.status !== "bought") {
       const defaultLocation = await c.env.DB.prepare(
-        'SELECT id FROM locations WHERE household_id = ? ORDER BY sort_order LIMIT 1'
+        "SELECT id FROM locations WHERE household_id = ? ORDER BY sort_order LIMIT 1",
       )
         .bind(householdId)
-        .first<{ id: string }>()
+        .first<{ id: string }>();
 
-      const purchaseId = crypto.randomUUID()
+      const purchaseId = crypto.randomUUID();
       statements.push(
         c.env.DB.prepare(
           `INSERT INTO purchases (id, household_id, store_id, date, created_at)
-           VALUES (?, ?, ?, ?, ?)`
-        ).bind(purchaseId, householdId, planItem.store_id || null, now.slice(0, 10), now)
-      )
+           VALUES (?, ?, ?, ?, ?)`,
+        ).bind(purchaseId, householdId, planItem.store_id || null, now.slice(0, 10), now),
+      );
 
-      const purchaseItemId = crypto.randomUUID()
+      const purchaseItemId = crypto.randomUUID();
       statements.push(
         c.env.DB.prepare(
           `INSERT INTO purchase_items (id, purchase_id, item_id, qty, unit, price, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, ?)`
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
         ).bind(
           purchaseItemId,
           purchaseId,
@@ -2273,31 +2273,31 @@ apiApp.patch(
           planItem.qty,
           planItem.unit,
           planItem.price_estimate ?? 0,
-          now
-        )
-      )
+          now,
+        ),
+      );
 
       const existingStock = await c.env.DB.prepare(
-        'SELECT id, qty FROM stock WHERE household_id = ? AND item_id = ?'
+        "SELECT id, qty FROM stock WHERE household_id = ? AND item_id = ?",
       )
         .bind(householdId, planItem.item_id)
-        .first<{ id: string; qty: number }>()
+        .first<{ id: string; qty: number }>();
 
       if (existingStock) {
-        const newQty = existingStock.qty + planItem.qty
-        const runOut = await computeRunOutDays(householdId, planItem.item_id, newQty, c.env.DB)
+        const newQty = existingStock.qty + planItem.qty;
+        const runOut = await computeRunOutDays(householdId, planItem.item_id, newQty, c.env.DB);
         statements.push(
           c.env.DB.prepare(
-            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`
-          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id)
-        )
+            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`,
+          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id),
+        );
       } else {
-        const stockId = crypto.randomUUID()
-        const locationId = defaultLocation?.id || null
+        const stockId = crypto.randomUUID();
+        const locationId = defaultLocation?.id || null;
         statements.push(
           c.env.DB.prepare(
             `INSERT INTO stock (id, household_id, item_id, location_id, qty, unit, run_out_days, basis, updated_at)
-             VALUES (?, ?, ?, ?, ?, ?, 30, 'default', ?)`
+             VALUES (?, ?, ?, ?, ?, ?, 30, 'default', ?)`,
           ).bind(
             stockId,
             householdId,
@@ -2305,37 +2305,37 @@ apiApp.patch(
             locationId,
             planItem.qty,
             planItem.unit,
-            now
-          )
-        )
+            now,
+          ),
+        );
       }
     }
 
     try {
-      await c.env.DB.batch(statements)
+      await c.env.DB.batch(statements);
     } catch (err) {
       return c.json(
         {
-          error: `Failed to update plan item: ${err instanceof Error ? err.message : 'Unknown'}`,
+          error: `Failed to update plan item: ${err instanceof Error ? err.message : "Unknown"}`,
         },
-        500
-      )
+        500,
+      );
     }
 
     const { results: allItems } = await c.env.DB.prepare(
-      `SELECT status FROM plan_items WHERE plan_id = ?`
+      `SELECT status FROM plan_items WHERE plan_id = ?`,
     )
       .bind(planId)
-      .all<{ status: string }>()
+      .all<{ status: string }>();
 
-    const allResolved = allItems.every((i) => i.status !== 'pending')
+    const allResolved = allItems.every((i) => i.status !== "pending");
     if (allResolved) {
-      const newStatus = body.status === 'bought' ? 'completed' : 'completed'
+      const newStatus = body.status === "bought" ? "completed" : "completed";
       await c.env.DB.prepare(
-        `UPDATE plans SET status = ?, updated_at = datetime('now') WHERE id = ?`
+        `UPDATE plans SET status = ?, updated_at = datetime('now') WHERE id = ?`,
       )
         .bind(newStatus, planId)
-        .run()
+        .run();
     }
 
     const updatedItem = await c.env.DB.prepare(
@@ -2344,28 +2344,28 @@ apiApp.patch(
        FROM plan_items pi
        LEFT JOIN items i ON i.id = pi.item_id
        LEFT JOIN stores s ON s.id = pi.store_id
-       WHERE pi.id = ?`
+       WHERE pi.id = ?`,
     )
       .bind(itemId)
-      .first()
+      .first();
 
     const updatedPlan = await c.env.DB.prepare(
-      'SELECT id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ?'
+      "SELECT id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ?",
     )
       .bind(planId)
-      .first()
+      .first();
 
-    const res = c.json({ item: updatedItem, plan: updatedPlan })
-    res.headers.set('Cache-Control', 'private, no-cache')
-    return res
-  }
-)
+    const res = c.json({ item: updatedItem, plan: updatedPlan });
+    res.headers.set("Cache-Control", "private, no-cache");
+    return res;
+  },
+);
 
 apiApp.notFound(async (c) => {
   if (c.env.ASSETS) {
-    return c.env.ASSETS.fetch(c.req.raw)
+    return c.env.ASSETS.fetch(c.req.raw);
   }
-  return c.json({ error: 'Not found' }, 404)
-})
+  return c.json({ error: "Not found" }, 404);
+});
 
-export { apiApp }
+export { apiApp };

@@ -1,10 +1,10 @@
-import { useState, useRef } from 'react'
-import { useTranslation } from 'react-i18next'
-import { useNavigate } from '@tanstack/react-router'
-import { formatRp } from '../data/mock.js'
-import { usePersona } from '../context/PersonaContext.jsx'
-import { personaText } from '../lib/persona.js'
-import { scanReceipt, createPurchase, getStores, getItems } from '../lib/api.js'
+import { useState, useRef } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from "@tanstack/react-router";
+import { formatRp } from "../data/mock.js";
+import { usePersona } from "../context/PersonaContext.jsx";
+import { personaText } from "../lib/persona.js";
+import { scanReceipt, createPurchase, getStores, getItems } from "../lib/api.js";
 import {
   IconCamera,
   IconUpload,
@@ -15,121 +15,121 @@ import {
   IconArrowLeft,
   IconShop,
   IconCalendarBlank,
-} from '../components/icons.jsx'
+} from "../components/icons.jsx";
 
-const MAX_SIZE = 5 * 1024 * 1024
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/webp']
+const MAX_SIZE = 5 * 1024 * 1024;
+const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/heic", "image/webp"];
 
 export function AddFromReceipt({ onDone }) {
-  const { t } = useTranslation()
-  const { persona } = usePersona()
-  const navigate = useNavigate()
-  const fileInputRef = useRef(null)
+  const { t } = useTranslation();
+  const { persona } = usePersona();
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
 
-  const [phase, setPhase] = useState('capture')
-  const [error, setError] = useState(null)
-  const [items, setItems] = useState([])
-  const [selectedStore, setSelectedStore] = useState(null)
-  const [stores, setStores] = useState([])
-  const [date, setDate] = useState(new Date().toISOString().slice(0, 10))
-  const [itemCatalog, setItemCatalog] = useState([])
-  const [selectedItemIds, setSelectedItemIds] = useState({})
-  const [imageKey, setImageKey] = useState(null)
-  const [imageUrl, setImageUrl] = useState(null)
-  const [creating, setCreating] = useState(false)
+  const [phase, setPhase] = useState("capture");
+  const [error, setError] = useState(null);
+  const [items, setItems] = useState([]);
+  const [selectedStore, setSelectedStore] = useState(null);
+  const [stores, setStores] = useState([]);
+  const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
+  const [itemCatalog, setItemCatalog] = useState([]);
+  const [selectedItemIds, setSelectedItemIds] = useState({});
+  const [imageKey, setImageKey] = useState(null);
+  const [imageUrl, setImageUrl] = useState(null);
+  const [creating, setCreating] = useState(false);
 
   const isNoKeyError =
-    error && (error.includes('AI provider not configured') || error.includes('Settings'))
+    error && (error.includes("AI provider not configured") || error.includes("Settings"));
 
   function triggerFileInput(captureMode) {
     if (fileInputRef.current) {
       if (captureMode) {
-        fileInputRef.current.setAttribute('capture', 'environment')
+        fileInputRef.current.setAttribute("capture", "environment");
       } else {
-        fileInputRef.current.removeAttribute('capture')
+        fileInputRef.current.removeAttribute("capture");
       }
-      fileInputRef.current.click()
+      fileInputRef.current.click();
     }
   }
 
   function handleFileChange(e) {
-    const file = e.target.files?.[0]
-    if (file) handleFileInner(file)
+    const file = e.target.files?.[0];
+    if (file) handleFileInner(file);
   }
 
   function handleDrop(e) {
-    e.preventDefault()
-    const file = e.dataTransfer?.files?.[0]
-    if (file) handleFileInner(file)
+    e.preventDefault();
+    const file = e.dataTransfer?.files?.[0];
+    if (file) handleFileInner(file);
   }
 
   function handleDragOver(e) {
-    e.preventDefault()
+    e.preventDefault();
   }
 
   async function handleFileInner(file) {
-    setError(null)
+    setError(null);
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setError('Unsupported file type. Accepted: JPEG, PNG, HEIC, WEBP.')
-      return
+      setError("Unsupported file type. Accepted: JPEG, PNG, HEIC, WEBP.");
+      return;
     }
     if (file.size > MAX_SIZE) {
-      setError('File too large. Maximum size is 5 MB.')
-      return
+      setError("File too large. Maximum size is 5 MB.");
+      return;
     }
 
-    setPhase('scanning')
+    setPhase("scanning");
 
     try {
-      const result = await scanReceipt(file)
-      setItems(result.items.map((it, i) => ({ ...it, _id: `item-${i}` })))
-      setImageKey(result.imageKey)
-      setImageUrl(result.imageUrl)
+      const result = await scanReceipt(file);
+      setItems(result.items.map((it, i) => ({ ...it, _id: `item-${i}` })));
+      setImageKey(result.imageKey);
+      setImageUrl(result.imageUrl);
       if (result.storeGuess) {
-        setSelectedStore(result.storeGuess.id)
+        setSelectedStore(result.storeGuess.id);
       }
       if (result.dateGuess) {
-        setDate(result.dateGuess)
+        setDate(result.dateGuess);
       }
 
       try {
-        const [storesData, itemsData] = await Promise.all([getStores(), getItems()])
-        setStores(storesData.stores || [])
-        setItemCatalog(itemsData.items || [])
+        const [storesData, itemsData] = await Promise.all([getStores(), getItems()]);
+        setStores(storesData.stores || []);
+        setItemCatalog(itemsData.items || []);
       } catch {
-        setStores([])
-        setItemCatalog([])
+        setStores([]);
+        setItemCatalog([]);
       }
 
-      setPhase('review')
+      setPhase("review");
     } catch (err) {
-      setError(err.message)
-      setPhase('capture')
+      setError(err.message);
+      setPhase("capture");
     }
   }
 
   function updateItem(id, field, value) {
-    setItems((prev) => prev.map((it) => (it._id === id ? { ...it, [field]: value } : it)))
+    setItems((prev) => prev.map((it) => (it._id === id ? { ...it, [field]: value } : it)));
   }
 
   function selectItemMatch(id, catalogItemId) {
-    setSelectedItemIds((prev) => ({ ...prev, [id]: catalogItemId }))
+    setSelectedItemIds((prev) => ({ ...prev, [id]: catalogItemId }));
     if (catalogItemId) {
-      const match = itemCatalog.find((c) => c.id === catalogItemId)
+      const match = itemCatalog.find((c) => c.id === catalogItemId);
       if (match) {
         setItems((prev) =>
           prev.map((it) =>
-            it._id === id ? { ...it, name: match.name, unit: match.unit || it.unit } : it
-          )
-        )
+            it._id === id ? { ...it, name: match.name, unit: match.unit || it.unit } : it,
+          ),
+        );
       }
     }
   }
 
   async function handleConfirm() {
-    setCreating(true)
-    setError(null)
+    setCreating(true);
+    setError(null);
 
     try {
       const payload = {
@@ -139,65 +139,65 @@ export function AddFromReceipt({ onDone }) {
         items: items.map((it) => ({
           name: it.name,
           qty: Number(it.qty) || 1,
-          unit: it.unit || 'pcs',
+          unit: it.unit || "pcs",
           price: Math.round(Number(it.price)) || 0,
           item_id: selectedItemIds[it._id] || undefined,
         })),
-      }
+      };
 
-      await createPurchase(payload)
-      setPhase('done')
+      await createPurchase(payload);
+      setPhase("done");
     } catch (err) {
-      setError(err.message)
+      setError(err.message);
     } finally {
-      setCreating(false)
+      setCreating(false);
     }
   }
 
   function handleRetake() {
-    setPhase('capture')
-    setItems([])
-    setError(null)
-    setImageKey(null)
-    setImageUrl(null)
+    setPhase("capture");
+    setItems([]);
+    setError(null);
+    setImageKey(null);
+    setImageUrl(null);
   }
 
-  const lineTotal = items.reduce((a, b) => a + (Number(b.price) || 0), 0)
+  const lineTotal = items.reduce((a, b) => a + (Number(b.price) || 0), 0);
 
   return (
     <>
       <div className="page__head">
-        <p className="page__lead">{personaText('receiptLead', persona, t)}</p>
+        <p className="page__lead">{personaText("receiptLead", persona, t)}</p>
       </div>
 
       {error && (
         <div
           className="panel"
           style={{
-            marginBottom: 'var(--sp-4)',
-            padding: 'var(--sp-3)',
-            background: 'var(--error-soft)',
-            border: '1px solid var(--error-soft-border)',
-            borderRadius: 'var(--radius-md)',
+            marginBottom: "var(--sp-4)",
+            padding: "var(--sp-3)",
+            background: "var(--error-soft)",
+            border: "1px solid var(--error-soft-border)",
+            borderRadius: "var(--radius-md)",
           }}
         >
           <div
             style={{
-              display: 'flex',
-              gap: 'var(--sp-2)',
-              alignItems: 'flex-start',
+              display: "flex",
+              gap: "var(--sp-2)",
+              alignItems: "flex-start",
             }}
           >
-            <IconWarning size={18} style={{ color: 'var(--error)', flexShrink: 0, marginTop: 2 }} />
+            <IconWarning size={18} style={{ color: "var(--error)", flexShrink: 0, marginTop: 2 }} />
             <div>
-              <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--error)' }}>{error}</p>
+              <p style={{ fontSize: "var(--fs-sm)", color: "var(--error)" }}>{error}</p>
               {isNoKeyError && (
                 <button
                   className="btn btn--ghost"
-                  style={{ marginTop: 'var(--sp-2)', fontSize: 'var(--fs-sm)' }}
-                  onClick={() => navigate({ to: '/settings' })}
+                  style={{ marginTop: "var(--sp-2)", fontSize: "var(--fs-sm)" }}
+                  onClick={() => navigate({ to: "/settings" })}
                 >
-                  {t('addReceipt.goToSettings') || 'Go to Settings'}
+                  {t("addReceipt.goToSettings") || "Go to Settings"}
                 </button>
               )}
             </div>
@@ -205,7 +205,7 @@ export function AddFromReceipt({ onDone }) {
         </div>
       )}
 
-      {phase === 'capture' && (
+      {phase === "capture" && (
         <div
           className="dropzone"
           role="button"
@@ -214,107 +214,107 @@ export function AddFromReceipt({ onDone }) {
           onDragOver={handleDragOver}
           onClick={() => triggerFileInput(false)}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') triggerFileInput(false)
+            if (e.key === "Enter") triggerFileInput(false);
           }}
         >
           <input
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/heic,image/webp"
-            style={{ display: 'none' }}
+            style={{ display: "none" }}
             onChange={handleFileChange}
             data-testid="file-input"
           />
           <div className="dropzone__icon">
             <IconCamera size={26} />
           </div>
-          <div className="dropzone__title">{t('addReceipt.takePhoto')}</div>
-          <div className="dropzone__hint">{t('addReceipt.dropHint')}</div>
+          <div className="dropzone__title">{t("addReceipt.takePhoto")}</div>
+          <div className="dropzone__hint">{t("addReceipt.dropHint")}</div>
           <div
             style={{
-              marginTop: 'var(--sp-5)',
-              display: 'flex',
-              gap: 'var(--sp-3)',
-              justifyContent: 'center',
+              marginTop: "var(--sp-5)",
+              display: "flex",
+              gap: "var(--sp-3)",
+              justifyContent: "center",
             }}
           >
             <button
               className="btn btn--primary"
               onClick={(e) => {
-                e.stopPropagation()
-                triggerFileInput(true)
+                e.stopPropagation();
+                triggerFileInput(true);
               }}
             >
-              <IconCamera size={18} /> {t('addReceipt.openCamera')}
+              <IconCamera size={18} /> {t("addReceipt.openCamera")}
             </button>
             <button
               className="btn btn--secondary"
               onClick={(e) => {
-                e.stopPropagation()
-                triggerFileInput(false)
+                e.stopPropagation();
+                triggerFileInput(false);
               }}
             >
-              <IconUpload size={18} /> {t('addReceipt.uploadFile')}
+              <IconUpload size={18} /> {t("addReceipt.uploadFile")}
             </button>
           </div>
         </div>
       )}
 
-      {phase === 'scanning' && (
-        <div className="panel" style={{ padding: 'var(--sp-9)', textAlign: 'center' }}>
-          <div style={{ margin: '0 auto var(--sp-5)', color: 'var(--accent)' }}>
+      {phase === "scanning" && (
+        <div className="panel" style={{ padding: "var(--sp-9)", textAlign: "center" }}>
+          <div style={{ margin: "0 auto var(--sp-5)", color: "var(--accent)" }}>
             <IconBolt size={32} className="spin" />
           </div>
-          <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)' }}>
-            {t('addReceipt.scanningTitle')}
+          <div style={{ fontWeight: 600, fontSize: "var(--fs-md)" }}>
+            {t("addReceipt.scanningTitle")}
           </div>
           <div
             style={{
-              color: 'var(--text-muted)',
-              fontSize: 'var(--fs-sm)',
-              marginTop: 'var(--sp-2)',
+              color: "var(--text-muted)",
+              fontSize: "var(--fs-sm)",
+              marginTop: "var(--sp-2)",
             }}
           >
-            {t('addReceipt.scanningDesc')}
+            {t("addReceipt.scanningDesc")}
           </div>
-          <div style={{ maxWidth: 360, margin: 'var(--sp-5) auto 0' }}>
+          <div style={{ maxWidth: 360, margin: "var(--sp-5) auto 0" }}>
             <SkeletonLines />
           </div>
         </div>
       )}
 
-      {phase === 'review' && (
+      {phase === "review" && (
         <>
           <div className="receipt-meta">
             {selectedStore && (
               <span className="chip chip--loc">
-                <IconShop size={14} />{' '}
+                <IconShop size={14} />{" "}
                 {stores.find((s) => s.id === selectedStore)?.label || selectedStore}
               </span>
             )}
             <span className="chip">
               <IconCalendarBlank size={14} /> {date}
             </span>
-            <span className="chip">{t('addReceipt.itemsRead', { count: items.length })}</span>
+            <span className="chip">{t("addReceipt.itemsRead", { count: items.length })}</span>
             <span style={{ flex: 1 }} />
             <span
               className="chip"
               style={{
-                background: 'var(--accent-soft)',
-                color: 'var(--accent-hover)',
-                border: '1px solid var(--accent-soft-border)',
+                background: "var(--accent-soft)",
+                color: "var(--accent-hover)",
+                border: "1px solid var(--accent-soft-border)",
               }}
             >
-              {t('addReceipt.aiReview')}
+              {t("addReceipt.aiReview")}
             </span>
           </div>
 
           {imageUrl && (
             <div
               style={{
-                marginBottom: 'var(--sp-4)',
-                borderRadius: 'var(--radius-md)',
-                overflow: 'hidden',
+                marginBottom: "var(--sp-4)",
+                borderRadius: "var(--radius-md)",
+                overflow: "hidden",
                 maxHeight: 200,
               }}
             >
@@ -322,37 +322,37 @@ export function AddFromReceipt({ onDone }) {
                 src={imageUrl}
                 alt="Receipt"
                 style={{
-                  width: '100%',
-                  height: 'auto',
-                  objectFit: 'contain',
+                  width: "100%",
+                  height: "auto",
+                  objectFit: "contain",
                   maxHeight: 200,
                 }}
               />
             </div>
           )}
 
-          <div className="panel" style={{ marginBottom: 'var(--sp-4)' }}>
+          <div className="panel" style={{ marginBottom: "var(--sp-4)" }}>
             <div
               className="panel__body"
-              style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}
+              style={{ display: "flex", gap: "var(--sp-3)", flexWrap: "wrap" }}
             >
               <div style={{ flex: 1, minWidth: 150 }}>
                 <label
                   style={{
-                    display: 'block',
-                    fontSize: 'var(--fs-xs)',
-                    color: 'var(--text-muted)',
-                    marginBottom: 'var(--sp-1)',
+                    display: "block",
+                    fontSize: "var(--fs-xs)",
+                    color: "var(--text-muted)",
+                    marginBottom: "var(--sp-1)",
                   }}
                 >
-                  {t('history.store') || 'Store'}
+                  {t("history.store") || "Store"}
                 </label>
                 <select
-                  value={selectedStore || ''}
+                  value={selectedStore || ""}
                   onChange={(e) => setSelectedStore(e.target.value || null)}
-                  style={{ width: '100%' }}
+                  style={{ width: "100%" }}
                 >
-                  <option value="">{t('addReceipt.selectStore') || 'Select store...'}</option>
+                  <option value="">{t("addReceipt.selectStore") || "Select store..."}</option>
                   {stores.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.label}
@@ -363,19 +363,19 @@ export function AddFromReceipt({ onDone }) {
               <div style={{ flex: 1, minWidth: 150 }}>
                 <label
                   style={{
-                    display: 'block',
-                    fontSize: 'var(--fs-xs)',
-                    color: 'var(--text-muted)',
-                    marginBottom: 'var(--sp-1)',
+                    display: "block",
+                    fontSize: "var(--fs-xs)",
+                    color: "var(--text-muted)",
+                    marginBottom: "var(--sp-1)",
                   }}
                 >
-                  {t('history.date') || 'Date'}
+                  {t("history.date") || "Date"}
                 </label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  style={{ width: '100%' }}
+                  style={{ width: "100%" }}
                 />
               </div>
             </div>
@@ -383,31 +383,31 @@ export function AddFromReceipt({ onDone }) {
 
           <div className="panel">
             <div className="panel__head">
-              <h2>{t('addReceipt.reviewTitle')}</h2>
-              <span className="hint">{t('addReceipt.editHint')}</span>
+              <h2>{t("addReceipt.reviewTitle")}</h2>
+              <span className="hint">{t("addReceipt.editHint")}</span>
             </div>
             <div className="panel__body">
               {items.map((it) => (
                 <div
                   className="parsed-row"
                   key={it._id}
-                  style={{ flexWrap: 'wrap', gap: 'var(--sp-2)' }}
+                  style={{ flexWrap: "wrap", gap: "var(--sp-2)" }}
                 >
                   <div
                     style={{
-                      flex: '1 1 100%',
-                      display: 'flex',
-                      gap: 'var(--sp-2)',
-                      alignItems: 'center',
+                      flex: "1 1 100%",
+                      display: "flex",
+                      gap: "var(--sp-2)",
+                      alignItems: "center",
                     }}
                   >
                     <select
-                      value={selectedItemIds[it._id] || ''}
+                      value={selectedItemIds[it._id] || ""}
                       onChange={(e) => selectItemMatch(it._id, e.target.value || null)}
                       style={{ flex: 1, minWidth: 120 }}
                       aria-label="Match to existing item"
                     >
-                      <option value="">{t('addReceipt.keepNew') || '— New item —'}</option>
+                      <option value="">{t("addReceipt.keepNew") || "— New item —"}</option>
                       {itemCatalog.map((c) => (
                         <option key={c.id} value={c.id}>
                           {c.name}
@@ -416,10 +416,10 @@ export function AddFromReceipt({ onDone }) {
                     </select>
                     <input
                       value={it.name}
-                      onChange={(e) => updateItem(it._id, 'name', e.target.value)}
-                      aria-label={t('history.item')}
+                      onChange={(e) => updateItem(it._id, "name", e.target.value)}
+                      aria-label={t("history.item")}
                       style={{ flex: 2, minWidth: 120 }}
-                      placeholder={t('addReceipt.itemName') || 'Item name'}
+                      placeholder={t("addReceipt.itemName") || "Item name"}
                     />
                   </div>
                   <input
@@ -427,13 +427,13 @@ export function AddFromReceipt({ onDone }) {
                     step="any"
                     min="0"
                     value={it.qty}
-                    onChange={(e) => updateItem(it._id, 'qty', e.target.value)}
-                    aria-label={t('common.from')}
+                    onChange={(e) => updateItem(it._id, "qty", e.target.value)}
+                    aria-label={t("common.from")}
                     style={{ width: 70 }}
                   />
                   <input
                     value={it.unit}
-                    onChange={(e) => updateItem(it._id, 'unit', e.target.value)}
+                    onChange={(e) => updateItem(it._id, "unit", e.target.value)}
                     aria-label="Unit"
                     style={{ width: 60 }}
                   />
@@ -441,8 +441,8 @@ export function AddFromReceipt({ onDone }) {
                     type="number"
                     min="0"
                     value={it.price}
-                    onChange={(e) => updateItem(it._id, 'price', e.target.value)}
-                    aria-label={t('history.price')}
+                    onChange={(e) => updateItem(it._id, "price", e.target.value)}
+                    aria-label={t("history.price")}
                     style={{ width: 90 }}
                   />
                 </div>
@@ -451,86 +451,86 @@ export function AddFromReceipt({ onDone }) {
             <div className="panel__foot">
               <div
                 style={{
-                  marginRight: 'auto',
-                  color: 'var(--text-muted)',
-                  fontSize: 'var(--fs-sm)',
+                  marginRight: "auto",
+                  color: "var(--text-muted)",
+                  fontSize: "var(--fs-sm)",
                 }}
               >
-                {t('addReceipt.total')}{' '}
-                <strong style={{ color: 'var(--text)' }}>{formatRp(lineTotal)}</strong>
+                {t("addReceipt.total")}{" "}
+                <strong style={{ color: "var(--text)" }}>{formatRp(lineTotal)}</strong>
               </div>
               <button className="btn btn--ghost" onClick={handleRetake}>
-                <IconArrowLeft size={18} /> {t('addReceipt.retake')}
+                <IconArrowLeft size={18} /> {t("addReceipt.retake")}
               </button>
               <button className="btn btn--primary" onClick={handleConfirm} disabled={creating}>
-                {creating ? <IconBolt size={18} className="spin" /> : <IconCheck size={18} />}{' '}
-                {t('addReceipt.confirmAdd')}
+                {creating ? <IconBolt size={18} className="spin" /> : <IconCheck size={18} />}{" "}
+                {t("addReceipt.confirmAdd")}
               </button>
             </div>
           </div>
         </>
       )}
 
-      {phase === 'done' && (
-        <div className="panel" style={{ padding: 'var(--sp-9)', textAlign: 'center' }}>
-          <div style={{ margin: '0 auto var(--sp-5)', color: 'var(--ok)' }}>
+      {phase === "done" && (
+        <div className="panel" style={{ padding: "var(--sp-9)", textAlign: "center" }}>
+          <div style={{ margin: "0 auto var(--sp-5)", color: "var(--ok)" }}>
             <div
               style={{
                 width: 56,
                 height: 56,
-                borderRadius: '50%',
-                background: 'var(--ok-soft)',
-                display: 'grid',
-                placeItems: 'center',
-                margin: '0 auto',
+                borderRadius: "50%",
+                background: "var(--ok-soft)",
+                display: "grid",
+                placeItems: "center",
+                margin: "0 auto",
               }}
             >
               <IconCheck size={28} />
             </div>
           </div>
-          <div style={{ fontWeight: 600, fontSize: 'var(--fs-lg)' }}>
-            {t('addReceipt.stockAdded', { count: items.length })}
+          <div style={{ fontWeight: 600, fontSize: "var(--fs-lg)" }}>
+            {t("addReceipt.stockAdded", { count: items.length })}
           </div>
           <div
             style={{
-              color: 'var(--text-muted)',
-              fontSize: 'var(--fs-sm)',
-              marginTop: 'var(--sp-2)',
+              color: "var(--text-muted)",
+              fontSize: "var(--fs-sm)",
+              marginTop: "var(--sp-2)",
             }}
           >
-            {t('addReceipt.stockUpdatedDesc')}
+            {t("addReceipt.stockUpdatedDesc")}
           </div>
           <div
             style={{
-              marginTop: 'var(--sp-5)',
-              display: 'flex',
-              gap: 'var(--sp-3)',
-              justifyContent: 'center',
+              marginTop: "var(--sp-5)",
+              display: "flex",
+              gap: "var(--sp-3)",
+              justifyContent: "center",
             }}
           >
             <button className="btn btn--secondary" onClick={handleRetake}>
-              <IconReceipt size={18} /> {t('addReceipt.addAnother')}
+              <IconReceipt size={18} /> {t("addReceipt.addAnother")}
             </button>
             <button className="btn btn--primary" onClick={onDone}>
-              {t('addReceipt.done')}
+              {t("addReceipt.done")}
             </button>
           </div>
         </div>
       )}
     </>
-  )
+  );
 }
 
 function SkeletonLines() {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "var(--sp-3)" }}>
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center' }}>
+        <div key={i} style={{ display: "flex", gap: "var(--sp-3)", alignItems: "center" }}>
           <div className="skeleton" style={{ height: 14, flex: 1 }} />
           <div className="skeleton" style={{ height: 14, width: 60 }} />
           <div className="skeleton" style={{ height: 14, width: 70 }} />
         </div>
       ))}
     </div>
-  )
+  );
 }

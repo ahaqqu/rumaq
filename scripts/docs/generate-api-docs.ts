@@ -1,85 +1,85 @@
-import { writeFileSync } from 'node:fs'
-import { generateSpecs } from 'hono-openapi'
-import { apiApp } from '../../backend/src/apps/api.js'
-import { authApp } from '../../backend/src/apps/auth.js'
+import { writeFileSync } from "node:fs";
+import { generateSpecs } from "hono-openapi";
+import { apiApp } from "../../backend/src/apps/api.js";
+import { authApp } from "../../backend/src/apps/auth.js";
 
 const DOCS_OPTIONS = {
   documentation: {
-    info: { title: 'RumaQ API', version: '0.1.0' },
+    info: { title: "RumaQ API", version: "0.1.0" },
     components: {
       securitySchemes: {
         cookieAuth: {
-          type: 'apiKey' as const,
-          in: 'cookie' as const,
-          name: 'rumaq_session',
+          type: "apiKey" as const,
+          in: "cookie" as const,
+          name: "rumaq_session",
         },
       },
     },
   },
-}
+};
 
 const AUTH_PATH_REMAP: Record<string, string> = {
-  '/login': '/api/auth/login',
-  '/callback': '/api/auth/callback',
-  '/logout': '/api/auth/logout',
-  '/email-login': '/api/auth/email-login',
-}
+  "/login": "/api/auth/login",
+  "/callback": "/api/auth/callback",
+  "/logout": "/api/auth/logout",
+  "/email-login": "/api/auth/email-login",
+};
 
-const EXCLUDE_PATHS = new Set(['/api/openapi.json', '/openapi.json'])
+const EXCLUDE_PATHS = new Set(["/api/openapi.json", "/openapi.json"]);
 
 type PathEntry = {
-  method: string
-  path: string
-  auth: string
-  query: string
-  body: string
-  description: string
-}
+  method: string;
+  path: string;
+  auth: string;
+  query: string;
+  body: string;
+  description: string;
+};
 
 function getQueryParams(operation: any): string {
-  if (!operation.parameters || operation.parameters.length === 0) return '\u2014'
+  if (!operation.parameters || operation.parameters.length === 0) return "\u2014";
   return operation.parameters
     .map((p: any) => {
-      const suffix = p.required ? '' : '?'
-      return `\`${p.name}${suffix}\``
+      const suffix = p.required ? "" : "?";
+      return `\`${p.name}${suffix}\``;
     })
-    .join(', ')
+    .join(", ");
 }
 
 function getBodyInfo(operation: any): string {
-  if (!operation.requestBody) return '\u2014'
-  const content = operation.requestBody.content
-  if (!content || !content['application/json']) return '`{ ... }`'
-  const schema = content['application/json'].schema
-  if (!schema || !schema.properties) return '`{ ... }`'
-  const props = Object.keys(schema.properties)
-  if (props.length === 0) return '`{ }`'
-  return `\`{ ${props.join(', ')} }\``
+  if (!operation.requestBody) return "\u2014";
+  const content = operation.requestBody.content;
+  if (!content || !content["application/json"]) return "`{ ... }`";
+  const schema = content["application/json"].schema;
+  if (!schema || !schema.properties) return "`{ ... }`";
+  const props = Object.keys(schema.properties);
+  if (props.length === 0) return "`{ }`";
+  return `\`{ ${props.join(", ")} }\``;
 }
 
 function extractEntries(paths: Record<string, any>): PathEntry[] {
-  const entries: PathEntry[] = []
+  const entries: PathEntry[] = [];
   for (let [path, methods] of Object.entries(paths)) {
-    if (EXCLUDE_PATHS.has(path)) continue
-    path = AUTH_PATH_REMAP[path] || path
+    if (EXCLUDE_PATHS.has(path)) continue;
+    path = AUTH_PATH_REMAP[path] || path;
     for (const [method, op] of Object.entries(methods as any)) {
-      const isAuth = !!(op.security && op.security.length > 0)
+      const isAuth = !!(op.security && op.security.length > 0);
       entries.push({
         method: method.toUpperCase(),
         path,
-        auth: isAuth ? 'Yes' : '\u2014',
+        auth: isAuth ? "Yes" : "\u2014",
         query: getQueryParams(op),
         body: getBodyInfo(op),
-        description: op.description || '',
-      })
+        description: op.description || "",
+      });
     }
   }
-  entries.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method))
-  return entries
+  entries.sort((a, b) => a.path.localeCompare(b.path) || a.method.localeCompare(b.method));
+  return entries;
 }
 
 function buildMarkdown(paths: Record<string, any>): string {
-  const entries = extractEntries(paths)
+  const entries = extractEntries(paths);
 
   let md = `# RumaQ \u2014 REST API Contract
 
@@ -101,52 +101,52 @@ Errors use \`{ "error": "..." }\`.
 
 | Method | Path                     | Auth | Query               | Body                  | Description                                                                                |
 | ------ | ------------------------ | ---- | ------------------- | --------------------- | ------------------------------------------------------------------------------------------ |
-`
+`;
 
   for (const e of entries) {
-    const method = e.method.padEnd(6)
-    const path = e.path.padEnd(24)
-    const auth = e.auth.padEnd(4)
-    const query = e.query.padEnd(19)
-    const body = e.body.padEnd(21)
-    md += `| ${method} | ${path} | ${auth} | ${query} | ${body} | ${e.description} |\n`
+    const method = e.method.padEnd(6);
+    const path = e.path.padEnd(24);
+    const auth = e.auth.padEnd(4);
+    const query = e.query.padEnd(19);
+    const body = e.body.padEnd(21);
+    md += `| ${method} | ${path} | ${auth} | ${query} | ${body} | ${e.description} |\n`;
   }
 
-  md += `\n## Planned endpoints\n\nThe following contracts are planned but not yet implemented:\n\n### Households\n\n- \`GET /households\` \u2014 list households for the current user.\n- \`POST /households\` \u2014 create a household.\n- \`PATCH /households/:id\` \u2014 update household name or active status.\n\n### Purchases\n\n- \`GET /purchases?store=&from=&to=\` \u2014 purchase history grouped by month.\n\n### Plans\n\n- \`GET /plans?status=active\` \u2014 list shopping plans.\n- \`POST /plans/generate\` \u2014 ask AI to generate a shopping plan.\n- \`POST /plans\` \u2014 save a generated plan as active.\n- \`PATCH /plans/:id/items/:itemId\` \u2014 mark a plan item as bought or skipped.\n\n### AI Assistant\n\n- \`POST /ai/chat\` \u2014 send a message to the AI assistant.\n`
+  md += `\n## Planned endpoints\n\nThe following contracts are planned but not yet implemented:\n\n### Households\n\n- \`GET /households\` \u2014 list households for the current user.\n- \`POST /households\` \u2014 create a household.\n- \`PATCH /households/:id\` \u2014 update household name or active status.\n\n### Purchases\n\n- \`GET /purchases?store=&from=&to=\` \u2014 purchase history grouped by month.\n\n### Plans\n\n- \`GET /plans?status=active\` \u2014 list shopping plans.\n- \`POST /plans/generate\` \u2014 ask AI to generate a shopping plan.\n- \`POST /plans\` \u2014 save a generated plan as active.\n- \`PATCH /plans/:id/items/:itemId\` \u2014 mark a plan item as bought or skipped.\n\n### AI Assistant\n\n- \`POST /ai/chat\` \u2014 send a message to the AI assistant.\n`;
 
-  return md
+  return md;
 }
 
 async function main() {
   const [apiSpec, authSpec] = await Promise.all([
     generateSpecs(apiApp, DOCS_OPTIONS),
     generateSpecs(authApp, DOCS_OPTIONS),
-  ])
+  ]);
 
-  const allPaths: Record<string, any> = { ...apiSpec.paths }
+  const allPaths: Record<string, any> = { ...apiSpec.paths };
   for (const [authPath, methods] of Object.entries(authSpec.paths)) {
-    allPaths[authPath] = methods
+    allPaths[authPath] = methods;
   }
 
-  allPaths['/logout'] = {
-    ...allPaths['/logout'],
+  allPaths["/logout"] = {
+    ...allPaths["/logout"],
     get: {
-      operationId: 'getLogout',
+      operationId: "getLogout",
       description:
-        'Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}.',
+        "Clears the session cookie. POST returns { ok: true }; GET redirects to {origin}.",
       responses: {
-        '200': { description: 'OK' },
-        '302': { description: 'Redirect (GET)' },
+        "200": { description: "OK" },
+        "302": { description: "Redirect (GET)" },
       },
     },
-  }
+  };
 
-  const markdown = buildMarkdown(allPaths)
-  writeFileSync('docs/API.md', markdown, 'utf-8')
-  console.log('\u2713 Generated docs/API.md')
+  const markdown = buildMarkdown(allPaths);
+  writeFileSync("docs/API.md", markdown, "utf-8");
+  console.log("\u2713 Generated docs/API.md");
 }
 
 main().catch((err) => {
-  console.error('Failed to generate API docs:', err)
-  process.exit(1)
-})
+  console.error("Failed to generate API docs:", err);
+  process.exit(1);
+});

@@ -1,105 +1,105 @@
-import { describe, test as it, beforeEach, expect } from 'vitest'
-import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
-import { ApiContext } from './helpers.js'
+import { describe, test as it, beforeEach, expect } from "vitest";
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from "jest-cucumber";
+import { ApiContext } from "./helpers.js";
 
-setJestCucumberConfiguration({ runner: { describe, test: it } })
+setJestCucumberConfiguration({ runner: { describe, test: it } });
 
-const feature = loadFeature('automation/tests/local/api/features/auth.feature')
+const feature = loadFeature("automation/tests/local/api/features/auth.feature");
 
 defineFeature(feature, (test) => {
-  let ctx
+  let ctx;
 
   beforeEach(() => {
-    ctx = new ApiContext()
-  })
+    ctx = new ApiContext();
+  });
 
-  test('Logout clears the session', ({ given, when, then, and }) => {
-    given('the database has seed data', async () => {
-      await ctx.resetAndSeed()
-    })
+  test("Logout clears the session", ({ given, when, then, and }) => {
+    given("the database has seed data", async () => {
+      await ctx.resetAndSeed();
+    });
 
-    and('I am authenticated as a test user', async () => {
-      await ctx.authenticate()
-    })
-
-    when(/I send a (POST) request to (\S+)/, async (method, path) => {
-      await ctx.sendRequest(method, path)
-    })
-
-    then('the response status should be 200', () => {
-      ctx.expectStatus(200)
-    })
-
-    and('the response body should contain { ok: true }', () => {
-      ctx.expectBodyToMatch({ ok: true })
-    })
-  })
-
-  test('Email login sets session cookie', ({ given, when, then, and }) => {
-    given('the database has seed data', async () => {
-      await ctx.resetAndSeed()
-    })
-
-    when(/I login via email as "([^"]+)" with password "([^"]+)"/, async (email, password) => {
-      await ctx.authenticateViaEmail(email, password)
-    })
-
-    then('the response status should be 200', () => {
-      ctx.expectStatus(200)
-    })
-
-    and('the response body should contain { ok: true }', () => {
-      ctx.expectBodyToMatch({ ok: true })
-    })
-
-    and('a session cookie should be set', () => {
-      expect(ctx.headers).toBeDefined()
-      expect(ctx.headers.Cookie).toMatch(/^rumaq_session=/)
-    })
-  })
-
-  test('Email logout clears session', ({ given, when, then, and }) => {
-    given('the database has seed data', async () => {
-      await ctx.resetAndSeed()
-    })
-
-    when(/I login via email as "([^"]+)" with password "([^"]+)"/, async (email, password) => {
-      await ctx.authenticateViaEmail(email, password)
-    })
-
-    then('the response status should be 200', () => {
-      ctx.expectStatus(200)
-    })
+    and("I am authenticated as a test user", async () => {
+      await ctx.authenticate();
+    });
 
     when(/I send a (POST) request to (\S+)/, async (method, path) => {
-      await ctx.sendRequest(method, path)
-    })
+      await ctx.sendRequest(method, path);
+    });
 
-    then('the response status should be 200', () => {
-      ctx.expectStatus(200)
-    })
+    then("the response status should be 200", () => {
+      ctx.expectStatus(200);
+    });
 
-    and('the response body should contain { ok: true }', () => {
-      ctx.expectBodyToMatch({ ok: true })
-    })
-  })
+    and("the response body should contain { ok: true }", () => {
+      ctx.expectBodyToMatch({ ok: true });
+    });
+  });
 
-  test('Login redirects to Google', ({ when, then }) => {
+  test("Email login sets session cookie", ({ given, when, then, and }) => {
+    given("the database has seed data", async () => {
+      await ctx.resetAndSeed();
+    });
+
+    when(/I login via email as "([^"]+)" with password "([^"]+)"/, async (email, password) => {
+      await ctx.authenticateViaEmail(email, password);
+    });
+
+    then("the response status should be 200", () => {
+      ctx.expectStatus(200);
+    });
+
+    and("the response body should contain { ok: true }", () => {
+      ctx.expectBodyToMatch({ ok: true });
+    });
+
+    and("a session cookie should be set", () => {
+      expect(ctx.headers).toBeDefined();
+      expect(ctx.headers.Cookie).toMatch(/^rumaq_session=/);
+    });
+  });
+
+  test("Email logout clears session", ({ given, when, then, and }) => {
+    given("the database has seed data", async () => {
+      await ctx.resetAndSeed();
+    });
+
+    when(/I login via email as "([^"]+)" with password "([^"]+)"/, async (email, password) => {
+      await ctx.authenticateViaEmail(email, password);
+    });
+
+    then("the response status should be 200", () => {
+      ctx.expectStatus(200);
+    });
+
+    when(/I send a (POST) request to (\S+)/, async (method, path) => {
+      await ctx.sendRequest(method, path);
+    });
+
+    then("the response status should be 200", () => {
+      ctx.expectStatus(200);
+    });
+
+    and("the response body should contain { ok: true }", () => {
+      ctx.expectBodyToMatch({ ok: true });
+    });
+  });
+
+  test("Login redirects to Google", ({ when, then }) => {
     when(/I send a (GET) request to (\S+)/, async (method, path) => {
       ctx.response = await fetch(`${ctx.baseUrl}${path}`, {
         method,
-        redirect: 'manual',
-      })
-      ctx.responseBody = null
-    })
+        redirect: "manual",
+      });
+      ctx.responseBody = null;
+    });
 
-    then('the response status should be 302', () => {
-      ctx.expectStatus(302)
-    })
+    then("the response status should be 302", () => {
+      ctx.expectStatus(302);
+    });
 
-    and('the Location header should point to accounts.google.com', () => {
-      const location = ctx.response.headers.get('Location') || ''
-      expect(location).toContain('accounts.google.com')
-    })
-  })
-})
+    and("the Location header should point to accounts.google.com", () => {
+      const location = ctx.response.headers.get("Location") || "";
+      expect(location).toContain("accounts.google.com");
+    });
+  });
+});

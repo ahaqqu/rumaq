@@ -1,5 +1,5 @@
-import type { PlanItem } from './ai.js'
-import { completeText } from './ai.js'
+import type { PlanItem } from "./ai.js";
+import { completeText } from "./ai.js";
 import {
   object,
   strictObject,
@@ -12,7 +12,7 @@ import {
   minLength,
   minValue,
   nullish,
-} from 'valibot'
+} from "valibot";
 
 export const planGenerateResponseSchema = object({
   items: array(
@@ -23,13 +23,13 @@ export const planGenerateResponseSchema = object({
       store_id: nullish(string()),
       price_estimate: nullish(number()),
       why: string(),
-    })
+    }),
   ),
-})
+});
 
 export const planItemPatchSchema = strictObject({
-  status: picklist(['bought', 'skipped']),
-})
+  status: picklist(["bought", "skipped"]),
+});
 
 export const planCreateSchema = strictObject({
   items: pipe(
@@ -41,57 +41,57 @@ export const planCreateSchema = strictObject({
         store_id: optional(string()),
         price_estimate: optional(number()),
         why: optional(string()),
-      })
+      }),
     ),
-    minLength(1)
+    minLength(1),
   ),
-})
+});
 
 export function buildPlanPrompt(
   lowStock: Array<{
-    name: string
-    qty: number
-    unit: string | null
-    run_out_days: number | null
-    expiry_date: string | null
+    name: string;
+    qty: number;
+    unit: string | null;
+    run_out_days: number | null;
+    expiry_date: string | null;
   }>,
   expiring: Array<{
-    name: string
-    qty: number
-    unit: string | null
-    expiry_date: string | null
+    name: string;
+    qty: number;
+    unit: string | null;
+    expiry_date: string | null;
   }>,
   recentPurchases: Array<{ name: string; store_label: string | null }>,
   stores: Array<{ id: string; label: string }>,
-  currency: string
+  currency: string,
 ): string {
-  const storeLines = stores.map((s) => `${s.id}: ${s.label}`).join('\n')
+  const storeLines = stores.map((s) => `${s.id}: ${s.label}`).join("\n");
   const lowStockLines = lowStock
     .map(
       (s) =>
-        `${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, runs out in ${s.run_out_days ?? '?'} days)`
+        `${s.name} (qty: ${s.qty}${s.unit ? " " + s.unit : ""}, runs out in ${s.run_out_days ?? "?"} days)`,
     )
-    .join('\n')
+    .join("\n");
   const expiringLines = expiring
-    .map((s) => `${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, expires: ${s.expiry_date})`)
-    .join('\n')
+    .map((s) => `${s.name} (qty: ${s.qty}${s.unit ? " " + s.unit : ""}, expires: ${s.expiry_date})`)
+    .join("\n");
   const purchaseLines = recentPurchases
-    .map((p) => `${p.name}${p.store_label ? ' @ ' + p.store_label : ''}`)
-    .join('\n')
+    .map((p) => `${p.name}${p.store_label ? " @ " + p.store_label : ""}`)
+    .join("\n");
 
   return `You are a shopping plan assistant. Based on the household's current inventory and purchase history, generate a shopping plan.
 
 Available stores (id: label):
-${storeLines || 'No stores configured'}
+${storeLines || "No stores configured"}
 
 Low-stock items (running out within 7 days):
-${lowStockLines || 'None'}
+${lowStockLines || "None"}
 
 Expiring items (within 7 days):
-${expiringLines || 'None'}
+${expiringLines || "None"}
 
 Recent purchases (last 30 days) — items the household regularly buys:
-${purchaseLines || 'None'}
+${purchaseLines || "None"}
 
 Return ONLY valid JSON in this exact format:
 {
@@ -115,47 +115,47 @@ Rules:
 - price_estimate is optional — provide a rough estimate in ${currency} if possible.
 - The "why" field explains why the item is suggested.
 - Include a sensible quantity based on past purchase patterns.
-- Do NOT include any text outside the JSON.`
+- Do NOT include any text outside the JSON.`;
 }
 
 export async function generateAiPlan(
   provider: string,
   apiKey: string,
   lowStock: Array<{
-    name: string
-    qty: number
-    unit: string | null
-    run_out_days: number | null
-    expiry_date: string | null
+    name: string;
+    qty: number;
+    unit: string | null;
+    run_out_days: number | null;
+    expiry_date: string | null;
   }>,
   expiring: Array<{
-    name: string
-    qty: number
-    unit: string | null
-    expiry_date: string | null
+    name: string;
+    qty: number;
+    unit: string | null;
+    expiry_date: string | null;
   }>,
   recentPurchases: Array<{ name: string; store_label: string | null }>,
   stores: Array<{ id: string; label: string }>,
-  currency: string
+  currency: string,
 ): Promise<PlanItem[]> {
-  const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, currency)
-  const systemPrompt = `You are a helpful shopping plan assistant. Generate concise, practical shopping plans in JSON format.`
+  const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, currency);
+  const systemPrompt = `You are a helpful shopping plan assistant. Generate concise, practical shopping plans in JSON format.`;
 
-  const content = await completeText(provider, apiKey, systemPrompt, prompt)
+  const content = await completeText(provider, apiKey, systemPrompt, prompt);
 
-  const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || '{}') as Record<string, unknown>
-  const items = (parsed.items || []) as Record<string, unknown>[]
+  const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || "{}") as Record<string, unknown>;
+  const items = (parsed.items || []) as Record<string, unknown>[];
 
   return items.slice(0, 50).map((it) => ({
-    name: String(it.name || ''),
+    name: String(it.name || ""),
     qty: Number(it.qty) || 1,
-    unit: String(it.unit || 'pcs'),
+    unit: String(it.unit || "pcs"),
     store_id: it.store_id ? String(it.store_id) : null,
     price_estimate: it.price_estimate != null ? Math.round(Number(it.price_estimate)) : null,
-    why: String(it.why || ''),
-  }))
+    why: String(it.why || ""),
+  }));
 }
 
 export function normalizeItemName(name: string): string {
-  return name.trim().toLowerCase().replace(/\s+/g, ' ')
+  return name.trim().toLowerCase().replace(/\s+/g, " ");
 }

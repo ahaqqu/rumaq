@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
-import { getHome } from '../api.js'
+import { useQuery } from "@tanstack/react-query";
+import { getHome } from "../api.js";
 
 export function useHome() {
   return useQuery({
-    queryKey: ['home'],
+    queryKey: ["home"],
     queryFn: getHome,
-  })
+  });
 }

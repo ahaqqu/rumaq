@@ -1,12 +1,12 @@
-@import 'tailwindcss';
-@import '@cloudflare/kumo/styles';
+@import "tailwindcss";
+@import "@cloudflare/kumo/styles";
 /* TODO: Phase 4 — remove these legacy imports once all pages are migrated to Tailwind */
-@import './styles/tokens.css';
-@import './styles/base.css';
-@import './styles/components.css';
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/components.css";
 
 :root,
-[data-theme='rumaq'] {
+[data-theme="rumaq"] {
   --surface: oklch(0.945 0.028 230);
   --surface-raised: oklch(0.975 0.018 230);
   --surface-sunken: oklch(0.915 0.032 230);

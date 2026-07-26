@@ -34,7 +34,7 @@ Translation keys are grouped by component:
 1. Create `frontend/src/i18n/locales/{code}.json` — translate every key from `en.json`
 2. Add it to `frontend/src/i18n/index.js`:
    ```js
-   import xx from './locales/{code}.json'
+   import xx from "./locales/{code}.json";
    // add to resources: { en: { translation: en }, id: { translation: id }, xx: { translation: xx } }
    ```
 3. It appears automatically in the Settings language switcher (Display section)
@@ -46,16 +46,16 @@ The persona engine reads base text from the current locale's translations. Mood 
 ## Usage in components
 
 ```jsx
-import { useTranslation } from 'react-i18next'
+import { useTranslation } from "react-i18next";
 
 function MyComponent() {
-  const { t } = useTranslation()
-  return <p>{t('home.stockStatus')}</p>
+  const { t } = useTranslation();
+  return <p>{t("home.stockStatus")}</p>;
 }
 ```
 
 For persona-personalised text, pass `t` to `personaText()`:
 
 ```js
-personaText('homeLead', persona, t)
+personaText("homeLead", persona, t);
 ```
