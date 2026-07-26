@@ -8,11 +8,39 @@ set -euo pipefail
 # update an existing local / Cloudflare deployment.
 #
 # Usage:
-#   ./scripts/deploy.sh              # prepare local env + start dev servers
-#   ./scripts/deploy.sh cloudflare   # deploy (or update) Cloudflare
+#   ./scripts/deploy.sh                       # prepare local env + start dev servers
+#   ./scripts/deploy.sh cloudflare            # deploy (or update) Cloudflare
+#   ./scripts/deploy.sh cloudflare --dry-run  # validate without deploying
+#   ./scripts/deploy.sh --dry-run             # alias for dry-run validation
+#   ./scripts/deploy.sh frontend              # deploy only the frontend
 # ============================================================
 
-MODE="${1:-local}"
+DRY_RUN=false
+MODE=""
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run)
+      DRY_RUN=true
+      ;;
+    local | cloudflare | frontend | dry-run)
+      MODE="$arg"
+      ;;
+    *)
+      echo "Unknown argument: $arg"
+      echo "Usage: $0 [local|cloudflare|frontend|dry-run] [--dry-run]"
+      exit 1
+      ;;
+  esac
+done
+
+if [[ -z $MODE ]]; then
+  if $DRY_RUN; then
+    MODE="cloudflare"
+  else
+    MODE="local"
+  fi
+fi
+
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 BACKEND_DIR="$ROOT_DIR/backend"
 
@@ -25,6 +53,7 @@ fi
 
 DB_NAME="${D1_DATABASE_NAME:-rumaq}"
 PAGES_PROJECT="${PAGES_PROJECT_NAME:-rumaq}"
+R2_BUCKET_NAME="${R2_BUCKET_NAME:-rumaq-receipts}"
 
 cd "$ROOT_DIR"
 
@@ -48,6 +77,26 @@ wrangler_cmd() {
   local db=$1
   shift
   wrangler d1 migrations apply "$db" --config "$config" "$@"
+}
+
+# Prepare a resolved wrangler config for deploy. If CLOUDFLARE_ACCOUNT_ID or
+# CLOUDFLARE_DATABASE_ID are set, their values override the placeholders in the
+# committed wrangler.cloudflare.toml. The original file is never modified.
+resolve_wrangler_config() {
+  local src="$BACKEND_DIR/wrangler.cloudflare.toml"
+  local tmp="$BACKEND_DIR/wrangler.cloudflare.resolved.toml"
+
+  cp "$src" "$tmp"
+
+  if [[ -n "${CLOUDFLARE_ACCOUNT_ID:-}" ]]; then
+    sed -i "s|^account_id = \"YOUR_ACCOUNT_ID\"|account_id = \"$CLOUDFLARE_ACCOUNT_ID\"|" "$tmp"
+  fi
+
+  if [[ -n "${CLOUDFLARE_DATABASE_ID:-}" ]]; then
+    sed -i "s|^database_id = \"YOUR_DATABASE_ID\"|database_id = \"$CLOUDFLARE_DATABASE_ID\"|" "$tmp"
+  fi
+
+  printf '%s' "$tmp"
 }
 
 # Detect branch for branch-specific deployments
@@ -123,26 +172,20 @@ ensure_wrangler_toml() {
 }
 
 # ------------------------------------------------------------------
-# .dev.vars – create template for local dev if missing
+# .dev.vars – create from example for local dev if missing
 # ------------------------------------------------------------------
 ensure_dev_vars() {
   if [[ -f $BACKEND_DIR/.dev.vars ]]; then
     return
   fi
 
-  log "backend/.dev.vars not found – creating template."
+  if [[ ! -f $BACKEND_DIR/.dev.vars.example ]]; then
+    echo "Error: backend/.dev.vars.example not found."
+    exit 1
+  fi
 
-  cat > "$BACKEND_DIR/.dev.vars" <<- EOF
-# Local-only secrets for \`wrangler dev\`.
-# Obtain real values from your Google Cloud Console and generate strong
-# random strings for JWT and encryption secrets.
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-WORKER_JWT_SECRET=
-WORKER_ENCRYPTION_KEY=
-EMAIL_AUTH_ENABLED=true
-EOF
-
+  log "backend/.dev.vars not found – copying from example."
+  cp "$BACKEND_DIR/.dev.vars.example" "$BACKEND_DIR/.dev.vars"
   warn "backend/.dev.vars created with placeholder values."
   warn "Edit backend/.dev.vars with real secrets before running the dev server."
 }
@@ -174,24 +217,37 @@ setup_database_local() {
 setup_database_remote() {
   log "Setting up remote D1 database (${DB_NAME})..."
 
-  local config_file="wrangler.cloudflare.toml"
+  if $DRY_RUN; then
+    ok "Skipping remote D1 migration in dry-run mode."
+    return
+  fi
+
+  local config_file
+  config_file=$(resolve_wrangler_config)
   cd "$BACKEND_DIR"
 
-  local db_id
-  db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2> /dev/null || true)
+  local db_id="${CLOUDFLARE_DATABASE_ID:-}"
+
+  if [[ -z $db_id ]]; then
+    db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2> /dev/null || true)
+  fi
 
   if [[ $db_id == "YOUR_DATABASE_ID" || -z $db_id ]]; then
     db_id=$(bun --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" d1-setup)
     if [[ -n $db_id ]]; then
-      sed -i "s|database_id = \".*\"|database_id = \"$db_id\"|" "$config_file"
-      ok "Updated database_id in wrangler.cloudflare.toml."
+      warn "Set CLOUDFLARE_DATABASE_ID=$db_id in your environment or .env to avoid recreating it."
     else
       warn "Could not determine database_id."
-      warn "Manually copy the database_id into backend/wrangler.cloudflare.toml."
+      warn "Set CLOUDFLARE_DATABASE_ID or manually copy the database_id into backend/wrangler.cloudflare.toml."
     fi
   fi
 
+  if [[ -n $db_id && $db_id != "YOUR_DATABASE_ID" ]]; then
+    sed -i "s|^database_id = \"YOUR_DATABASE_ID\"|database_id = \"$db_id\"|" "$config_file"
+  fi
+
   wrangler_cmd "$config_file" "$DB_NAME" --remote
+  rm -f "$config_file"
   cd "$ROOT_DIR"
 }
 
@@ -200,6 +256,12 @@ setup_database_remote() {
 # ------------------------------------------------------------------
 ensure_r2_bucket() {
   local bucket_name="${R2_BUCKET_NAME:-rumaq-receipts}"
+
+  if $DRY_RUN; then
+    ok "Skipping R2 bucket check in dry-run mode."
+    return
+  fi
+
   log "Ensuring R2 bucket \"${bucket_name}\"..."
   cd "$BACKEND_DIR"
   result=$(bun --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" r2-ensure)
@@ -212,22 +274,13 @@ ensure_r2_bucket() {
 }
 
 # ------------------------------------------------------------------
-# Deploy Worker to Cloudflare
+# Validate required deploy variables
 # ------------------------------------------------------------------
-deploy_worker() {
-  log "Deploying Worker (name: ${WORKER_NAME})..."
-
-  if [[ ! -f $BACKEND_DIR/wrangler.cloudflare.toml ]]; then
-    echo "Error: backend/wrangler.cloudflare.toml not found."
-    echo "Run \`./scripts/deploy.sh cloudflare\` first to create it."
+validate_deploy_env() {
+  if [[ -z "${WORKER_URL:-}" ]]; then
+    echo "Error: WORKER_URL is empty. Cannot build frontend with an empty API base."
     exit 1
   fi
-
-  bunx wrangler deploy \
-    --config "$BACKEND_DIR/wrangler.cloudflare.toml" \
-    --name "$WORKER_NAME" \
-    --var PAGES_ORIGIN:"$PAGES_ORIGIN"
-  ok "Worker deployed to ${WORKER_URL}."
 }
 
 # ------------------------------------------------------------------
@@ -235,6 +288,11 @@ deploy_worker() {
 # ------------------------------------------------------------------
 put_worker_secrets() {
   log "Setting Worker secrets for ${WORKER_NAME}..."
+
+  if $DRY_RUN; then
+    ok "Skipping secret upload in dry-run mode."
+    return
+  fi
 
   for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
     val="${!key:-}"
@@ -250,13 +308,59 @@ put_worker_secrets() {
 }
 
 # ------------------------------------------------------------------
-# Build & deploy frontend to Cloudflare Pages (static only)
+# Deploy Worker to Cloudflare
 # ------------------------------------------------------------------
-deploy_frontend() {
+deploy_worker() {
+  log "Deploying Worker (name: ${WORKER_NAME})..."
+
+  if [[ ! -f $BACKEND_DIR/wrangler.cloudflare.toml ]]; then
+    echo "Error: backend/wrangler.cloudflare.toml not found."
+    echo "Run \`./scripts/deploy.sh cloudflare\` first to create it."
+    exit 1
+  fi
+
+  local config_file
+  config_file=$(resolve_wrangler_config)
+
+  # shellcheck disable=SC2064
+  trap "rm -f '$config_file'" EXIT INT TERM
+
+  local dry_run_flag=""
+  if $DRY_RUN; then
+    dry_run_flag="--dry-run"
+  fi
+
+  # shellcheck disable=SC2086
+  bunx wrangler deploy \
+    --config "$config_file" \
+    --name "$WORKER_NAME" \
+    --var PAGES_ORIGIN:"$PAGES_ORIGIN" \
+    ${dry_run_flag}
+
+  rm -f "$config_file"
+  trap - EXIT INT TERM
+
+  if $DRY_RUN; then
+    ok "Worker dry-run build succeeded."
+  else
+    ok "Worker deployed to ${WORKER_URL}."
+  fi
+}
+
+# ------------------------------------------------------------------
+# Build frontend (no deploy)
+# ------------------------------------------------------------------
+build_frontend() {
   log "Building frontend with Worker URL: ${WORKER_URL}..."
   bun install --frozen-lockfile
   VITE_API_BASE="$WORKER_URL" bunx vp build frontend
+  ok "Frontend build succeeded."
+}
 
+# ------------------------------------------------------------------
+# Deploy built frontend to Cloudflare Pages (static only)
+# ------------------------------------------------------------------
+pages_deploy() {
   log "Deploying static assets to Cloudflare Pages (project: ${PAGES_PROJECT}, branch: ${PAGES_BRANCH})..."
   wrangler pages deploy frontend/dist \
     --project-name "$PAGES_PROJECT" \
@@ -266,13 +370,42 @@ deploy_frontend() {
 }
 
 # ------------------------------------------------------------------
-# Build frontend (no deploy)
+# Build & deploy frontend to Cloudflare Pages (static only)
 # ------------------------------------------------------------------
-build_frontend() {
-  log "Building frontend (dry-run)..."
-  bun install --frozen-lockfile
-  bunx vp build frontend
-  ok "Frontend build succeeded (no deployment was made)."
+deploy_frontend() {
+  build_frontend
+  pages_deploy
+}
+
+# ------------------------------------------------------------------
+# Dry-run validation for Cloudflare deploy
+# ------------------------------------------------------------------
+validate_cloudflare_deploy() {
+  echo "=== RumaQ: Cloudflare deploy dry-run ==="
+  check_prereqs
+  ensure_wrangler_toml cloudflare
+  validate_deploy_env
+  install_deps
+
+  log "Validating Worker build..."
+  local config_file
+  config_file=$(resolve_wrangler_config)
+
+  # shellcheck disable=SC2064
+  trap "rm -f '$config_file'" EXIT INT TERM
+
+  bunx wrangler deploy \
+    --config "$config_file" \
+    --name "$WORKER_NAME" \
+    --var PAGES_ORIGIN:"$PAGES_ORIGIN" \
+    --dry-run
+
+  rm -f "$config_file"
+  trap - EXIT INT TERM
+
+  log "Validating frontend build..."
+  build_frontend
+  ok "Dry-run complete. No resources were deployed."
 }
 
 # ------------------------------------------------------------------
@@ -345,11 +478,15 @@ do_cloudflare() {
   check_login
   ensure_wrangler_toml cloudflare
   install_deps
+  validate_deploy_env
   setup_database_remote
   ensure_r2_bucket
-  deploy_worker
   put_worker_secrets
-  deploy_frontend
+  deploy_worker
+  build_frontend
+  if ! $DRY_RUN; then
+    pages_deploy
+  fi
   summary_cloudflare
 }
 
@@ -386,9 +523,8 @@ do_local() {
 }
 
 do_dry_run() {
-  echo "=== RumaQ: dry-run (build only) ==="
-  check_prereqs
-  build_frontend
+  DRY_RUN=true
+  do_cloudflare
 }
 
 # ==================================================================
@@ -405,11 +541,14 @@ case "$MODE" in
     do_dry_run
     ;;
   frontend)
-    deploy_frontend
+    build_frontend
+    if ! $DRY_RUN; then
+      pages_deploy
+    fi
     ;;
   *)
     echo "Unknown mode: $MODE"
-    echo "Usage: $0 [local|cloudflare|dry-run|frontend]"
+    echo "Usage: $0 [local|cloudflare|dry-run|frontend] [--dry-run]"
     exit 1
     ;;
 esac

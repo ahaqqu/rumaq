@@ -2,7 +2,11 @@ name = "api"
 main = "src/index.ts"
 compatibility_date = "2026-07-10"
 compatibility_flags = ["nodejs_compat"]
-account_id = "85cd0e23088e12759d05b347f0f68536"
+
+# The real account_id is supplied via the CLOUDFLARE_ACCOUNT_ID environment
+# variable. Wrangler reads it automatically; the placeholder below is only a
+# fallback for local tooling that parses the file without env substitution.
+account_id = "YOUR_ACCOUNT_ID"
 
 [vars]
 PAGES_ORIGIN = "https://rumaq.pages.dev"
@@ -12,7 +16,11 @@ RUN_SECRETS_CHECK = "true"
 [[d1_databases]]
 binding = "DB"
 database_name = "rumaq"
-database_id = "0591e773-0f1b-48c9-b931-8280a00b9068"
+
+# The real database_id is supplied via the CLOUDFLARE_DATABASE_ID environment
+# variable. Wrangler uses the value here as a fallback, so keep it as a
+# placeholder in version control.
+database_id = "YOUR_DATABASE_ID"
 
 [[r2_buckets]]
 binding = "RECEIPTS"

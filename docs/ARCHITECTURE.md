@@ -257,25 +257,40 @@ Daily usage is tracked in `ai_usage` so the app can show the meter and cap reque
 
 ### Branch deployments
 
-When not on `main`, `./scripts/deploy.sh cloudflare` deploys to a branch-specific Worker (`rumaq-api-{sanitized-branch}`) and Pages preview environment. Production is never touched.
+When not on `main`, `./scripts/deploy.sh cloudflare` deploys to a **branch-specific Worker** (`rumaq-api-{sanitized-branch}`) and a matching **Cloudflare Pages preview branch**. This means every PR gets its own real preview environment backed by a real Worker, rather than pointing the preview frontend at the production Worker.
 
 Branch Workers are cleaned up automatically via `.github/workflows/cleanup-branch.yml` when the PR is closed.
 
+`.github/workflows/preview.yml` runs on every PR to main. It builds the frontend, deploys the branch Worker + Pages preview, and comments the preview URL on the PR.
+
 ### One-time setup
 
-1. Create the D1 database:
+1. Set the Cloudflare account ID:
+
+   ```bash
+   export CLOUDFLARE_ACCOUNT_ID=your-account-id
+   ```
+
+   Wrangler reads `CLOUDFLARE_ACCOUNT_ID` automatically. You can also put it in `.env` (gitignored) at the project root; `scripts/deploy.sh` sources `.env` if it exists.
+
+2. Create the D1 database:
 
    ```bash
    node scripts/deploy/deploy-cf.js d1-setup
    ```
 
-   Copy the returned UUID into `backend/wrangler.cloudflare.toml` as `database_id`.
-
-2. Apply migrations:
+   Copy the returned UUID and export it:
 
    ```bash
-   cd backend && wrangler d1 migrations apply rumaq --remote
+   export CLOUDFLARE_DATABASE_ID=the-returned-uuid
    ```
+
+   Do **not** hard-code it in `backend/wrangler.cloudflare.toml`. The committed file uses placeholders; the deploy script resolves them from environment variables at runtime.
+
+   **Where to find the ID later:**
+   - Cloudflare dashboard: Workers & Pages > D1 > `rumaq` > Database ID
+   - Wrangler CLI: `wrangler d1 list`
+   - API: `GET /client/v4/accounts/{account_id}/d1/database`
 
 3. Create the R2 bucket:
 
@@ -283,22 +298,65 @@ Branch Workers are cleaned up automatically via `.github/workflows/cleanup-branc
    node scripts/deploy/deploy-cf.js r2-ensure
    ```
 
-4. Deploy (builds + deploys Worker, then builds frontend with Worker URL, deploys static assets to Pages):
+   The bucket is private by default. Verify privacy in the Cloudflare dashboard under R2 > `rumaq-receipts` > Settings: "Object access" should be "Private".
+
+4. Set Worker secrets:
+
    ```bash
    ./scripts/deploy.sh cloudflare
    ```
 
+   The deploy script uploads secrets before deploying the Worker so a startup secrets check never fails.
+
 ### Environment variables
 
-| Variable                | Where         | Purpose                                                                                                  |
-| ----------------------- | ------------- | -------------------------------------------------------------------------------------------------------- |
-| `GOOGLE_CLIENT_ID`      | Worker secret | Google OAuth client ID                                                                                   |
-| `GOOGLE_CLIENT_SECRET`  | Worker secret | Google OAuth client secret                                                                               |
-| `WORKER_JWT_SECRET`     | Worker secret | HMAC key for session JWT                                                                                 |
-| `WORKER_ENCRYPTION_KEY` | Worker secret | AES-GCM key for AI keys                                                                                  |
-| `EMAIL_AUTH_ENABLED`    | Worker var    | Set to `"true"` to enable email/password testing auth; `"false"` (default) keeps it disabled             |
-| `RUN_SECRETS_CHECK`     | Worker var    | Set to `"true"` to enable missing-secrets check on startup (recommended for production); off by default  |
-| `WORKER_URL`            | Build env     | URL of the deployed Worker (e.g. `https://api.rumaq.workers.dev`); used at build time as `VITE_API_BASE` |
+| Variable                 | Where         | Purpose                                                                                                  |
+| ------------------------ | ------------- | -------------------------------------------------------------------------------------------------------- |
+| `GOOGLE_CLIENT_ID`       | Worker secret | Google OAuth client ID                                                                                   |
+| `GOOGLE_CLIENT_SECRET`   | Worker secret | Google OAuth client secret                                                                               |
+| `WORKER_JWT_SECRET`      | Worker secret | HMAC key for session JWT                                                                                 |
+| `WORKER_ENCRYPTION_KEY`  | Worker secret | AES-GCM key for AI keys                                                                                  |
+| `CLOUDFLARE_ACCOUNT_ID`  | Build/deploy  | Cloudflare account ID; used by Wrangler and the deploy script                                            |
+| `CLOUDFLARE_DATABASE_ID` | Build/deploy  | D1 database UUID; supplied to `wrangler.cloudflare.toml` at deploy time instead of being committed       |
+| `CLOUDFLARE_API_TOKEN`   | Build/deploy  | Optional API token for CI/automated deploys. If absent, `wrangler login` is used interactively           |
+| `EMAIL_AUTH_ENABLED`     | Worker var    | Set to `"true"` to enable email/password testing auth; `"false"` (default) keeps it disabled             |
+| `RUN_SECRETS_CHECK`      | Worker var    | Set to `"true"` to enable missing-secrets check on startup (recommended for production); off by default  |
+| `WORKER_URL`             | Build env     | URL of the deployed Worker (e.g. `https://api.rumaq.workers.dev`); used at build time as `VITE_API_BASE` |
+| `PAGES_PROJECT_NAME`     | Deploy        | Cloudflare Pages project name (default: `rumaq`)                                                         |
+| `D1_DATABASE_NAME`       | Deploy        | D1 database name (default: `rumaq`)                                                                      |
+| `R2_BUCKET_NAME`         | Deploy        | R2 bucket name for receipt images (default: `rumaq-receipts`)                                            |
+
+### Secrets management
+
+Generate strong secrets locally:
+
+```bash
+openssl rand -hex 32   # WORKER_JWT_SECRET
+openssl rand -hex 32   # WORKER_ENCRYPTION_KEY
+```
+
+For local development, copy `backend/.dev.vars.example` to `backend/.dev.vars` and fill in all values. `backend/.dev.vars` is gitignored and must never be committed.
+
+To set or rotate a secret in production:
+
+```bash
+# interactive
+wrangler secret put WORKER_JWT_SECRET --name api --config backend/wrangler.cloudflare.toml
+
+# or use the deploy script, which reads secrets from the environment
+export WORKER_JWT_SECRET=...
+export WORKER_ENCRYPTION_KEY=...
+./scripts/deploy.sh cloudflare
+```
+
+**Important:** Rotating `WORKER_ENCRYPTION_KEY` invalidates every stored AI API key because they are encrypted with the old key. After rotation, all users must re-enter their AI key in Settings. Rotating `WORKER_JWT_SECRET` only invalidates active sessions; users simply log in again.
+
+| Secret                  | Local | Test | Production | Rotation impact                   |
+| ----------------------- | ----- | ---- | ---------- | --------------------------------- |
+| `GOOGLE_CLIENT_ID`      | yes   | no   | yes        | OAuth login only                  |
+| `GOOGLE_CLIENT_SECRET`  | yes   | no   | yes        | OAuth login only                  |
+| `WORKER_JWT_SECRET`     | yes   | yes  | yes        | Active sessions invalidated       |
+| `WORKER_ENCRYPTION_KEY` | yes   | yes  | yes        | Stored AI keys must be re-entered |
 
 ## 9. Free-tier headroom
 
