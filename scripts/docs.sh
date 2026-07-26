@@ -5,4 +5,4 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 
 cd "$ROOT_DIR"
 bunx tsx scripts/docs/generate-api-docs.ts
-vp fmt --write docs/API.md > /dev/null
+bunx vp fmt --write docs/API.md > /dev/null

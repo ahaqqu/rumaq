@@ -19,7 +19,7 @@ COPY backend/wrangler.test.toml ./backend/
 # Layer 3: src (changes most frequently)
 COPY frontend/src/ ./frontend/src/
 
-RUN vp build frontend
+RUN bunx vp build frontend
 
 FROM nginx:alpine
 

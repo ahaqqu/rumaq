@@ -11,10 +11,10 @@ fi
 
 if $CHECK; then
   echo "==> Checking formatting, lint, and types"
-  vp check
+  bunx vp check
 else
   echo "==> Formatting and auto-fixing code"
-  vp check --fix
+  bunx vp check --fix
 fi
 
 echo "==> Style OK"

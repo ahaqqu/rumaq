@@ -255,7 +255,7 @@ put_worker_secrets() {
 deploy_frontend() {
   log "Building frontend with Worker URL: ${WORKER_URL}..."
   bun install --frozen-lockfile
-  VITE_API_BASE="$WORKER_URL" vp build frontend
+  VITE_API_BASE="$WORKER_URL" bunx vp build frontend
 
   log "Deploying static assets to Cloudflare Pages (project: ${PAGES_PROJECT}, branch: ${PAGES_BRANCH})..."
   wrangler pages deploy frontend/dist \
@@ -271,7 +271,7 @@ deploy_frontend() {
 build_frontend() {
   log "Building frontend (dry-run)..."
   bun install --frozen-lockfile
-  vp build frontend
+  bunx vp build frontend
   ok "Frontend build succeeded (no deployment was made)."
 }
 
@@ -301,7 +301,7 @@ summary_local() {
   echo "============================================"
   echo ""
   echo "  Start the dev servers:"
-  echo "    vp run dev"
+  echo "    bunx vp run dev"
   echo ""
   echo "  Make sure backend/.dev.vars has real secrets."
   echo "============================================"
@@ -369,11 +369,11 @@ do_local() {
   trap cleanup EXIT INT TERM
 
   log "Starting frontend (Vite) on http://localhost:5173..."
-  vp dev frontend &
+  bunx vp dev frontend &
   FRONTEND_PID=$!
 
   log "Starting backend (Worker) on http://localhost:8787..."
-  vp dev backend &
+  bunx vp dev backend &
   BACKEND_PID=$!
 
   echo ""

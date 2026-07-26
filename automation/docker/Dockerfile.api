@@ -23,7 +23,7 @@ COPY automation/tests/ ./automation/tests/
 COPY backend/src/ ./backend/src/
 
 # Layer 5: build (invalidated when src changes)
-RUN vp build backend
+RUN bunx vp build backend
 
 EXPOSE 8787
 

@@ -34,4 +34,4 @@ COPY automation/tests/ ./automation/tests/
 
 ENV TEST_BASE_URL=http://proxy:3000
 
-CMD ["sh", "-c", "vp run test:api && vp run test:e2e && sync"]
+CMD ["sh", "-c", "bunx vp run test:api && bunx vp run test:e2e && sync"]
