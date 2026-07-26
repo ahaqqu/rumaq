@@ -62,10 +62,10 @@ export function buildPlanPrompt(
     expiry_date: string | null
   }>,
   recentPurchases: Array<{ name: string; store_label: string | null }>,
-  stores: Array<{ id: string; label: string }>,
+  stores: Array<{ label: string }>,
   currency: string
 ): string {
-  const storeLines = stores.map((s) => `${s.id}: ${s.label}`).join('\n')
+  const storeLines = stores.map((s) => `- ${s.label}`).join('\n')
   const lowStockLines = lowStock
     .map(
       (s) =>
@@ -81,7 +81,7 @@ export function buildPlanPrompt(
 
   return `You are a shopping plan assistant. Based on the household's current inventory and purchase history, generate a shopping plan.
 
-Available stores (id: label):
+Available stores:
 ${storeLines || 'No stores configured'}
 
 Low-stock items (running out within 7 days):
@@ -110,7 +110,7 @@ Return ONLY valid JSON in this exact format:
 Rules:
 - Suggest items that are running low or expiring soon.
 - Include items from purchase history that may need restocking.
-- Group items by store where possible using the store IDs above. If a store is unknown, set store_id to null.
+- Group items by store where possible using the store labels above. If a store is unknown, set store_id to null.
 - Cap at 50 items maximum.
 - price_estimate is optional — provide a rough estimate in ${currency} if possible.
 - The "why" field explains why the item is suggested.
@@ -138,7 +138,8 @@ export async function generateAiPlan(
   stores: Array<{ id: string; label: string }>,
   currency: string
 ): Promise<PlanItem[]> {
-  const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, currency)
+  const promptStores = stores.map((s) => ({ label: s.label }))
+  const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, promptStores, currency)
   const systemPrompt = `You are a helpful shopping plan assistant. Generate concise, practical shopping plans in JSON format.`
 
   const content = await completeText(provider, apiKey, systemPrompt, prompt)

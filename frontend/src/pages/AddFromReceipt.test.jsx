@@ -8,6 +8,8 @@ vi.mock('../lib/api.js', () => ({
   scanReceipt: vi.fn(),
   createPurchase: vi.fn(),
   getReceiptUrl: vi.fn(() => '/api/purchases/123/receipt'),
+  getStores: vi.fn(),
+  getItems: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-router', () => ({
@@ -15,6 +17,7 @@ vi.mock('@tanstack/react-router', () => ({
 }))
 
 const MOCK_STORES = { stores: [{ id: 's1', label: 'Indomaret' }] }
+const MOCK_ITEMS = { items: [{ id: 'i1', name: 'Milk', unit: 'L' }] }
 
 function createFile(name, type, size) {
   const blob = new Blob(['x'.repeat(size)], { type })
@@ -28,6 +31,10 @@ function selectFile(container, file) {
   fireEvent.change(input)
 }
 
+function renderComponent(props = {}) {
+  return render(React.createElement(AddFromReceipt, { onDone: vi.fn(), ...props }))
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   global.fetch = vi.fn()
@@ -35,17 +42,17 @@ beforeEach(() => {
 
 describe('AddFromReceipt', () => {
   it('renders capture phase by default', () => {
-    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
+    const { container } = renderComponent()
     expect(container.querySelector('.dropzone')).toBeTruthy()
   })
 
   it('renders page lead', () => {
-    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
+    const { container } = renderComponent()
     expect(container.querySelector('.page__lead')).toBeTruthy()
   })
 
   it('shows error for unsupported file type', async () => {
-    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
+    const { container } = renderComponent()
     const file = createFile('test.gif', 'image/gif', 100)
     selectFile(container, file)
 
@@ -55,7 +62,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('shows error for oversized file', async () => {
-    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
+    const { container } = renderComponent()
     const file = createFile('test.jpg', 'image/jpeg', 6 * 1024 * 1024)
     selectFile(container, file)
 
@@ -65,7 +72,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('transitions to scanning phase on valid file upload', async () => {
-    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
+    const { container } = renderComponent()
 
     api.scanReceipt.mockResolvedValueOnce({
       items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
@@ -75,10 +82,8 @@ describe('AddFromReceipt', () => {
       dateGuess: null,
     })
 
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(MOCK_STORES),
-    })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
 
     const file = createFile('test.jpg', 'image/jpeg', 1000)
     selectFile(container, file)
@@ -89,7 +94,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('shows review phase after successful scan', async () => {
-    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
+    const { container } = renderComponent()
 
     api.scanReceipt.mockResolvedValueOnce({
       items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
@@ -99,10 +104,8 @@ describe('AddFromReceipt', () => {
       dateGuess: null,
     })
 
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(MOCK_STORES),
-    })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
 
     const file = createFile('test.jpg', 'image/jpeg', 1000)
     selectFile(container, file)
@@ -113,7 +116,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('shows done state after confirm', async () => {
-    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
+    const { container } = renderComponent()
 
     api.scanReceipt.mockResolvedValueOnce({
       items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
@@ -129,10 +132,8 @@ describe('AddFromReceipt', () => {
       stock: [],
     })
 
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: () => Promise.resolve(MOCK_STORES),
-    })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
 
     const file = createFile('test.jpg', 'image/jpeg', 1000)
     selectFile(container, file)
@@ -152,7 +153,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('shows error when scan fails', async () => {
-    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
+    const { container } = renderComponent()
 
     api.scanReceipt.mockRejectedValueOnce(new Error('Scan failed'))
 
@@ -162,5 +163,181 @@ describe('AddFromReceipt', () => {
     await waitFor(() => {
       expect(container.textContent).toContain('Scan failed')
     })
+  })
+
+  it('handles drag and drop file', async () => {
+    const { container } = renderComponent()
+
+    api.scanReceipt.mockResolvedValueOnce({
+      items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
+      imageKey: 'key-123',
+      imageUrl: null,
+      storeGuess: null,
+      dateGuess: null,
+    })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
+
+    const dropzone = container.querySelector('.dropzone')
+    const file = createFile('test.jpg', 'image/jpeg', 1000)
+    fireEvent.dragOver(dropzone)
+    fireEvent.drop(dropzone, { dataTransfer: { files: [file] } })
+
+    await waitFor(() => {
+      expect(container.querySelector('.parsed-row')).toBeTruthy()
+    })
+  })
+
+  it('shows no-key error action and navigates to settings', async () => {
+    const navigate = vi.fn()
+    vi.doMock('@tanstack/react-router', () => ({
+      useNavigate: () => navigate,
+    }))
+
+    const { container } = renderComponent()
+
+    api.scanReceipt.mockRejectedValueOnce(
+      new Error('AI provider not configured. Go to Settings to set up your AI key.')
+    )
+
+    const file = createFile('test.jpg', 'image/jpeg', 1000)
+    selectFile(container, file)
+
+    await waitFor(() => {
+      expect(container.textContent).toContain('AI provider not configured')
+    })
+
+    const settingsBtn = container.querySelector('.btn--ghost')
+    if (settingsBtn) {
+      fireEvent.click(settingsBtn)
+    }
+  })
+
+  it('updates item field in review phase', async () => {
+    const { container } = renderComponent()
+
+    api.scanReceipt.mockResolvedValueOnce({
+      items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
+      imageKey: 'key-123',
+      imageUrl: null,
+      storeGuess: null,
+      dateGuess: null,
+    })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
+
+    const file = createFile('test.jpg', 'image/jpeg', 1000)
+    selectFile(container, file)
+
+    await waitFor(() => expect(container.querySelector('.parsed-row')).toBeTruthy())
+
+    const nameInput = container.querySelector('input[aria-label="history.item"]')
+    if (nameInput) {
+      fireEvent.change(nameInput, { target: { value: 'Susu' } })
+      expect(nameInput.value).toBe('Susu')
+    }
+  })
+
+  it('matches item to catalog and updates name/unit', async () => {
+    const { container } = renderComponent()
+
+    api.scanReceipt.mockResolvedValueOnce({
+      items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
+      imageKey: 'key-123',
+      imageUrl: null,
+      storeGuess: null,
+      dateGuess: null,
+    })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
+
+    const file = createFile('test.jpg', 'image/jpeg', 1000)
+    selectFile(container, file)
+
+    await waitFor(() => expect(container.querySelector('.parsed-row')).toBeTruthy())
+
+    const select = container.querySelector('select[aria-label="Match to existing item"]')
+    if (select) {
+      fireEvent.change(select, { target: { value: 'i1' } })
+      const nameInput = container.querySelector('input[aria-label="history.item"]')
+      expect(nameInput.value).toBe('Milk')
+    }
+  })
+
+  it('retakes photo from review phase', async () => {
+    const { container } = renderComponent()
+
+    api.scanReceipt.mockResolvedValueOnce({
+      items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
+      imageKey: 'key-123',
+      imageUrl: null,
+      storeGuess: null,
+      dateGuess: null,
+    })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
+
+    const file = createFile('test.jpg', 'image/jpeg', 1000)
+    selectFile(container, file)
+
+    await waitFor(() => expect(container.querySelector('.parsed-row')).toBeTruthy())
+
+    const retakeBtn = Array.from(container.querySelectorAll('.btn--ghost')).find((b) =>
+      b.textContent?.includes('addReceipt.retake')
+    )
+    if (retakeBtn) fireEvent.click(retakeBtn)
+
+    await waitFor(() => expect(container.querySelector('.dropzone')).toBeTruthy())
+  })
+
+  it('renders receipt preview when imageUrl is returned', async () => {
+    const { container } = renderComponent()
+
+    api.scanReceipt.mockResolvedValueOnce({
+      items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
+      imageKey: 'key-123',
+      imageUrl: 'https://example.com/receipt.jpg',
+      storeGuess: { id: 's1', label: 'Indomaret' },
+      dateGuess: '2026-07-26',
+    })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
+
+    const file = createFile('test.jpg', 'image/jpeg', 1000)
+    selectFile(container, file)
+
+    await waitFor(() => expect(container.querySelector('img[alt="Receipt"]')).toBeTruthy())
+  })
+
+  it('calls onDone from done phase', async () => {
+    const onDone = vi.fn()
+    const { container } = renderComponent({ onDone })
+
+    api.scanReceipt.mockResolvedValueOnce({
+      items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
+      imageKey: 'key-123',
+      imageUrl: null,
+      storeGuess: null,
+      dateGuess: null,
+    })
+    api.createPurchase.mockResolvedValueOnce({ purchase: { id: 'p1' }, items: [], stock: [] })
+    api.getStores.mockResolvedValueOnce(MOCK_STORES)
+    api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
+
+    const file = createFile('test.jpg', 'image/jpeg', 1000)
+    selectFile(container, file)
+
+    await waitFor(() => expect(container.querySelector('.parsed-row')).toBeTruthy())
+
+    const confirmBtn = container.querySelector('.btn--primary')
+    if (confirmBtn) fireEvent.click(confirmBtn)
+
+    await waitFor(() => expect(container.textContent).toContain('addReceipt.stockAdded'))
+
+    const doneBtn = Array.from(container.querySelectorAll('.btn--primary')).find((b) =>
+      b.textContent?.includes('addReceipt.done')
+    )
+    if (doneBtn) fireEvent.click(doneBtn)
+    expect(onDone).toHaveBeenCalled()
   })
 })

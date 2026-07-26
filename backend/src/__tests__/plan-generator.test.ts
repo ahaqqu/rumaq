@@ -24,8 +24,10 @@ describe('buildPlanPrompt', () => {
 
   it('includes store list in prompt', () => {
     const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, 'IDR')
-    expect(prompt).toContain('store-1: Indomaret')
-    expect(prompt).toContain('store-2: Pasar')
+    expect(prompt).toContain('Indomaret')
+    expect(prompt).toContain('Pasar')
+    expect(prompt).not.toContain('store-1')
+    expect(prompt).not.toContain('store-2')
   })
 
   it('includes low-stock items', () => {

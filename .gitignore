@@ -3,6 +3,7 @@
 *.local
 .DS_Store
 .env
+.agents
 .features-gen
 .shots
 .vscode/*

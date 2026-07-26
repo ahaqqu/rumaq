@@ -25,7 +25,7 @@ export type PlanResult = {
   items: PlanItem[]
 }
 
-function buildScanPrompt(): string {
+export function buildScanPrompt(): string {
   return `You are a receipt OCR assistant. Extract line items from the receipt image.
 
 Return ONLY valid JSON in this exact format:

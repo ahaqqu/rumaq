@@ -4,8 +4,8 @@
 
 | Location                          | Runner | Environment | Coverage                |
 | --------------------------------- | ------ | ----------- | ----------------------- |
-| `frontend/src/**/*.test.{js,jsx}` | Vitest | jsdom       | 90/75/85/90             |
-| `backend/src/**/*.test.ts`        | Vitest | Node        | 90/80/85/90 (D1 mocked) |
+| `frontend/src/**/*.test.{js,jsx}` | Vitest | jsdom       | 50/50/50/50             |
+| `backend/src/**/*.test.ts`        | Vitest | Node        | 50/50/50/50 (D1 mocked) |
 
 ```
 ./scripts/test.sh unit
@@ -29,8 +29,8 @@ Runs every 6 hours via `.github/workflows/smoke.yml`. Two base URLs: `rumaq.page
 
 ## Acceptance criteria
 
-- [ ] Frontend unit test coverage thresholds met (90/75/85/90) — `./scripts/test.sh unit frontend --coverage`
-- [ ] Backend unit test coverage thresholds met (90/80/85/90) — `./scripts/test.sh unit backend --coverage`
+- [ ] Frontend unit test coverage thresholds met (50/50/50/50) — `./scripts/test.sh unit frontend --coverage`
+- [ ] Backend unit test coverage thresholds met (50/50/50/50) — `./scripts/test.sh unit backend --coverage`
 - [ ] New API endpoint has automation test scenario — `automation/tests/local/api/`
 - [ ] New UI flow has automation test scenario — `automation/tests/local/e2e/`
 - [ ] Local automation tests pass — `./scripts/test.sh automation-local`

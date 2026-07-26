@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, fireEvent } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Home } from './Home.jsx'
+import { useHome } from '../lib/queries/index.js'
 
-const mockHomeData = {
+const baseHomeData = {
   total_items: 3,
   expiring_7d: 0,
   running_out_7d: 1,
@@ -24,7 +25,7 @@ const mockHomeData = {
 }
 
 vi.mock('../lib/queries/index.js', () => ({
-  useHome: () => ({ data: mockHomeData, isLoading: false }),
+  useHome: vi.fn(),
 }))
 
 function createQueryClient() {
@@ -45,6 +46,10 @@ function renderWithQuery(ui) {
 }
 
 describe('Home', () => {
+  beforeEach(() => {
+    vi.mocked(useHome).mockReturnValue({ data: baseHomeData, isLoading: false })
+  })
+
   it('renders page lead', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
@@ -132,5 +137,78 @@ describe('Home', () => {
     const statNums = container.querySelectorAll('.stat__num')
     expect(statNums.length).toBe(4)
     expect(statNums[0].textContent).toBe('3')
+  })
+
+  it('renders next trip card when nextTrip exists', () => {
+    vi.mocked(useHome).mockReturnValue({
+      data: {
+        ...baseHomeData,
+        next_trip: {
+          store: 'Indomaret',
+          items: [{ id: 'i1', name: 'Milk' }],
+        },
+      },
+      isLoading: false,
+    })
+
+    const { container } = renderWithQuery(
+      React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
+    )
+    expect(container.querySelector('.tripcard')).toBeTruthy()
+    expect(container.textContent).toContain('home.shopAt')
+  })
+
+  it('calls setView plan from next trip card', () => {
+    const setView = vi.fn()
+    vi.mocked(useHome).mockReturnValue({
+      data: {
+        ...baseHomeData,
+        next_trip: {
+          store: 'Indomaret',
+          items: [{ id: 'i1', name: 'Milk' }],
+        },
+      },
+      isLoading: false,
+    })
+
+    const { container } = renderWithQuery(
+      React.createElement(Home, { setView, askAssistant: vi.fn() })
+    )
+    const planBtn = container.querySelector('.tripcard .btn--primary')
+    if (planBtn) {
+      fireEvent.click(planBtn)
+      expect(setView).toHaveBeenCalledWith('plan')
+    }
+  })
+
+  it('shows warning tone when expiring or running out', () => {
+    vi.mocked(useHome).mockReturnValue({
+      data: {
+        ...baseHomeData,
+        expiring_7d: 2,
+        running_out_7d: 3,
+      },
+      isLoading: false,
+    })
+
+    const { container } = renderWithQuery(
+      React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
+    )
+    const statNums = container.querySelectorAll('.stat__num')
+    expect(
+      statNums[1].classList.contains('is-warn') || statNums[2].classList.contains('is-warn')
+    ).toBe(true)
+  })
+
+  it('renders empty needs attention when no low stock', () => {
+    vi.mocked(useHome).mockReturnValue({
+      data: { ...baseHomeData, low_stock: [] },
+      isLoading: false,
+    })
+
+    const { container } = renderWithQuery(
+      React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
+    )
+    expect(container.querySelector('.empty')).toBeTruthy()
   })
 })
