@@ -36,6 +36,13 @@ defineFeature(feature, (test) => {
       await ctx.authenticate()
     })
 
+    and('the user has an AI key configured', async () => {
+      await ctx.sendRequestWithBody('PATCH', '/api/settings', {
+        ai_key: 'sk-test-key-12345',
+        ai_provider: 'openai',
+      })
+    })
+
     when('I upload a receipt image for scanning', async () => {
       const img = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
       await ctx.sendMultipart(
@@ -107,10 +114,14 @@ defineFeature(feature, (test) => {
     })
 
     and('the user has exceeded the AI usage limit', async () => {
+      await ctx.sendRequestWithBody('PATCH', '/api/settings', {
+        ai_key: 'sk-test-key-12345',
+        ai_provider: 'gemini',
+      })
       const today = new Date().toISOString().slice(0, 10)
       const id = '00000000-0000-0000-0000-000000000099'
       await ctx.sendRequestWithBody('POST', `/api/__test/direct-sql`, {
-        sql: `INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES ('${id}', '${ctx.testUserId}', '${today}', 'openai', 20, 20)`,
+        sql: `INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES ('${id}', '${ctx.testUserId}', '${today}', 'gemini', 20, 20)`,
       })
     })
 
@@ -131,7 +142,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Scan with non-image file returns 400', ({ given, when, then }) => {
+  test('Scan with non-image file returns 400', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

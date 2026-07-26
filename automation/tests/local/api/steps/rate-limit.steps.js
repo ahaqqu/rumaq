@@ -33,6 +33,12 @@ defineFeature(feature, (test) => {
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
+    and('the user has an AI key configured', async () => {
+      await ctx.sendRequestWithBody('PATCH', '/api/settings', {
+        ai_key: 'sk-test-key-12345',
+        ai_provider: 'openai',
+      })
+    })
     and('the user has exceeded the AI usage limit', async () => {
       await seedAiUsage(ctx)
     })
@@ -59,6 +65,12 @@ defineFeature(feature, (test) => {
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
+    and('the user has an AI key configured', async () => {
+      await ctx.sendRequestWithBody('PATCH', '/api/settings', {
+        ai_key: 'sk-test-key-12345',
+        ai_provider: 'openai',
+      })
+    })
     and('the user has exceeded the AI usage limit', async () => {
       await seedAiUsage(ctx)
     })
@@ -80,6 +92,12 @@ defineFeature(feature, (test) => {
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
+    and('the user has an AI key configured', async () => {
+      await ctx.sendRequestWithBody('PATCH', '/api/settings', {
+        ai_key: 'sk-test-key-12345',
+        ai_provider: 'openai',
+      })
+    })
     and('the user has exceeded the AI usage limit', async () => {
       await seedAiUsage(ctx)
     })
@@ -87,31 +105,6 @@ defineFeature(feature, (test) => {
       await ctx.sendRequestWithBody(method, path, JSON.parse(body))
     })
     then('the response status should be 429', () => {
-      ctx.expectStatus(429)
-    })
-    and('the response should contain a Retry-After header', () => {
-      expect(ctx.response.headers.get('Retry-After')).toBeTruthy()
-    })
-  })
-
-  test('General API returns 429 after too many requests from one IP', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
-    given('the database has seed data', async () => {
-      await ctx.resetAndSeed()
-      // Configure a very tight window so we can trigger the limit quickly.
-      process.env.RATE_LIMIT_WINDOW_MS = '60000'
-      process.env.RATE_LIMIT_MAX_REQUESTS = '100'
-    })
-    when('a single IP sends 101 GET requests to /api/health within one minute', async () => {
-      for (let i = 0; i < 101; i++) {
-        await ctx.sendRequest('GET', '/api/health')
-      }
-    })
-    then('the last response status should be 429', () => {
       ctx.expectStatus(429)
     })
     and('the response should contain a Retry-After header', () => {

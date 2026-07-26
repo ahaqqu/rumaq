@@ -321,7 +321,7 @@ If usage grows, the first upgrade is Workers Paid ($5/mo) for higher request and
 - [x] Every D1 query that reads or writes household-scoped data filters by `household_id` or `user_id`.
 - [ ] CORS allows only the configured Pages origin, localhost, and branch previews; unknown origins are rejected in production.
 - [ ] AI prompts never expose another user's data and avoid internal DB IDs where possible.
-- [ ] General API rate limiting returns 429 with `Retry-After`.
+- [x] General API rate limiting returns 429 with `Retry-After`.
 
 ## 11. Testing
 

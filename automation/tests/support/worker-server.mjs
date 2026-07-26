@@ -1,16 +1,59 @@
-import { readFileSync } from 'node:fs'
-import { resolve, dirname } from 'node:path'
+import { readFileSync, readdirSync } from 'node:fs'
+import { resolve, dirname, extname, join } from 'node:path'
 import { createServer } from 'node:http'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '../../..')
 const BACKEND_DIR = resolve(ROOT, 'backend')
-const BUNDLE_PATH = resolve(BACKEND_DIR, 'dist/api/index.js')
+const DIST_DIR = resolve(BACKEND_DIR, 'dist/api')
+
+// --- Dynamically build modules array from dist output ---
+function collectJsFiles(dir) {
+  const files = []
+  const entries = readdirSync(dir, { withFileTypes: true })
+  for (const entry of entries) {
+    const fullPath = join(dir, entry.name)
+    if (entry.isDirectory()) {
+      files.push(...collectJsFiles(fullPath))
+    } else if (entry.isFile() && extname(entry.name) === '.js') {
+      files.push({
+        type: 'ESModule',
+        path: fullPath,
+        contents: readFileSync(fullPath, 'utf-8'),
+      })
+    }
+  }
+  return files
+}
+
+const MODULES = collectJsFiles(DIST_DIR)
+// Ensure index.js is first — it's the entry point
+const entryIdx = MODULES.findIndex((m) => m.path.endsWith('/index.js'))
+if (entryIdx > 0) {
+  const entry = MODULES.splice(entryIdx, 1)[0]
+  MODULES.unshift(entry)
+}
 
 // --- Read SQL files ---
 const migrationSql = readFileSync(resolve(BACKEND_DIR, 'migrations/0001_schema.sql'), 'utf-8')
 const emailAuthColumnSql = 'ALTER TABLE users ADD COLUMN password_hash TEXT;'
+const stockIndexesSql = readFileSync(
+  resolve(BACKEND_DIR, 'migrations/0003_stock_indexes.sql'),
+  'utf-8'
+)
+const planIndexesSql = readFileSync(
+  resolve(BACKEND_DIR, 'migrations/0004_plan_indexes.sql'),
+  'utf-8'
+)
+const purchaseIndexesSql = readFileSync(
+  resolve(BACKEND_DIR, 'migrations/0005_purchase_history_indexes.sql'),
+  'utf-8'
+)
+const languageSql = readFileSync(
+  resolve(BACKEND_DIR, 'migrations/0006_user_settings_language.sql'),
+  'utf-8'
+)
 const seedSql = readFileSync(resolve(ROOT, 'automation/tests/fixtures/seed.sql'), 'utf-8')
 const resetSql = readFileSync(resolve(ROOT, 'automation/tests/fixtures/reset.sql'), 'utf-8')
 
@@ -18,8 +61,8 @@ const resetSql = readFileSync(resolve(ROOT, 'automation/tests/fixtures/reset.sql
 const { Miniflare } = await import('miniflare')
 
 const mf = new Miniflare({
-  modules: true,
-  scriptPath: BUNDLE_PATH,
+  modules: MODULES,
+  modulesRoot: BACKEND_DIR,
   d1Databases: { DB: 'rumaq-test' },
   r2Buckets: { RECEIPTS: 'rumaq-receipts-test' },
   compatibilityDate: '2026-07-10',
@@ -31,26 +74,28 @@ const mf = new Miniflare({
     WORKER_JWT_SECRET: 'test-jwt-secret',
     WORKER_ENCRYPTION_KEY: 'a'.repeat(32),
     TEST_MODE: 'true',
+    EMAIL_AUTH_ENABLED: 'true',
   },
 })
 
 // --- Apply migrations & seed ---
 const db = await mf.getD1Database('DB')
 
-// Miniflare's db.exec() processes SQL line-by-line, so we need to
-// flatten multi-line statements: strip comments, then remove newlines
-// within each statement.
 function flattenSql(sql) {
   return sql
-    .replace(/--.*$/gm, '') // strip single-line comments
-    .replace(/\n\s*/g, ' ') // collapse multi-line into single line
-    .replace(/\s*;\s*/g, ';\n') // put each statement on its own line
-    .replace(/\n{2,}/g, '\n') // collapse blank lines
+    .replace(/--.*$/gm, '')
+    .replace(/\n\s*/g, ' ')
+    .replace(/\s*;\s*/g, ';\n')
+    .replace(/\n{2,}/g, '\n')
     .trim()
 }
 
 await db.exec(flattenSql(migrationSql))
 await db.exec(flattenSql(emailAuthColumnSql))
+await db.exec(flattenSql(stockIndexesSql))
+await db.exec(flattenSql(planIndexesSql))
+await db.exec(flattenSql(purchaseIndexesSql))
+await db.exec(flattenSql(languageSql))
 await db.exec(flattenSql(seedSql))
 
 console.log('✓ D1 migrations applied and database seeded')
@@ -60,7 +105,6 @@ const server = createServer(async (req, res) => {
   try {
     const url = new URL(req.url, 'http://localhost:8787')
 
-    // Test-only admin endpoints
     if (process.env.TEST_MODE === 'true') {
       if (url.pathname === '/api/__test/reset' && req.method === 'POST') {
         await db.exec(flattenSql(resetSql))
@@ -88,7 +132,6 @@ const server = createServer(async (req, res) => {
       }
     }
 
-    // Forward to Miniflare worker
     const headers = new Headers()
     for (const [key, value] of Object.entries(req.headers)) {
       if (value != null) headers.set(key, value)
@@ -108,7 +151,14 @@ const server = createServer(async (req, res) => {
     })
     const responseBody = await workerResponse.text()
 
-    res.writeHead(workerResponse.status, Object.fromEntries(workerResponse.headers))
+    // Strip headers that conflict with Node.js http.ServerResponse
+    const sanitizedHeaders = Object.fromEntries(
+      [...workerResponse.headers].filter(
+        ([key]) =>
+          !['content-length', 'transfer-encoding', 'connection', 'date', 'keep-alive'].includes(key)
+      )
+    )
+    res.writeHead(workerResponse.status, sanitizedHeaders)
     res.end(responseBody)
   } catch (err) {
     console.error('Worker server error:', err)
@@ -121,7 +171,6 @@ server.listen(8787, '0.0.0.0', () => {
   console.log('✓ Worker server listening on http://0.0.0.0:8787')
 })
 
-// Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('Shutting down...')
   server.close()

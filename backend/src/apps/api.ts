@@ -162,7 +162,9 @@ apiApp.use('/api/purchases/patterns', propsAuthMiddleware)
 apiApp.use('/api/purchases/:id', propsAuthMiddleware)
 apiApp.use('/api/purchases/:id/receipt', propsAuthMiddleware)
 apiApp.use('/api/ai/chat', propsAuthMiddleware)
-apiApp.use('/api/plans*', propsAuthMiddleware)
+apiApp.use('/api/plans', propsAuthMiddleware)
+apiApp.use('/api/plans/generate', propsAuthMiddleware)
+apiApp.use('/api/plans/:id/items/:itemId', propsAuthMiddleware)
 apiApp.use('/api/ai-key/*', propsAuthMiddleware)
 
 apiApp.get(
@@ -463,7 +465,7 @@ apiApp.get(
       `SELECT motion_preference, language, ai_provider, persona_user_role,
                persona_ai_role, persona_enabled, theme_hue, active_household_id,
                encrypted_ai_key
-       FROM user_settings WHERE user_id = ?`
+        FROM user_settings WHERE user_id = ?`
     )
       .bind(c.get('userId'))
       .first<{
@@ -570,7 +572,7 @@ apiApp.patch(
     const settings = await c.env.DB.prepare(
       `SELECT motion_preference, language, ai_provider, persona_user_role,
               persona_ai_role, persona_enabled, theme_hue, encrypted_ai_key
-       FROM user_settings WHERE user_id = ?`
+        FROM user_settings WHERE user_id = ?`
     )
       .bind(c.get('userId'))
       .first<{
@@ -2272,7 +2274,7 @@ apiApp.patch(
 
     statements.push(
       c.env.DB.prepare(
-        `UPDATE plan_items SET status = ?, updated_at = datetime('now') WHERE id = ? AND plan_id IN (SELECT id FROM plans WHERE id = ? AND household_id = ?)`
+        `UPDATE plan_items SET status = ? WHERE id = ? AND plan_id IN (SELECT id FROM plans WHERE id = ? AND household_id = ?)`
       ).bind(body.status, itemId, planId, householdId)
     )
 

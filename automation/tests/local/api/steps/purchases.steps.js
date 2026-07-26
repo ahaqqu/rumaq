@@ -170,7 +170,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Another household cannot access purchase receipt', ({ given, when, then }) => {
+  test('Another household cannot access purchase receipt', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -332,7 +332,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Get non-existent purchase returns 404', ({ given, when, then }) => {
+  test('Get non-existent purchase returns 404', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

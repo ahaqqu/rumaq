@@ -26,7 +26,8 @@ Feature: Locations
   Scenario: Delete a location not referenced by stock
     Given the database has seed data
     And I am authenticated as a test user
-    When I send a DELETE request to /api/locations/loc-pantry
+    When I create a new location "Test Delete"
+    And I delete the created location
     Then the response status should be 204
 
   Scenario: Delete a location referenced by stock returns 409

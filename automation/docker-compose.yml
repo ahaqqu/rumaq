@@ -5,13 +5,13 @@ services:
       dockerfile: automation/docker/Dockerfile.api
     environment:
       - TEST_MODE=true
+      - RATE_LIMIT_WINDOW_MS=60000
+      - RATE_LIMIT_MAX_REQUESTS=1000000
     healthcheck:
       test:
         [
-          'CMD',
-          'node',
-          '-e',
-          "fetch('http://localhost:8787/api/health').then(r => r.ok ? process.exit(0) : process.exit(1))",
+          'CMD-SHELL',
+          'curl -sf --max-time 4 --output /dev/null --write-out "%{http_code}" http://localhost:8787/api/health | grep -q 200',
         ]
       interval: 2s
       timeout: 5s

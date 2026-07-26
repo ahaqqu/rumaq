@@ -9,6 +9,7 @@ Feature: Shopping Plans
   Scenario: Generate a plan returns draft items
     Given the database has seed data
     And I am authenticated as a test user
+    And the user has an AI key configured
     When I send a POST request to /api/plans/generate
     Then the response status should be 200
     And the response should have generated items
@@ -65,7 +66,9 @@ Feature: Shopping Plans
     Given the database has seed data
     And I am authenticated as a test user
     When I send a PATCH request to /api/plans/nonexistent-plan/items/nonexistent-item with body
+      """
       {"status": "bought"}
+      """
     Then the response status should be 404
 
   Scenario: Modifying an item on an archived plan returns 400

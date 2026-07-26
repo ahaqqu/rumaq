@@ -206,7 +206,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('PATCH stock with invalid location returns 400', ({ given, when, then }) => {
+  test('PATCH stock with invalid location returns 400', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

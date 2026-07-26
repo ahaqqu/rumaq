@@ -26,7 +26,8 @@ Feature: Stores
   Scenario: Delete a store
     Given the database has seed data
     And I am authenticated as a test user
-    When I send a DELETE request to /api/stores/store-super
+    When I create a new store "Test Delete Store"
+    And I delete the created store
     Then the response status should be 204
 
   Scenario: Delete nonexistent store returns 404
