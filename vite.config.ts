@@ -12,9 +12,8 @@ export default defineConfig({
   lint: {
     options: {
       // Keep linting close to the previous ESLint setup while we migrate.
-      // Type-aware rules are disabled for now; use `tsc --noEmit` for type checking.
-      typeAware: false,
-      typeCheck: false,
+      typeAware: true,
+      typeCheck: true,
     },
     plugins: ['import'],
     rules: {
