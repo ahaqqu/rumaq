@@ -68,7 +68,7 @@ describe('apiApp (cached routes)', () => {
 
     const res = await apiApp.request('/api/me', {}, env)
     expect(res.status).toBe(200)
-    const body = await res.json() as { user: { email: string } }
+    const body = (await res.json()) as { user: { email: string } }
     expect(body.user.email).toBe('a@b.com')
     expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
   })
@@ -82,7 +82,7 @@ describe('apiApp (cached routes)', () => {
 
     const res = await apiApp.request('/api/stock', {}, env)
     expect(res.status).toBe(200)
-    const body = await res.json() as { stock: unknown[] }
+    const body = (await res.json()) as { stock: unknown[] }
     expect(body.stock).toHaveLength(1)
     expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
   })

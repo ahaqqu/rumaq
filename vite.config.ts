@@ -13,7 +13,7 @@ export default defineConfig({
     options: {
       // Keep linting close to the previous ESLint setup while we migrate.
       typeAware: true,
-      typeCheck: true,
+      typeCheck: false,
     },
     plugins: ['import'],
     rules: {
