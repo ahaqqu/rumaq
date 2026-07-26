@@ -57,8 +57,9 @@ export const gateway = {
       }
 
       try {
-        if (ctx.exports?.CachedApi) {
-          return ctx.exports.CachedApi.fetch(request, env)
+        const exports = ctx.exports as Record<string, unknown> | undefined
+        if (exports?.CachedApi) {
+          return (exports.CachedApi as { fetch: Function }).fetch(request, env)
         }
       } catch {
         // ctx.exports not available (Miniflare / test mode)

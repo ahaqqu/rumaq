@@ -1,3 +1,4 @@
+import type { AuthProps } from '../types.js'
 import { describe, it, expect, vi } from 'vitest'
 import { apiApp } from '../apps/api.js'
 
@@ -15,7 +16,10 @@ function createMockEnv() {
     GOOGLE_CLIENT_SECRET: 'test-client-secret',
     WORKER_JWT_SECRET: 'test-secret',
     WORKER_ENCRYPTION_KEY: 'test-enc-key',
-    PAGES_ORIGIN: 'http://localhost:5173',
+    PAGES_ORIGIN: 'http://localhost:5173' as string,
+    EMAIL_AUTH_ENABLED: 'false' as string,
+    ASSETS: undefined as unknown as Fetcher,
+    props: undefined as AuthProps | undefined,
   }
 }
 
@@ -64,7 +68,7 @@ describe('apiApp (cached routes)', () => {
 
     const res = await apiApp.request('/api/me', {}, env)
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const body = await res.json() as { user: { email: string } }
     expect(body.user.email).toBe('a@b.com')
     expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
   })
@@ -78,7 +82,7 @@ describe('apiApp (cached routes)', () => {
 
     const res = await apiApp.request('/api/stock', {}, env)
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const body = await res.json() as { stock: unknown[] }
     expect(body.stock).toHaveLength(1)
     expect(res.headers.get('Cache-Control')).toMatch(/private, no-cache/)
   })
@@ -120,7 +124,7 @@ describe('apiApp (cached routes)', () => {
 
   it('cors uses default origin when PAGES_ORIGIN is not set', async () => {
     const env = createMockEnv()
-    delete env.PAGES_ORIGIN
+    env.PAGES_ORIGIN = ''
     const res = await apiApp.request(
       '/api/health',
       {

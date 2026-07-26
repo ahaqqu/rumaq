@@ -166,8 +166,8 @@ apiApp.get(
                   properties: {
                     id: { type: 'string' },
                     email: { type: 'string' },
-                    name: { type: 'string', nullable: true },
-                    picture: { type: 'string', nullable: true },
+                    name: { type: 'string', nullable: true } as any,
+                    picture: { type: 'string', nullable: true } as any,
                   },
                 },
               },
@@ -451,7 +451,7 @@ apiApp.get(
       .bind(c.get('userId'))
       .first<{
         motion_preference: string
-        currency: string
+        language: string | null
         ai_provider: string | null
         persona_user_role: string | null
         persona_ai_role: string | null
