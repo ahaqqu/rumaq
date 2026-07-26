@@ -25,4 +25,17 @@ bun audit --audit-level=critical
 echo "=== CI: build ==="
 bash "$ROOT_DIR/scripts/build.sh"
 
+echo "=== CI: validate Wrangler config ==="
+if [[ -n "${CLOUDFLARE_API_TOKEN:-}" ]]; then
+  cd "$ROOT_DIR/backend"
+  bunx wrangler deploy \
+    --config wrangler.cloudflare.toml \
+    --name "api-ci-validation" \
+    --var PAGES_ORIGIN:"https://rumaq.pages.dev" \
+    --dry-run
+  cd "$ROOT_DIR"
+else
+  echo "  skip  CLOUDFLARE_API_TOKEN not set — Wrangler config validation skipped."
+fi
+
 echo "=== CI: passed ==="

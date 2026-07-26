@@ -23,7 +23,6 @@
     "style:check": "vp check",
     "deploy": "./scripts/deploy.sh",
     "deploy:frontend": "./scripts/deploy.sh frontend",
-    "deploy:backend": "./scripts/deploy.sh backend",
     "deploy:dry-run": "./scripts/deploy.sh dry-run"
   },
   "devDependencies": {
