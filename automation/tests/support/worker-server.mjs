@@ -70,11 +70,13 @@ const mf = new Miniflare({
   bindings: {
     PAGES_ORIGIN: 'http://localhost:3000',
     GOOGLE_CLIENT_ID: 'test-client-id',
-    GOOGLE_CLIENT_SECRET: 'test-client-secret',
+    GOOGLE_CLIENT_SECRET: 'test-secret',
     WORKER_JWT_SECRET: 'test-jwt-secret',
     WORKER_ENCRYPTION_KEY: 'a'.repeat(32),
     TEST_MODE: 'true',
     EMAIL_AUTH_ENABLED: 'true',
+    RATE_LIMIT_WINDOW_MS: process.env.RATE_LIMIT_WINDOW_MS,
+    RATE_LIMIT_MAX_REQUESTS: process.env.RATE_LIMIT_MAX_REQUESTS,
   },
 })
 
@@ -142,6 +144,19 @@ const server = createServer(async (req, res) => {
       const chunks = []
       for await (const chunk of req) chunks.push(chunk)
       body = Buffer.concat(chunks)
+    }
+
+    // If the proxy already passed X-Forwarded-* headers, keep them. Otherwise
+    // fill in sensible defaults for this local Docker stack so handlers like
+    // auth can reconstruct the public origin for redirect URIs.
+    if (!headers.has('X-Forwarded-Proto')) {
+      headers.set('X-Forwarded-Proto', 'http')
+    }
+    if (!headers.has('X-Forwarded-Host')) {
+      headers.set('X-Forwarded-Host', req.headers.host || 'localhost:3000')
+    }
+    if (!headers.has('X-Forwarded-Port')) {
+      headers.set('X-Forwarded-Port', '3000')
     }
 
     const workerResponse = await mf.dispatchFetch(url.toString(), {

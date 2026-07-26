@@ -5,11 +5,34 @@ import { signTestCookie } from '../../../support/auth.js'
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
 const TEST_USER_ID = process.env.TEST_USER_ID || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 
+// Each test file / scenario gets a stable but unique synthetic IP so the
+// in-memory rate limiter treats them as separate clients. This avoids
+// one scenario exhausting the global window for the entire suite.
+let ipCounter = 0
+function makeTestIp() {
+  ipCounter += 1
+  // Spread across the 10.0.0.0/8 range to stay well clear of real networks.
+  const b = (ipCounter >> 16) & 0xff
+  const c = (ipCounter >> 8) & 0xff
+  const d = ipCounter & 0xff
+  return `10.${b}.${c}.${d}`
+}
+
 export class ApiContext {
   constructor() {
     this.response = null
     this.responseBody = null
-    this.headers = null
+    const testIp = makeTestIp()
+    this.headers = {
+      'X-Forwarded-For': testIp,
+      'X-Forwarded-Proto': 'http',
+      'X-Forwarded-Host': 'localhost:3000',
+      'X-Forwarded-Port': '3000',
+    }
+  }
+
+  get defaultHeaders() {
+    return this.headers
   }
 
   get baseUrl() {
@@ -29,7 +52,7 @@ export class ApiContext {
     const cookie = await signTestCookie(TEST_USER_ID, {
       email: 'test@rumaq.dev',
     })
-    this.headers = { Cookie: cookie }
+    this.headers = { ...this.headers, Cookie: cookie }
   }
 
   async authenticateViaEmail(email, password) {
@@ -45,7 +68,7 @@ export class ApiContext {
     }
     const setCookie = this.response.headers.get('set-cookie')
     if (setCookie) {
-      this.headers = { Cookie: setCookie.split(';')[0] }
+      this.headers = { ...this.headers, Cookie: setCookie.split(';')[0] }
     }
   }
 
@@ -117,6 +140,21 @@ export class ApiContext {
     const opts = { method, headers: { 'Content-Type': 'application/json' } }
     if (this.headers) opts.headers = { ...opts.headers, ...this.headers }
     if (body != null) opts.body = JSON.stringify(body)
+    this.response = await fetch(`${BASE_URL}${path}`, opts)
+    try {
+      this.responseBody = await this.response.json()
+    } catch {
+      this.responseBody = null
+    }
+  }
+
+  async sendRequestDirect(method, path, body) {
+    const opts = { method }
+    if (this.headers) opts.headers = this.headers
+    if (body != null) {
+      opts.headers = { ...opts.headers, 'Content-Type': 'application/json' }
+      opts.body = JSON.stringify(body)
+    }
     this.response = await fetch(`${BASE_URL}${path}`, opts)
     try {
       this.responseBody = await this.response.json()

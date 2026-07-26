@@ -34,4 +34,9 @@ COPY automation/tests/ ./automation/tests/
 
 ENV TEST_BASE_URL=http://proxy:3000
 
+# Pre-generate Playwright-BDD tests so the output is part of the image. This
+# avoids regenerating them on every test run and makes `bunx playwright test`
+# discover tests immediately.
+RUN bunx bddgen test --config automation/playwright.config.js
+
 CMD ["sh", "-c", "bun x vitest run --config automation/vitest.config.integration.mjs && bun x playwright test --config automation/playwright.config.js && sync"]
