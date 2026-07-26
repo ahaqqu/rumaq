@@ -1,59 +1,59 @@
-import { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
-import { useNavigate } from "@tanstack/react-router";
-import { useQueryClient } from "@tanstack/react-query";
-import { BrandMark } from "../components/icons.jsx";
-import { login, emailAuthStatus, emailLogin } from "../lib/api.js";
+import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
+import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { BrandMark } from '../components/icons.jsx'
+import { login, emailAuthStatus, emailLogin } from '../lib/api.js'
 
 export function Login() {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-  const queryClient = useQueryClient();
-  const [emailAuth, setEmailAuth] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const { t } = useTranslation()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const [emailAuth, setEmailAuth] = useState(false)
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    emailAuthStatus().then((res) => setEmailAuth(res.enabled));
-  }, []);
+    emailAuthStatus().then((res) => setEmailAuth(res.enabled))
+  }, [])
 
   const handleEmailLogin = async (e) => {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+    e.preventDefault()
+    setError('')
+    setLoading(true)
     try {
-      await emailLogin(email, password);
-      queryClient.invalidateQueries({ queryKey: ["me"] });
-      navigate({ to: "/" });
+      await emailLogin(email, password)
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      navigate({ to: '/' })
     } catch (err) {
-      setError(err.message);
+      setError(err.message)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   return (
     <div className="login">
       <div className="login__card">
         <BrandMark size={48} />
         <h1 className="login__title">RumaQ</h1>
-        <p className="login__desc">{t("login.desc", "Household shopping & inventory assistant")}</p>
+        <p className="login__desc">{t('login.desc', 'Household shopping & inventory assistant')}</p>
 
         <button className="btn btn--primary btn--block login__btn" onClick={login}>
-          {t("login.signIn", "Sign in with Google")}
+          {t('login.signIn', 'Sign in with Google')}
         </button>
 
         {emailAuth && (
           <>
             <div className="login__divider">
-              <span>{t("login.or", "or")}</span>
+              <span>{t('login.or', 'or')}</span>
             </div>
 
             <form className="login__form" onSubmit={handleEmailLogin}>
               <label className="login__label" htmlFor="email">
-                {t("login.email", "Email")}
+                {t('login.email', 'Email')}
               </label>
               <input
                 id="email"
@@ -66,7 +66,7 @@ export function Login() {
               />
 
               <label className="login__label" htmlFor="password">
-                {t("login.password", "Password")}
+                {t('login.password', 'Password')}
               </label>
               <input
                 id="password"
@@ -86,13 +86,13 @@ export function Login() {
                 disabled={loading}
               >
                 {loading
-                  ? t("login.signingIn", "Signing in…")
-                  : t("login.signInEmail", "Sign in with email")}
+                  ? t('login.signingIn', 'Signing in…')
+                  : t('login.signInEmail', 'Sign in with email')}
               </button>
             </form>
           </>
         )}
       </div>
     </div>
-  );
+  )
 }

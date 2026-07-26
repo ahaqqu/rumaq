@@ -1,46 +1,46 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, fireEvent } from "@testing-library/react";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import React from "react";
-import { Settings } from "./Settings.jsx";
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, fireEvent } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import React from 'react'
+import { Settings } from './Settings.jsx'
 
 const mockLocations = [
-  { id: "loc-1", label: "Kitchen", sort_order: 1 },
-  { id: "loc-2", label: "Fridge", sort_order: 2 },
-];
+  { id: 'loc-1', label: 'Kitchen', sort_order: 1 },
+  { id: 'loc-2', label: 'Fridge', sort_order: 2 },
+]
 
 const mockStores = [
-  { id: "store-1", label: "Indomaret" },
-  { id: "store-2", label: "Alfamart" },
-];
+  { id: 'store-1', label: 'Indomaret' },
+  { id: 'store-2', label: 'Alfamart' },
+]
 
 const mockSettings = {
-  motion_preference: "standard",
-  currency: "idr",
-  ai_provider: "gemini",
+  motion_preference: 'standard',
+  currency: 'idr',
+  ai_provider: 'gemini',
   persona_user_role: null,
   persona_ai_role: null,
   persona_enabled: false,
   theme_hue: null,
-  active_household_id: "house-1",
-  active_household_name: "Test Household",
+  active_household_id: 'house-1',
+  active_household_name: 'Test Household',
   has_ai_key: false,
-};
+}
 
-const mockUsage = { used: 0, daily_limit: 20, provider: "gemini" };
+const mockUsage = { used: 0, daily_limit: 20, provider: 'gemini' }
 
-const mockMutateAsync = vi.fn();
+const mockMutateAsync = vi.fn()
 
-vi.mock("../lib/persona.js", () => ({
+vi.mock('../lib/persona.js', () => ({
   personaText: vi.fn((key) => key),
   deriveHue: vi.fn(() => 230),
-}));
+}))
 
-vi.mock("../lib/api.js", () => ({
+vi.mock('../lib/api.js', () => ({
   testAiKey: vi.fn(),
-}));
+}))
 
-vi.mock("../lib/queries/index.js", () => ({
+vi.mock('../lib/queries/index.js', () => ({
   useSettings: () => ({ data: mockSettings, isLoading: false }),
   useUpdateSettings: () => ({ mutateAsync: mockMutateAsync, isPending: false }),
   useLocations: () => ({
@@ -53,14 +53,14 @@ vi.mock("../lib/queries/index.js", () => ({
   useCreateStore: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useDeleteStore: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useUsage: () => ({ data: mockUsage }),
-}));
+}))
 
 function createQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: { retry: false, gcTime: 0 },
     },
-  });
+  })
 }
 
 function renderWithQuery(ui) {
@@ -68,179 +68,177 @@ function renderWithQuery(ui) {
     React.createElement(QueryClientProvider, {
       client: createQueryClient(),
       children: ui,
-    }),
-  );
+    })
+  )
 }
 
-describe("Settings", () => {
+describe('Settings', () => {
   const baseProps = {
     aiKey: null,
     setAiKey: vi.fn(),
-    motion: "standard",
+    motion: 'standard',
     setMotion: vi.fn(),
-  };
+  }
 
-  it("renders page lead", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    expect(container.querySelector(".page__lead")).toBeTruthy();
-  });
+  it('renders page lead', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    expect(container.querySelector('.page__lead')).toBeTruthy()
+  })
 
-  it("renders API key section", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    expect(container.querySelector(".section")).toBeTruthy();
-  });
+  it('renders API key section', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    expect(container.querySelector('.section')).toBeTruthy()
+  })
 
-  it("renders provider select", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const select = container.querySelector("select");
-    expect(select).toBeTruthy();
-  });
+  it('renders provider select', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const select = container.querySelector('select')
+    expect(select).toBeTruthy()
+  })
 
-  it("renders AI usage section", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    expect(container.querySelector(".usage")).toBeTruthy();
-  });
+  it('renders AI usage section', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    expect(container.querySelector('.usage')).toBeTruthy()
+  })
 
-  it("renders persona inputs", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const inputs = container.querySelectorAll("input");
-    expect(inputs.length).toBeGreaterThan(0);
-  });
+  it('renders persona inputs', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const inputs = container.querySelectorAll('input')
+    expect(inputs.length).toBeGreaterThan(0)
+  })
 
-  it("renders storage locations section", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    expect(container.textContent).toContain("settings.storageLocations");
-  });
+  it('renders storage locations section', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    expect(container.textContent).toContain('settings.storageLocations')
+  })
 
-  it("renders recorded stores section", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    expect(container.textContent).toContain("settings.recordedStores");
-  });
+  it('renders recorded stores section', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    expect(container.textContent).toContain('settings.recordedStores')
+  })
 
-  it("renders display section", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    expect(container.textContent).toContain("settings.display");
-  });
+  it('renders display section', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    expect(container.textContent).toContain('settings.display')
+  })
 
-  it("calls setAiKey on save", async () => {
-    const setAiKey = vi.fn();
-    const { container } = renderWithQuery(
-      React.createElement(Settings, { ...baseProps, setAiKey }),
-    );
-    const passwordInput = container.querySelector('input[type="password"]');
+  it('calls setAiKey on save', async () => {
+    const setAiKey = vi.fn()
+    const { container } = renderWithQuery(React.createElement(Settings, { ...baseProps, setAiKey }))
+    const passwordInput = container.querySelector('input[type="password"]')
     if (passwordInput) {
-      fireEvent.change(passwordInput, { target: { value: "new-key" } });
+      fireEvent.change(passwordInput, { target: { value: 'new-key' } })
     }
-    const saveBtn = container.querySelector(".btn--primary");
+    const saveBtn = container.querySelector('.btn--primary')
     if (saveBtn) {
-      fireEvent.click(saveBtn);
+      fireEvent.click(saveBtn)
     }
-    expect(setAiKey).toHaveBeenCalledWith("new-key");
-  });
+    expect(setAiKey).toHaveBeenCalledWith('new-key')
+  })
 
-  it("test button triggers test flow", async () => {
+  it('test button triggers test flow', async () => {
     const { container } = renderWithQuery(
-      React.createElement(Settings, { ...baseProps, aiKey: "existing-key" }),
-    );
-    const testBtn = Array.from(container.querySelectorAll(".btn--secondary")).find((btn) =>
-      btn.textContent?.includes("settings.test"),
-    );
-    expect(testBtn).toBeTruthy();
-  });
+      React.createElement(Settings, { ...baseProps, aiKey: 'existing-key' })
+    )
+    const testBtn = Array.from(container.querySelectorAll('.btn--secondary')).find((btn) =>
+      btn.textContent?.includes('settings.test')
+    )
+    expect(testBtn).toBeTruthy()
+  })
 
-  it("adds a new location", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const locInput = container.querySelector('input[placeholder="settings.locationName"]');
+  it('adds a new location', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const locInput = container.querySelector('input[placeholder="settings.locationName"]')
     if (locInput) {
-      fireEvent.change(locInput, { target: { value: "Garage" } });
+      fireEvent.change(locInput, { target: { value: 'Garage' } })
     }
-    const addBtn = Array.from(container.querySelectorAll(".btn--secondary")).find((btn) =>
-      btn.textContent?.includes("settings.add"),
-    );
+    const addBtn = Array.from(container.querySelectorAll('.btn--secondary')).find((btn) =>
+      btn.textContent?.includes('settings.add')
+    )
     if (addBtn) {
-      fireEvent.click(addBtn);
+      fireEvent.click(addBtn)
     }
-  });
+  })
 
-  it("removes a location", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const deleteBtns = container.querySelectorAll(".btn--ghost");
+  it('removes a location', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const deleteBtns = container.querySelectorAll('.btn--ghost')
     if (deleteBtns.length > 0) {
-      fireEvent.click(deleteBtns[0]);
+      fireEvent.click(deleteBtns[0])
     }
-  });
+  })
 
-  it("handles language change", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const langBtns = container.querySelectorAll("[aria-pressed]");
+  it('handles language change', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const langBtns = container.querySelectorAll('[aria-pressed]')
     if (langBtns.length > 0) {
-      fireEvent.click(langBtns[0]);
+      fireEvent.click(langBtns[0])
     }
-  });
+  })
 
-  it("handles motion change", () => {
-    const setMotion = vi.fn();
+  it('handles motion change', () => {
+    const setMotion = vi.fn()
     const { container } = renderWithQuery(
-      React.createElement(Settings, { ...baseProps, setMotion }),
-    );
-    const motionBtns = container.querySelectorAll(".motion-scale button");
+      React.createElement(Settings, { ...baseProps, setMotion })
+    )
+    const motionBtns = container.querySelectorAll('.motion-scale button')
     if (motionBtns.length > 0) {
-      fireEvent.click(motionBtns[0]);
-      expect(setMotion).toHaveBeenCalled();
+      fireEvent.click(motionBtns[0])
+      expect(setMotion).toHaveBeenCalled()
     }
-  });
+  })
 
-  it("handles persona toggle", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const toggle = container.querySelector("#persona-toggle");
+  it('handles persona toggle', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const toggle = container.querySelector('#persona-toggle')
     if (toggle) {
-      fireEvent.click(toggle);
-      expect(toggle.checked).toBe(true);
+      fireEvent.click(toggle)
+      expect(toggle.checked).toBe(true)
     }
-  });
+  })
 
-  it("handles persona role inputs", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const inputs = container.querySelectorAll("input[placeholder]");
+  it('handles persona role inputs', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const inputs = container.querySelectorAll('input[placeholder]')
     const myRole = Array.from(inputs).find(
-      (inp) => inp.getAttribute("placeholder") === "settings.myRolePlaceholder",
-    );
+      (inp) => inp.getAttribute('placeholder') === 'settings.myRolePlaceholder'
+    )
     const aiRole = Array.from(inputs).find(
-      (inp) => inp.getAttribute("placeholder") === "settings.aiRolePlaceholder",
-    );
+      (inp) => inp.getAttribute('placeholder') === 'settings.aiRolePlaceholder'
+    )
     if (myRole) {
-      fireEvent.change(myRole, { target: { value: "raja" } });
+      fireEvent.change(myRole, { target: { value: 'raja' } })
     }
     if (aiRole) {
-      fireEvent.change(aiRole, { target: { value: "prajurit" } });
+      fireEvent.change(aiRole, { target: { value: 'prajurit' } })
     }
-  });
+  })
 
-  it("applies persona with apply button", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const applyBtn = Array.from(container.querySelectorAll(".btn--primary")).find((btn) =>
-      btn.textContent?.includes("settings.apply"),
-    );
+  it('applies persona with apply button', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const applyBtn = Array.from(container.querySelectorAll('.btn--primary')).find((btn) =>
+      btn.textContent?.includes('settings.apply')
+    )
     if (applyBtn) {
-      fireEvent.click(applyBtn);
+      fireEvent.click(applyBtn)
     }
-  });
+  })
 
-  it("changes provider via select", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const select = container.querySelector("select");
+  it('changes provider via select', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const select = container.querySelector('select')
     if (select) {
-      fireEvent.change(select, { target: { value: "openai" } });
-      expect(select.value).toBe("openai");
+      fireEvent.change(select, { target: { value: 'openai' } })
+      expect(select.value).toBe('openai')
     }
-  });
+  })
 
-  it("adds location with Enter key", () => {
-    const { container } = renderWithQuery(React.createElement(Settings, baseProps));
-    const locInput = container.querySelector('input[placeholder="settings.locationName"]');
+  it('adds location with Enter key', () => {
+    const { container } = renderWithQuery(React.createElement(Settings, baseProps))
+    const locInput = container.querySelector('input[placeholder="settings.locationName"]')
     if (locInput) {
-      fireEvent.change(locInput, { target: { value: "Pantry" } });
-      fireEvent.keyDown(locInput, { key: "Enter" });
+      fireEvent.change(locInput, { target: { value: 'Pantry' } })
+      fireEvent.keyDown(locInput, { key: 'Enter' })
     }
-  });
-});
+  })
+})

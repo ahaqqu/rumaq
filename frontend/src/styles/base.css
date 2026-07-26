@@ -129,13 +129,13 @@ hr {
 }
 
 /* Manual motion preference (Settings slider) */
-[data-motion="none"] *,
-[data-motion="none"] *::before,
-[data-motion="none"] *::after {
+[data-motion='none'] *,
+[data-motion='none'] *::before,
+[data-motion='none'] *::after {
   animation: none !important;
   transition: none !important;
 }
-[data-motion="reduced"] * {
+[data-motion='reduced'] * {
   animation-duration: 120ms !important;
   transition-duration: 120ms !important;
 }

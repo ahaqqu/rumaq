@@ -1,8 +1,8 @@
-import { defineConfig } from "vite-plus";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { defineConfig } from 'vite-plus'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   check: {
@@ -16,24 +16,24 @@ export default defineConfig({
       typeAware: false,
       typeCheck: false,
     },
-    plugins: ["import"],
+    plugins: ['import'],
     rules: {
-      "import/no-default-export": "error",
-      "import/no-anonymous-default-export": "error",
+      'import/no-default-export': 'error',
+      'import/no-anonymous-default-export': 'error',
     },
     overrides: [
       {
-        files: ["backend/src/index.ts"],
+        files: ['backend/src/index.ts'],
         rules: {
-          "import/no-default-export": "off",
-          "import/no-anonymous-default-export": "off",
+          'import/no-default-export': 'off',
+          'import/no-anonymous-default-export': 'off',
         },
       },
       {
-        files: ["**/*.config.{js,ts,mjs,cjs}", "automation/**/*.mjs", "automation/**/*.js"],
+        files: ['**/*.config.{js,ts,mjs,cjs}', 'automation/**/*.mjs', 'automation/**/*.js'],
         rules: {
-          "import/no-default-export": "off",
-          "import/no-anonymous-default-export": "off",
+          'import/no-default-export': 'off',
+          'import/no-anonymous-default-export': 'off',
         },
       },
     ],
@@ -41,19 +41,19 @@ export default defineConfig({
   fmt: {
     semi: false,
     singleQuote: true,
-    trailingComma: "es5",
+    trailingComma: 'es5',
     overrides: [
       {
-        files: ["**/*.sh"],
-        formatter: "prettier",
+        files: ['**/*.sh'],
+        formatter: 'prettier',
       },
     ],
   },
   resolve: {
     alias: {
-      "virtual:pwa-register/react": path.resolve(
+      'virtual:pwa-register/react': path.resolve(
         __dirname,
-        "frontend/src/__mocks__/virtual-pwa-register-react.js",
+        'frontend/src/__mocks__/virtual-pwa-register-react.js'
       ),
     },
   },
@@ -62,21 +62,21 @@ export default defineConfig({
       {
         extends: true,
         test: {
-          name: "frontend",
-          root: "frontend",
-          environment: "jsdom",
-          include: ["src/**/*.test.{js,jsx}"],
-          setupFiles: ["src/test-setup.js"],
+          name: 'frontend',
+          root: 'frontend',
+          environment: 'jsdom',
+          include: ['src/**/*.test.{js,jsx}'],
+          setupFiles: ['src/test-setup.js'],
           testTimeout: 15000,
         },
       },
       {
         extends: true,
         test: {
-          name: "backend",
-          root: "backend",
-          environment: "node",
-          include: ["src/**/*.test.ts"],
+          name: 'backend',
+          root: 'backend',
+          environment: 'node',
+          include: ['src/**/*.test.ts'],
           testTimeout: 15000,
         },
       },
@@ -84,11 +84,11 @@ export default defineConfig({
   },
   coverage: {
     exclude: [
-      "frontend/src/styles/**",
-      "frontend/src/routes/**",
-      "frontend/src/lib/queries/**",
-      "frontend/src/context/AppContext.jsx",
-      "frontend/src/lib/cn.js",
+      'frontend/src/styles/**',
+      'frontend/src/routes/**',
+      'frontend/src/lib/queries/**',
+      'frontend/src/context/AppContext.jsx',
+      'frontend/src/lib/cn.js',
     ],
     thresholds: {
       statements: 90,
@@ -97,4 +97,4 @@ export default defineConfig({
       lines: 90,
     },
   },
-});
+})

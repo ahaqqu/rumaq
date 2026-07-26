@@ -1,72 +1,72 @@
-import { useTranslation } from "react-i18next";
-import { TimeSignal, SkeletonRows } from "../components/ui.jsx";
-import { useHome } from "../lib/queries/index.js";
-import { usePersona } from "../context/PersonaContext.jsx";
-import { personaText } from "../lib/persona.js";
-import { IconReceipt, IconSpark, IconLeaf, IconBox } from "../components/icons.jsx";
+import { useTranslation } from 'react-i18next'
+import { TimeSignal, SkeletonRows } from '../components/ui.jsx'
+import { useHome } from '../lib/queries/index.js'
+import { usePersona } from '../context/PersonaContext.jsx'
+import { personaText } from '../lib/persona.js'
+import { IconReceipt, IconSpark, IconLeaf, IconBox } from '../components/icons.jsx'
 
 function getDaysUntil(expiryDate) {
-  if (!expiryDate) return null;
-  const now = new Date();
-  const expiry = new Date(expiryDate + "T00:00:00");
-  return Math.round((expiry - now) / 86400000);
+  if (!expiryDate) return null
+  const now = new Date()
+  const expiry = new Date(expiryDate + 'T00:00:00')
+  return Math.round((expiry - now) / 86400000)
 }
 
 export function Home({ setView, askAssistant }) {
-  const { t } = useTranslation();
-  const { persona } = usePersona();
-  const { data, isLoading } = useHome();
+  const { t } = useTranslation()
+  const { persona } = usePersona()
+  const { data, isLoading } = useHome()
 
   if (isLoading) {
     return (
       <div className="panel">
         <SkeletonRows n={4} />
       </div>
-    );
+    )
   }
 
-  const totalItems = data?.total_items ?? 0;
-  const expiring7d = data?.expiring_7d ?? 0;
-  const runningOut7d = data?.running_out_7d ?? 0;
-  const needs = data?.low_stock ?? [];
-  const nextTrip = data?.next_trip;
+  const totalItems = data?.total_items ?? 0
+  const expiring7d = data?.expiring_7d ?? 0
+  const runningOut7d = data?.running_out_7d ?? 0
+  const needs = data?.low_stock ?? []
+  const nextTrip = data?.next_trip
 
   return (
     <>
       <div className="page__head">
-        <p className="page__lead">{personaText("homeLead", persona, t)}</p>
+        <p className="page__lead">{personaText('homeLead', persona, t)}</p>
       </div>
 
       <div
         className="section__head"
-        style={{ marginTop: "var(--sp-2)", marginBottom: "var(--sp-4)" }}
+        style={{ marginTop: 'var(--sp-2)', marginBottom: 'var(--sp-4)' }}
       >
-        <h2>{t("home.stockStatus")}</h2>
+        <h2>{t('home.stockStatus')}</h2>
       </div>
       <div className="stats">
         <div className="stat">
           <div className="stat__num">{totalItems}</div>
-          <div className="stat__label">{t("home.itemsMonitored")}</div>
+          <div className="stat__label">{t('home.itemsMonitored')}</div>
         </div>
         <div className="stat">
-          <div className={`stat__num${expiring7d > 0 ? " is-warn" : ""}`}>{expiring7d}</div>
-          <div className="stat__label">{t("home.expiring")}</div>
+          <div className={`stat__num${expiring7d > 0 ? ' is-warn' : ''}`}>{expiring7d}</div>
+          <div className="stat__label">{t('home.expiring')}</div>
         </div>
         <div className="stat">
-          <div className={`stat__num${runningOut7d > 0 ? " is-warn" : ""}`}>{runningOut7d}</div>
-          <div className="stat__label">{t("home.nearlyOut")}</div>
+          <div className={`stat__num${runningOut7d > 0 ? ' is-warn' : ''}`}>{runningOut7d}</div>
+          <div className="stat__label">{t('home.nearlyOut')}</div>
         </div>
         <div className="stat">
           <div className="stat__num">&mdash;</div>
-          <div className="stat__label">{t("home.storesRecorded")}</div>
+          <div className="stat__label">{t('home.storesRecorded')}</div>
         </div>
       </div>
 
       <section className="section">
         <div className="section__head">
-          <h2>{t("home.needsAttention")}</h2>
-          <button className="btn btn--ghost btn--sm" onClick={() => setView("inventory")}>
-            {t("home.seeAll")}
+          <h2>{t('home.needsAttention')}</h2>
+          <button className="btn btn--ghost btn--sm" onClick={() => setView('inventory')}>
+            {t('home.seeAll')}
           </button>
         </div>
         <div className="panel">
@@ -75,8 +75,8 @@ export function Home({ setView, askAssistant }) {
               <div className="empty__icon">
                 <IconBox size={40} />
               </div>
-              <div className="empty__title">{t("home.allSafe")}</div>
-              <div className="empty__desc">{t("home.allSafeDesc")}</div>
+              <div className="empty__title">{t('home.allSafe')}</div>
+              <div className="empty__desc">{t('home.allSafeDesc')}</div>
             </div>
           ) : (
             <div className="list">
@@ -106,17 +106,17 @@ export function Home({ setView, askAssistant }) {
 
       <section className="section">
         <div className="section__head">
-          <h2>{t("home.nextTrip")}</h2>
+          <h2>{t('home.nextTrip')}</h2>
           <button className="btn btn--ghost btn--sm" onClick={askAssistant}>
-            <IconSpark size={15} /> {t("home.askPlan")}
+            <IconSpark size={15} /> {t('home.askPlan')}
           </button>
         </div>
         {nextTrip ? (
           <div className="tripcard">
             <div>
-              <div className="tripcard__title">{t("home.shopAt", { store: nextTrip.store })}</div>
+              <div className="tripcard__title">{t('home.shopAt', { store: nextTrip.store })}</div>
               <div className="tripcard__sub">
-                {t("home.itemCount", { count: nextTrip.items?.length ?? 0 })}
+                {t('home.itemCount', { count: nextTrip.items?.length ?? 0 })}
               </div>
               <div className="tripcard__items">
                 {nextTrip.items?.map((it) => (
@@ -126,8 +126,8 @@ export function Home({ setView, askAssistant }) {
                 ))}
               </div>
             </div>
-            <button className="btn btn--primary" onClick={() => setView("plan")}>
-              {t("home.seePlan")}
+            <button className="btn btn--primary" onClick={() => setView('plan')}>
+              {t('home.seePlan')}
             </button>
           </div>
         ) : (
@@ -136,9 +136,9 @@ export function Home({ setView, askAssistant }) {
               <div className="empty__icon">
                 <IconBox size={40} />
               </div>
-              <div className="empty__title">{t("home.noPlanYet") || "No trip planned"}</div>
+              <div className="empty__title">{t('home.noPlanYet') || 'No trip planned'}</div>
               <div className="empty__desc">
-                {t("home.noPlanYetDesc") || "Ask the assistant to plan your next shopping trip."}
+                {t('home.noPlanYetDesc') || 'Ask the assistant to plan your next shopping trip.'}
               </div>
             </div>
           </div>
@@ -147,16 +147,16 @@ export function Home({ setView, askAssistant }) {
 
       <section className="section">
         <div className="section__head">
-          <h2>{t("home.quickRefill")}</h2>
+          <h2>{t('home.quickRefill')}</h2>
         </div>
         <div
           className="panel"
           style={{
-            padding: "var(--sp-6)",
-            display: "flex",
-            gap: "var(--sp-5)",
-            alignItems: "center",
-            flexWrap: "wrap",
+            padding: 'var(--sp-6)',
+            display: 'flex',
+            gap: 'var(--sp-5)',
+            alignItems: 'center',
+            flexWrap: 'wrap',
           }}
         >
           <div
@@ -165,27 +165,27 @@ export function Home({ setView, askAssistant }) {
               margin: 0,
               width: 48,
               height: 48,
-              borderRadius: "var(--r-md)",
+              borderRadius: 'var(--r-md)',
             }}
           >
             <IconReceipt size={24} />
           </div>
           <div style={{ flex: 1, minWidth: 220 }}>
-            <div style={{ fontWeight: 600, fontSize: "var(--fs-md)" }}>
-              {t("home.quickRefillTitle")}
+            <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)' }}>
+              {t('home.quickRefillTitle')}
             </div>
             <div
               style={{
-                color: "var(--text-muted)",
-                fontSize: "var(--fs-sm)",
-                marginTop: "var(--sp-2)",
+                color: 'var(--text-muted)',
+                fontSize: 'var(--fs-sm)',
+                marginTop: 'var(--sp-2)',
               }}
             >
-              {t("home.quickRefillDesc")}
+              {t('home.quickRefillDesc')}
             </div>
           </div>
-          <button className="btn btn--primary" onClick={() => setView("add")}>
-            <IconReceipt size={18} /> {t("home.addFromReceipt")}
+          <button className="btn btn--primary" onClick={() => setView('add')}>
+            <IconReceipt size={18} /> {t('home.addFromReceipt')}
           </button>
         </div>
       </section>
@@ -196,14 +196,14 @@ export function Home({ setView, askAssistant }) {
             <IconLeaf size={20} />
           </div>
           <div>
-            <div className="tiptip__title">{t("home.savingsTip")}</div>
-            <div className="tiptip__text">{t("home.savingsTipText")}</div>
+            <div className="tiptip__title">{t('home.savingsTip')}</div>
+            <div className="tiptip__text">{t('home.savingsTipText')}</div>
           </div>
           <button className="btn btn--primary btn--sm" onClick={askAssistant}>
-            <IconSpark size={15} /> {t("home.askRecipe")}
+            <IconSpark size={15} /> {t('home.askRecipe')}
           </button>
         </div>
       </section>
     </>
-  );
+  )
 }

@@ -1,62 +1,62 @@
-import { vi } from "vitest";
-import React from "react";
+import { vi } from 'vitest'
+import React from 'react'
 
-import en from "./i18n/locales/en.json";
+import en from './i18n/locales/en.json'
 
-vi.mock("react-i18next", () => {
+vi.mock('react-i18next', () => {
   const t = (key, opts) => {
-    if (opts && opts.returnObjects) return {};
-    if (opts && opts.defaultValue) return opts.defaultValue;
-    if (key.startsWith("persona.mood.")) {
-      const parts = key.split(".");
-      const moodKey = parts[parts.length - 1];
-      const template = en.persona?.mood?.[moodKey];
+    if (opts && opts.returnObjects) return {}
+    if (opts && opts.defaultValue) return opts.defaultValue
+    if (key.startsWith('persona.mood.')) {
+      const parts = key.split('.')
+      const moodKey = parts[parts.length - 1]
+      const template = en.persona?.mood?.[moodKey]
       if (template && opts) {
-        return template.replace(/\{\{(\w+)\}\}/g, (_, name) => opts[name] ?? `{{${name}}}`);
+        return template.replace(/\{\{(\w+)\}\}/g, (_, name) => opts[name] ?? `{{${name}}}`)
       }
     }
-    return key;
-  };
+    return key
+  }
   return {
     useTranslation: () => ({
       t,
       i18n: {
-        language: "en",
+        language: 'en',
         changeLanguage: vi.fn(),
         on: vi.fn(),
         off: vi.fn(),
       },
     }),
     I18nextProvider: ({ children }) => children,
-    initReactI18next: { type: "3rdParty", init: vi.fn() },
-  };
-});
+    initReactI18next: { type: '3rdParty', init: vi.fn() },
+  }
+})
 
 const mockPersona = {
   persona: {
     enabled: false,
-    userRole: "",
-    aiRole: "",
+    userRole: '',
+    aiRole: '',
     hue: 230,
     generatedCopy: null,
   },
   setPersona: vi.fn(),
   regenerateCopy: vi.fn(),
-};
+}
 
-vi.mock("./context/PersonaContext.jsx", () => ({
+vi.mock('./context/PersonaContext.jsx', () => ({
   PersonaProvider: ({ children }) => children,
   usePersona: () => mockPersona,
-}));
+}))
 
-vi.mock("@tanstack/react-router", async () => {
-  const actual = await vi.importActual("@tanstack/react-router");
+vi.mock('@tanstack/react-router', async () => {
+  const actual = await vi.importActual('@tanstack/react-router')
   return {
     ...actual,
-    useMatches: () => [{ routeId: "/", pathname: "/" }],
+    useMatches: () => [{ routeId: '/', pathname: '/' }],
     useNavigate: () => vi.fn(),
     Link: ({ children, to, className, ...props }) =>
-      React.createElement("a", { ...props, className, href: to, "data-testid": "link" }, children),
+      React.createElement('a', { ...props, className, href: to, 'data-testid': 'link' }, children),
     Outlet: () => null,
-  };
-});
+  }
+})

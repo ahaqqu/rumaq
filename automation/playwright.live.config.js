@@ -1,14 +1,14 @@
-import { defineConfig } from "@playwright/test";
+import { defineConfig } from '@playwright/test'
 
 export default defineConfig({
-  testDir: "tests/live",
+  testDir: 'tests/live',
   fullyParallel: false,
   retries: 0,
-  reporter: "html",
+  reporter: 'html',
   timeout: 60_000,
   expect: { timeout: 10_000 },
   use: {
-    trace: "on-first-retry",
-    screenshot: "only-on-failure",
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
   },
-});
+})

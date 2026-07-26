@@ -3,5 +3,5 @@ export function useRegisterSW() {
     needRefresh: [false, () => {}],
     offlineReady: [false, () => {}],
     updateServiceWorker: () => {},
-  };
+  }
 }

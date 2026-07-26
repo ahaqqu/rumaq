@@ -1,78 +1,78 @@
-import type { Env } from "./types.js";
-import { authApp } from "./apps/auth.js";
-import { apiApp } from "./apps/api.js";
+import type { Env } from './types.js'
+import { authApp } from './apps/auth.js'
+import { apiApp } from './apps/api.js'
 
 const AUTH_ROUTES = new Set([
-  "/api/auth/login",
-  "/api/auth/callback",
-  "/api/auth/logout",
-  "/api/auth/email-login",
-]);
+  '/api/auth/login',
+  '/api/auth/callback',
+  '/api/auth/logout',
+  '/api/auth/email-login',
+])
 
 const REQUIRED_SECRETS = [
-  "GOOGLE_CLIENT_ID",
-  "GOOGLE_CLIENT_SECRET",
-  "WORKER_JWT_SECRET",
-  "WORKER_ENCRYPTION_KEY",
-] as const;
+  'GOOGLE_CLIENT_ID',
+  'GOOGLE_CLIENT_SECRET',
+  'WORKER_JWT_SECRET',
+  'WORKER_ENCRYPTION_KEY',
+] as const
 
-const secretCache = new WeakMap<object, string[]>();
+const secretCache = new WeakMap<object, string[]>()
 
-function missingSecrets(env: Env["Bindings"]): string[] {
-  if (env.RUN_SECRETS_CHECK !== "true") return [];
-  if (env.TEST_MODE === "true") return [];
-  const cacheKey = env as unknown as object;
+function missingSecrets(env: Env['Bindings']): string[] {
+  if (env.RUN_SECRETS_CHECK !== 'true') return []
+  if (env.TEST_MODE === 'true') return []
+  const cacheKey = env as unknown as object
   if (secretCache.has(cacheKey)) {
-    return secretCache.get(cacheKey) ?? [];
+    return secretCache.get(cacheKey) ?? []
   }
-  const missing = REQUIRED_SECRETS.filter((k) => !env[k]);
-  secretCache.set(cacheKey, missing);
-  return missing;
+  const missing = REQUIRED_SECRETS.filter((k) => !env[k])
+  secretCache.set(cacheKey, missing)
+  return missing
 }
 
 export const gateway = {
-  async fetch(request: Request, env: Env["Bindings"], ctx: ExecutionContext): Promise<Response> {
-    const missing = missingSecrets(env);
+  async fetch(request: Request, env: Env['Bindings'], ctx: ExecutionContext): Promise<Response> {
+    const missing = missingSecrets(env)
     if (missing.length > 0) {
       return new Response(
         JSON.stringify({
-          error: `Worker misconfigured; missing required secrets: ${missing.join(", ")}`,
+          error: `Worker misconfigured; missing required secrets: ${missing.join(', ')}`,
         }),
         {
           status: 500,
-          headers: { "Content-Type": "application/json" },
-        },
-      );
+          headers: { 'Content-Type': 'application/json' },
+        }
+      )
     }
 
-    const url = new URL(request.url);
-    const path = url.pathname;
+    const url = new URL(request.url)
+    const path = url.pathname
 
-    if (path.startsWith("/api/")) {
+    if (path.startsWith('/api/')) {
       if (AUTH_ROUTES.has(path)) {
-        const adjustedUrl = new URL(request.url);
-        adjustedUrl.pathname = path.replace(/^\/api\/auth/, "");
-        const adjustedRequest = new Request(adjustedUrl.toString(), request);
-        return authApp.fetch(adjustedRequest, env, ctx);
+        const adjustedUrl = new URL(request.url)
+        adjustedUrl.pathname = path.replace(/^\/api\/auth/, '')
+        const adjustedRequest = new Request(adjustedUrl.toString(), request)
+        return authApp.fetch(adjustedRequest, env, ctx)
       }
 
       try {
         if (ctx.exports?.CachedApi) {
-          return ctx.exports.CachedApi.fetch(request, env);
+          return ctx.exports.CachedApi.fetch(request, env)
         }
       } catch {
         // ctx.exports not available (Miniflare / test mode)
       }
-      return apiApp.fetch(request, env, ctx);
+      return apiApp.fetch(request, env, ctx)
     }
 
     if (env.ASSETS) {
-      return env.ASSETS.fetch(request);
+      return env.ASSETS.fetch(request)
     }
 
-    return new Response(JSON.stringify({ error: "Not found" }), {
+    return new Response(JSON.stringify({ error: 'Not found' }), {
       status: 404,
-      headers: { "Content-Type": "application/json" },
-    });
+      headers: { 'Content-Type': 'application/json' },
+    })
   },
-};
+}

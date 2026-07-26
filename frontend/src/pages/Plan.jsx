@@ -1,10 +1,10 @@
-import { useTranslation } from "react-i18next";
-import { usePlans, useGeneratePlan, useSavePlan, useUpdatePlanItem } from "../lib/queries/index.js";
-import { useSettings } from "../lib/queries/index.js";
-import { usePersona } from "../context/PersonaContext.jsx";
-import { useApp } from "../context/AppContext.jsx";
-import { personaText } from "../lib/persona.js";
-import { SkeletonRows, EmptyState } from "../components/ui.jsx";
+import { useTranslation } from 'react-i18next'
+import { usePlans, useGeneratePlan, useSavePlan, useUpdatePlanItem } from '../lib/queries/index.js'
+import { useSettings } from '../lib/queries/index.js'
+import { usePersona } from '../context/PersonaContext.jsx'
+import { useApp } from '../context/AppContext.jsx'
+import { personaText } from '../lib/persona.js'
+import { SkeletonRows, EmptyState } from '../components/ui.jsx'
 import {
   IconSpark,
   IconShop,
@@ -12,93 +12,93 @@ import {
   IconKey,
   IconBolt,
   IconClose,
-} from "../components/icons.jsx";
+} from '../components/icons.jsx'
 
 function formatPrice(amount, currency) {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: currency || "IDR",
+  return new Intl.NumberFormat('id-ID', {
+    style: 'currency',
+    currency: currency || 'IDR',
     minimumFractionDigits: 0,
-  }).format(amount);
+  }).format(amount)
 }
 
 export function Plan({ askAssistant, setView }) {
-  const { t } = useTranslation();
-  const { persona } = usePersona();
-  const { assistantProposal, setAssistantProposal } = useApp();
-  const { data: settings, isLoading: settingsLoading } = useSettings();
-  const { data: plansData, isLoading: plansLoading } = usePlans("active");
-  const generateMutation = useGeneratePlan();
-  const saveMutation = useSavePlan();
-  const updateItemMutation = useUpdatePlanItem();
+  const { t } = useTranslation()
+  const { persona } = usePersona()
+  const { assistantProposal, setAssistantProposal } = useApp()
+  const { data: settings, isLoading: settingsLoading } = useSettings()
+  const { data: plansData, isLoading: plansLoading } = usePlans('active')
+  const generateMutation = useGeneratePlan()
+  const saveMutation = useSavePlan()
+  const updateItemMutation = useUpdatePlanItem()
 
-  const hasAiKey = settings?.has_ai_key === true;
-  const currency = settings?.currency || "IDR";
+  const hasAiKey = settings?.has_ai_key === true
+  const currency = settings?.currency || 'IDR'
 
-  const activePlan = plansData?.plans?.[0] ?? null;
-  const generatedItems = generateMutation.data?.items ?? null;
+  const activePlan = plansData?.plans?.[0] ?? null
+  const generatedItems = generateMutation.data?.items ?? null
 
   const renderProposalBanner = () => {
-    if (!assistantProposal) return null;
+    if (!assistantProposal) return null
     return (
       <div
         className="panel"
         style={{
-          padding: "var(--sp-5)",
-          marginBottom: "var(--sp-4)",
-          display: "flex",
-          flexDirection: "column",
-          gap: "var(--sp-3)",
+          padding: 'var(--sp-5)',
+          marginBottom: 'var(--sp-4)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: 'var(--sp-3)',
         }}
       >
         <div
           style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "var(--sp-3)",
+            display: 'flex',
+            alignItems: 'center',
+            gap: 'var(--sp-3)',
           }}
         >
-          <span style={{ color: "var(--accent)" }}>
+          <span style={{ color: 'var(--accent)' }}>
             <IconSpark size={18} />
           </span>
-          <strong>{t("assistant.applyToPlan")}</strong>
+          <strong>{t('assistant.applyToPlan')}</strong>
           <button
             className="assistant__close"
             onClick={() => setAssistantProposal(null)}
-            aria-label={t("assistant.closeAriaLabel")}
-            style={{ marginLeft: "auto" }}
+            aria-label={t('assistant.closeAriaLabel')}
+            style={{ marginLeft: 'auto' }}
           >
             <IconClose size={16} />
           </button>
         </div>
-        <p style={{ whiteSpace: "pre-wrap", margin: 0 }}>{assistantProposal}</p>
+        <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{assistantProposal}</p>
       </div>
-    );
-  };
+    )
+  }
 
   const allDone =
-    activePlan && activePlan.items.every((it) => it.status === "bought" || it.status === "skipped");
+    activePlan && activePlan.items.every((it) => it.status === 'bought' || it.status === 'skipped')
 
   const itemsByStore = (items) => {
-    const map = {};
+    const map = {}
     for (const it of items) {
-      const storeId = it.store_id || "__unknown__";
+      const storeId = it.store_id || '__unknown__'
       if (!map[storeId]) {
         map[storeId] = {
           store_id: storeId,
-          store_label: it.store_label || t("plan.otherStore"),
+          store_label: it.store_label || t('plan.otherStore'),
           items: [],
-        };
+        }
       }
-      map[storeId].items.push(it);
+      map[storeId].items.push(it)
     }
-    return Object.values(map);
-  };
+    return Object.values(map)
+  }
 
   const handleCheckItem = (planId, itemId, currentStatus) => {
-    if (currentStatus !== "pending") return;
-    updateItemMutation.mutate({ planId, itemId, status: "bought" });
-  };
+    if (currentStatus !== 'pending') return
+    updateItemMutation.mutate({ planId, itemId, status: 'bought' })
+  }
 
   const handleSaveDraft = async () => {
     const items = generatedItems.map((it) => ({
@@ -108,76 +108,76 @@ export function Plan({ askAssistant, setView }) {
       store_id: it.store_id,
       price_estimate: it.price_estimate,
       why: it.why,
-    }));
-    await saveMutation.mutateAsync(items);
-    generateMutation.reset();
-  };
+    }))
+    await saveMutation.mutateAsync(items)
+    generateMutation.reset()
+  }
 
   const handleDiscardDraft = () => {
-    generateMutation.reset();
-  };
+    generateMutation.reset()
+  }
 
   if (settingsLoading || plansLoading) {
     return (
       <div className="panel">
         <SkeletonRows n={4} />
       </div>
-    );
+    )
   }
 
   if (!hasAiKey) {
     return (
       <>
         <div className="page__head">
-          <p className="page__lead">{personaText("planLeadNoKey", persona, t)}</p>
+          <p className="page__lead">{personaText('planLeadNoKey', persona, t)}</p>
         </div>
         {renderProposalBanner()}
         <div className="panel">
           <EmptyState
             icon={IconKey}
-            title={t("plan.connectApiKey")}
-            desc={t("plan.bringYourOwnKey")}
+            title={t('plan.connectApiKey')}
+            desc={t('plan.bringYourOwnKey')}
             action={
-              <button className="btn btn--primary" onClick={() => setView("settings")}>
-                <IconKey size={18} /> {t("plan.addApiKey")}
+              <button className="btn btn--primary" onClick={() => setView('settings')}>
+                <IconKey size={18} /> {t('plan.addApiKey')}
               </button>
             }
           />
         </div>
       </>
-    );
+    )
   }
 
   if (generateMutation.isPending) {
     return (
       <>
         <div className="page__head">
-          <p className="page__lead">{personaText("planLead", persona, t)}</p>
+          <p className="page__lead">{personaText('planLead', persona, t)}</p>
         </div>
         {renderProposalBanner()}
         <div className="panel">
           <SkeletonRows n={4} />
         </div>
       </>
-    );
+    )
   }
 
   if (generatedItems) {
-    const stores = itemsByStore(generatedItems);
-    const grandTotal = generatedItems.reduce((s, it) => s + (it.price_estimate || 0), 0);
+    const stores = itemsByStore(generatedItems)
+    const grandTotal = generatedItems.reduce((s, it) => s + (it.price_estimate || 0), 0)
 
     return (
       <>
         <div className="page__head">
-          <p className="page__lead">{personaText("planLead", persona, t)}</p>
+          <p className="page__lead">{personaText('planLead', persona, t)}</p>
         </div>
         {renderProposalBanner()}
         <div
           style={{
-            display: "flex",
-            gap: "var(--sp-3)",
-            marginBottom: "var(--sp-5)",
-            flexWrap: "wrap",
+            display: 'flex',
+            gap: 'var(--sp-3)',
+            marginBottom: 'var(--sp-5)',
+            flexWrap: 'wrap',
           }}
         >
           <button
@@ -185,39 +185,39 @@ export function Plan({ askAssistant, setView }) {
             onClick={handleSaveDraft}
             disabled={saveMutation.isPending}
           >
-            <IconCheck size={18} /> {t("plan.savePlan")}
+            <IconCheck size={18} /> {t('plan.savePlan')}
           </button>
           <button
             className="btn btn--secondary"
             onClick={() => generateMutation.mutate()}
             disabled={generateMutation.isPending}
           >
-            <IconSpark size={18} /> {t("plan.regenerate")}
+            <IconSpark size={18} /> {t('plan.regenerate')}
           </button>
           <button
             className="btn btn--ghost"
             onClick={handleDiscardDraft}
             disabled={saveMutation.isPending}
           >
-            {t("plan.discardDraft")}
+            {t('plan.discardDraft')}
           </button>
           {grandTotal > 0 && (
-            <div className="chip" style={{ alignSelf: "center" }}>
-              {t("plan.stores", { count: stores.length })} · {formatPrice(grandTotal, currency)}
+            <div className="chip" style={{ alignSelf: 'center' }}>
+              {t('plan.stores', { count: stores.length })} · {formatPrice(grandTotal, currency)}
             </div>
           )}
         </div>
         {stores.map((store) => (
-          <div className="trip" key={store.store_id} style={{ marginBottom: "var(--sp-4)" }}>
+          <div className="trip" key={store.store_id} style={{ marginBottom: 'var(--sp-4)' }}>
             <div className="trip__head">
               <div className="trip__store">
                 <IconShop size={18} /> {store.store_label}
               </div>
               <div className="trip__total">
-                {t("home.itemCount", { count: store.items.length })} ·{" "}
+                {t('home.itemCount', { count: store.items.length })} ·{' '}
                 {formatPrice(
                   store.items.reduce((s, it) => s + (it.price_estimate || 0), 0),
-                  currency,
+                  currency
                 )}
               </div>
             </div>
@@ -227,7 +227,7 @@ export function Plan({ askAssistant, setView }) {
                   <div className="plan-item__main">
                     <div className="plan-item__name">
                       {it.name} · {it.qty}
-                      {it.unit ? ` ${it.unit}` : ""}
+                      {it.unit ? ` ${it.unit}` : ''}
                     </div>
                     <div className="plan-item__why">{it.why}</div>
                   </div>
@@ -242,53 +242,53 @@ export function Plan({ askAssistant, setView }) {
           </div>
         ))}
       </>
-    );
+    )
   }
 
   if (!activePlan) {
     return (
       <>
         <div className="page__head">
-          <p className="page__lead">{personaText("planLead", persona, t)}</p>
+          <p className="page__lead">{personaText('planLead', persona, t)}</p>
         </div>
         {renderProposalBanner()}
         <div className="panel">
           <EmptyState
             icon={IconSpark}
-            title={t("plan.noActivePlan")}
-            desc={t("plan.generatePrompt")}
+            title={t('plan.noActivePlan')}
+            desc={t('plan.generatePrompt')}
             action={
               <button
                 className="btn btn--primary"
                 onClick={() => generateMutation.mutate()}
                 disabled={generateMutation.isPending}
               >
-                <IconSpark size={18} /> {t("plan.generate")}
+                <IconSpark size={18} /> {t('plan.generate')}
               </button>
             }
           />
         </div>
       </>
-    );
+    )
   }
 
-  const stores = itemsByStore(activePlan.items);
-  const grandTotal = activePlan.items.reduce((s, it) => s + (it.price_estimate || 0), 0);
+  const stores = itemsByStore(activePlan.items)
+  const grandTotal = activePlan.items.reduce((s, it) => s + (it.price_estimate || 0), 0)
 
   return (
     <>
       <div className="page__head">
-        <p className="page__lead">{personaText("planLead", persona, t)}</p>
+        <p className="page__lead">{personaText('planLead', persona, t)}</p>
       </div>
 
       {renderProposalBanner()}
 
       <div
         style={{
-          display: "flex",
-          gap: "var(--sp-3)",
-          marginBottom: "var(--sp-5)",
-          flexWrap: "wrap",
+          display: 'flex',
+          gap: 'var(--sp-3)',
+          marginBottom: 'var(--sp-5)',
+          flexWrap: 'wrap',
         }}
       >
         <button
@@ -296,36 +296,36 @@ export function Plan({ askAssistant, setView }) {
           onClick={() => generateMutation.mutate()}
           disabled={generateMutation.isPending}
         >
-          <IconSpark size={18} /> {t("plan.regenerate")}
+          <IconSpark size={18} /> {t('plan.regenerate')}
         </button>
         {grandTotal > 0 && (
-          <div className="chip" style={{ alignSelf: "center" }}>
-            {t("plan.stores", { count: stores.length })} · {formatPrice(grandTotal, currency)}
+          <div className="chip" style={{ alignSelf: 'center' }}>
+            {t('plan.stores', { count: stores.length })} · {formatPrice(grandTotal, currency)}
           </div>
         )}
       </div>
 
       {stores.map((store) => (
-        <div className="trip" key={store.store_id} style={{ marginBottom: "var(--sp-4)" }}>
+        <div className="trip" key={store.store_id} style={{ marginBottom: 'var(--sp-4)' }}>
           <div className="trip__head">
             <div className="trip__store">
               <IconShop size={18} /> {store.store_label}
             </div>
             <div className="trip__total">
-              {t("home.itemCount", { count: store.items.length })} ·{" "}
+              {t('home.itemCount', { count: store.items.length })} ·{' '}
               {formatPrice(
                 store.items.reduce((s, it) => s + (it.price_estimate || 0), 0),
-                currency,
+                currency
               )}
             </div>
           </div>
           <div className="trip__items">
             {store.items.map((it) => {
-              const isDone = it.status === "bought";
-              const isSkipped = it.status === "skipped";
+              const isDone = it.status === 'bought'
+              const isSkipped = it.status === 'skipped'
               return (
                 <label
-                  className={`plan-item${isDone ? " is-done" : ""}${isSkipped ? " is-skipped" : ""}`}
+                  className={`plan-item${isDone ? ' is-done' : ''}${isSkipped ? ' is-skipped' : ''}`}
                   key={it.id}
                 >
                   <input
@@ -338,7 +338,7 @@ export function Plan({ askAssistant, setView }) {
                   <div className="plan-item__main">
                     <div className="plan-item__name">
                       {it.item_name || it.name} · {it.qty}
-                      {it.unit ? ` ${it.unit}` : ""}
+                      {it.unit ? ` ${it.unit}` : ''}
                     </div>
                     {it.why && <div className="plan-item__why">{it.why}</div>}
                   </div>
@@ -348,7 +348,7 @@ export function Plan({ askAssistant, setView }) {
                     </div>
                   )}
                 </label>
-              );
+              )
             })}
           </div>
         </div>
@@ -358,20 +358,20 @@ export function Plan({ askAssistant, setView }) {
         <div
           className="panel"
           style={{
-            padding: "var(--sp-5)",
-            display: "flex",
-            gap: "var(--sp-4)",
-            alignItems: "center",
+            padding: 'var(--sp-5)',
+            display: 'flex',
+            gap: 'var(--sp-4)',
+            alignItems: 'center',
           }}
         >
-          <div style={{ color: "var(--ok)" }}>
+          <div style={{ color: 'var(--ok)' }}>
             <IconCheck size={22} />
           </div>
-          <div style={{ flex: 1, fontSize: "var(--fs-sm)" }}>
-            <strong>{t("plan.allBought")}</strong> {t("plan.allBoughtDesc")}
+          <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
+            <strong>{t('plan.allBought')}</strong> {t('plan.allBoughtDesc')}
           </div>
           <button className="btn btn--primary btn--sm" onClick={() => generateMutation.mutate()}>
-            <IconSpark size={16} /> {t("plan.generateNext")}
+            <IconSpark size={16} /> {t('plan.generateNext')}
           </button>
         </div>
       )}
@@ -380,23 +380,23 @@ export function Plan({ askAssistant, setView }) {
         <div
           className="panel"
           style={{
-            padding: "var(--sp-5)",
-            display: "flex",
-            gap: "var(--sp-4)",
-            alignItems: "center",
+            padding: 'var(--sp-5)',
+            display: 'flex',
+            gap: 'var(--sp-4)',
+            alignItems: 'center',
           }}
         >
-          <div style={{ color: "var(--accent)" }}>
+          <div style={{ color: 'var(--accent)' }}>
             <IconBolt size={20} />
           </div>
-          <div style={{ flex: 1, fontSize: "var(--fs-sm)" }}>
-            {t("plan.basedOnItems", { count: activePlan.items.length })}
+          <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
+            {t('plan.basedOnItems', { count: activePlan.items.length })}
           </div>
           <button className="btn btn--ghost btn--sm" onClick={askAssistant}>
-            {t("plan.askAssistant")}
+            {t('plan.askAssistant')}
           </button>
         </div>
       )}
     </>
-  );
+  )
 }

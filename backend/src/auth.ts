@@ -1,159 +1,159 @@
-import { createMiddleware } from "hono/factory";
-import { getCookie } from "hono/cookie";
-import type { Env } from "./types.js";
+import { createMiddleware } from 'hono/factory'
+import { getCookie } from 'hono/cookie'
+import type { Env } from './types.js'
 
 export function base64UrlEncode(buffer: ArrayBuffer | Uint8Array) {
-  const bytes = new Uint8Array(buffer);
-  let binary = "";
+  const bytes = new Uint8Array(buffer)
+  let binary = ''
   for (let i = 0; i < bytes.length; i++) {
-    binary += String.fromCharCode(bytes[i]);
+    binary += String.fromCharCode(bytes[i])
   }
-  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
 export function base64UrlDecode(str: string): ArrayBuffer {
-  const normalized = str.replace(/-/g, "+").replace(/_/g, "/");
-  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), "=");
-  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)).buffer as ArrayBuffer;
+  const normalized = str.replace(/-/g, '+').replace(/_/g, '/')
+  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)).buffer as ArrayBuffer
 }
 
 export async function signJwt(payload: Record<string, unknown>, secret: string) {
-  const encoder = new TextEncoder();
+  const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
-    "raw",
+    'raw',
     encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
+    { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ["sign"],
-  );
-  const header = { alg: "HS256", typ: "JWT" };
+    ['sign']
+  )
+  const header = { alg: 'HS256', typ: 'JWT' }
   const body = `${base64UrlEncode(encoder.encode(JSON.stringify(header)))}.${base64UrlEncode(
-    encoder.encode(JSON.stringify(payload)),
-  )}`;
-  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
-  return `${body}.${base64UrlEncode(sig)}`;
+    encoder.encode(JSON.stringify(payload))
+  )}`
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(body))
+  return `${body}.${base64UrlEncode(sig)}`
 }
 
 export async function verifyJwt(token: string, secret: string) {
-  const parts = token.split(".");
-  if (parts.length !== 3) return null;
-  const [h, p, s] = parts;
-  const encoder = new TextEncoder();
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  const [h, p, s] = parts
+  const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(
-    "raw",
+    'raw',
     encoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
+    { name: 'HMAC', hash: 'SHA-256' },
     false,
-    ["verify"],
-  );
+    ['verify']
+  )
   const ok = await crypto.subtle.verify(
-    "HMAC",
+    'HMAC',
     key,
     base64UrlDecode(s),
-    encoder.encode(`${h}.${p}`),
-  );
-  if (!ok) return null;
+    encoder.encode(`${h}.${p}`)
+  )
+  if (!ok) return null
 
-  const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(p)));
+  const payload = JSON.parse(new TextDecoder().decode(base64UrlDecode(p)))
 
-  if (payload.exp && typeof payload.exp === "number" && Date.now() > payload.exp) {
-    return null;
+  if (payload.exp && typeof payload.exp === 'number' && Date.now() > payload.exp) {
+    return null
   }
 
-  return payload;
+  return payload
 }
 
 export function randomState() {
-  return base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)).buffer);
+  return base64UrlEncode(crypto.getRandomValues(new Uint8Array(32)).buffer)
 }
 
-const PBKDF2_ITERATIONS = 100000;
-const HASH_PREFIX = "pbkdf2_sha256";
+const PBKDF2_ITERATIONS = 100000
+const HASH_PREFIX = 'pbkdf2_sha256'
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = crypto.getRandomValues(new Uint8Array(16));
+  const salt = crypto.getRandomValues(new Uint8Array(16))
   const key = await crypto.subtle.importKey(
-    "raw",
+    'raw',
     new TextEncoder().encode(password),
-    { name: "PBKDF2" },
+    { name: 'PBKDF2' },
     false,
-    ["deriveBits"],
-  );
+    ['deriveBits']
+  )
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: PBKDF2_ITERATIONS, hash: "SHA-256" },
+    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
     key,
-    256,
-  );
-  const saltB64 = base64UrlEncode(salt.buffer);
-  const hashB64 = base64UrlEncode(bits);
-  return `${HASH_PREFIX}$${PBKDF2_ITERATIONS}$${saltB64}$${hashB64}`;
+    256
+  )
+  const saltB64 = base64UrlEncode(salt.buffer)
+  const hashB64 = base64UrlEncode(bits)
+  return `${HASH_PREFIX}$${PBKDF2_ITERATIONS}$${saltB64}$${hashB64}`
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const parts = stored.split("$");
-  if (parts.length !== 4 || parts[0] !== HASH_PREFIX) return false;
-  const iterations = parseInt(parts[1], 10);
-  const salt = new Uint8Array(base64UrlDecode(parts[2]));
-  const expectedHash = parts[3];
+  const parts = stored.split('$')
+  if (parts.length !== 4 || parts[0] !== HASH_PREFIX) return false
+  const iterations = parseInt(parts[1], 10)
+  const salt = new Uint8Array(base64UrlDecode(parts[2]))
+  const expectedHash = parts[3]
   const key = await crypto.subtle.importKey(
-    "raw",
+    'raw',
     new TextEncoder().encode(password),
-    { name: "PBKDF2" },
+    { name: 'PBKDF2' },
     false,
-    ["deriveBits"],
-  );
+    ['deriveBits']
+  )
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations, hash: "SHA-256" },
+    { name: 'PBKDF2', salt, iterations, hash: 'SHA-256' },
     key,
-    256,
-  );
-  const hashB64 = base64UrlEncode(bits);
-  return hashB64 === expectedHash;
+    256
+  )
+  const hashB64 = base64UrlEncode(bits)
+  return hashB64 === expectedHash
 }
 
 export const propsAuthMiddleware = createMiddleware<Env>(async (c, next) => {
-  const props = c.env.props;
+  const props = c.env.props
   if (props?.userId && props?.householdId) {
-    c.set("userId", props.userId);
-    c.set("householdId", props.householdId);
-    await next();
-    return;
+    c.set('userId', props.userId)
+    c.set('householdId', props.householdId)
+    await next()
+    return
   }
 
-  let token: string | undefined;
+  let token: string | undefined
   try {
-    token = getCookie(c, "rumaq_session");
+    token = getCookie(c, 'rumaq_session')
   } catch {
     // c.req.raw not available (test mock)
   }
   if (!token) {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  const payload = await verifyJwt(token, c.env.WORKER_JWT_SECRET);
-  if (!payload || typeof payload.sub !== "string") {
-    return c.json({ error: "Unauthorized" }, 401);
+  const payload = await verifyJwt(token, c.env.WORKER_JWT_SECRET)
+  if (!payload || typeof payload.sub !== 'string') {
+    return c.json({ error: 'Unauthorized' }, 401)
   }
 
   const user = await c.env.DB.prepare(
-    "SELECT active_household_id FROM user_settings WHERE user_id = ?",
+    'SELECT active_household_id FROM user_settings WHERE user_id = ?'
   )
     .bind(payload.sub)
-    .first<{ active_household_id: string | null }>();
+    .first<{ active_household_id: string | null }>()
 
   const householdId =
     user?.active_household_id ||
     (
-      await c.env.DB.prepare("SELECT household_id FROM household_members WHERE user_id = ? LIMIT 1")
+      await c.env.DB.prepare('SELECT household_id FROM household_members WHERE user_id = ? LIMIT 1')
         .bind(payload.sub)
         .first<{ household_id: string }>()
-    )?.household_id;
+    )?.household_id
 
   if (!householdId) {
-    return c.json({ error: "Unauthorized" }, 401);
+    return c.json({ error: 'Unauthorized' }, 401)
   }
 
-  c.set("userId", payload.sub);
-  c.set("householdId", householdId);
-  await next();
-});
+  c.set('userId', payload.sub)
+  c.set('householdId', householdId)
+  await next()
+})

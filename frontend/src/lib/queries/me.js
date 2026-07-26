@@ -1,30 +1,30 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { getMe, logout as apiLogout } from "../api.js";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { getMe, logout as apiLogout } from '../api.js'
 
 export function useMe() {
   return useQuery({
-    queryKey: ["me"],
+    queryKey: ['me'],
     queryFn: getMe,
     retry: false,
     staleTime: 1000 * 60 * 5,
-  });
+  })
 }
 
 export function useMeQueryOptions() {
   return {
-    queryKey: ["me"],
+    queryKey: ['me'],
     queryFn: getMe,
     retry: false,
     staleTime: 1000 * 60 * 5,
-  };
+  }
 }
 
 export function useLogout() {
-  const queryClient = useQueryClient();
+  const queryClient = useQueryClient()
   return useMutation({
     mutationFn: async () => {
-      queryClient.clear();
-      apiLogout();
+      queryClient.clear()
+      apiLogout()
     },
-  });
+  })
 }

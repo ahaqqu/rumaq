@@ -1,118 +1,118 @@
-import { describe, it, expect } from "vitest";
-import { safeParse } from "valibot";
-import { settingsPatchSchema, locationSchema, storeSchema } from "../schemas.js";
+import { describe, it, expect } from 'vitest'
+import { safeParse } from 'valibot'
+import { settingsPatchSchema, locationSchema, storeSchema } from '../schemas.js'
 
-describe("settingsPatchSchema", () => {
-  it("accepts a partial update with valid fields", () => {
+describe('settingsPatchSchema', () => {
+  it('accepts a partial update with valid fields', () => {
     const result = safeParse(settingsPatchSchema, {
-      ai_provider: "gemini",
-      language: "id",
-    });
-    expect(result.success).toBe(true);
+      ai_provider: 'gemini',
+      language: 'id',
+    })
+    expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.output.ai_provider).toBe("gemini");
-      expect(result.output.language).toBe("id");
+      expect(result.output.ai_provider).toBe('gemini')
+      expect(result.output.language).toBe('id')
     }
-  });
+  })
 
-  it("accepts ai_key as plain text", () => {
+  it('accepts ai_key as plain text', () => {
     const result = safeParse(settingsPatchSchema, {
-      ai_key: "sk-xxxxxxxxxxxx",
-    });
-    expect(result.success).toBe(true);
+      ai_key: 'sk-xxxxxxxxxxxx',
+    })
+    expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.output.ai_key).toBe("sk-xxxxxxxxxxxx");
+      expect(result.output.ai_key).toBe('sk-xxxxxxxxxxxx')
     }
-  });
+  })
 
-  it("accepts all optional fields at once", () => {
+  it('accepts all optional fields at once', () => {
     const result = safeParse(settingsPatchSchema, {
-      ai_provider: "openai",
-      ai_key: "sk-test",
-      persona_user_role: "chef",
-      persona_ai_role: "assistant",
+      ai_provider: 'openai',
+      ai_key: 'sk-test',
+      persona_user_role: 'chef',
+      persona_ai_role: 'assistant',
       persona_enabled: true,
-      motion_preference: "reduced",
-      language: "id",
+      motion_preference: 'reduced',
+      language: 'id',
       theme_hue: 200,
-    });
-    expect(result.success).toBe(true);
-  });
+    })
+    expect(result.success).toBe(true)
+  })
 
-  it("rejects invalid ai_provider", () => {
+  it('rejects invalid ai_provider', () => {
     const result = safeParse(settingsPatchSchema, {
-      ai_provider: "invalid-ai",
-    });
-    expect(result.success).toBe(false);
-  });
+      ai_provider: 'invalid-ai',
+    })
+    expect(result.success).toBe(false)
+  })
 
-  it("rejects invalid motion_preference", () => {
+  it('rejects invalid motion_preference', () => {
     const result = safeParse(settingsPatchSchema, {
-      motion_preference: "extreme",
-    });
-    expect(result.success).toBe(false);
-  });
+      motion_preference: 'extreme',
+    })
+    expect(result.success).toBe(false)
+  })
 
-  it("rejects invalid language", () => {
+  it('rejects invalid language', () => {
     const result = safeParse(settingsPatchSchema, {
-      language: "fr",
-    });
-    expect(result.success).toBe(false);
-  });
+      language: 'fr',
+    })
+    expect(result.success).toBe(false)
+  })
 
-  it("rejects unknown fields", () => {
+  it('rejects unknown fields', () => {
     const result = safeParse(settingsPatchSchema, {
-      unknown_field: "value",
-    });
-    expect(result.success).toBe(false);
-  });
+      unknown_field: 'value',
+    })
+    expect(result.success).toBe(false)
+  })
 
-  it("rejects empty ai_key", () => {
+  it('rejects empty ai_key', () => {
     const result = safeParse(settingsPatchSchema, {
-      ai_key: "",
-    });
-    expect(result.success).toBe(false);
-  });
+      ai_key: '',
+    })
+    expect(result.success).toBe(false)
+  })
 
-  it("accepts empty object (no fields to update)", () => {
-    const result = safeParse(settingsPatchSchema, {});
-    expect(result.success).toBe(true);
+  it('accepts empty object (no fields to update)', () => {
+    const result = safeParse(settingsPatchSchema, {})
+    expect(result.success).toBe(true)
     if (result.success) {
-      expect(Object.keys(result.output).length).toBe(0);
+      expect(Object.keys(result.output).length).toBe(0)
     }
-  });
-});
+  })
+})
 
-describe("locationSchema", () => {
-  it("accepts a valid label", () => {
-    const result = safeParse(locationSchema, { label: "Kitchen" });
-    expect(result.success).toBe(true);
-  });
+describe('locationSchema', () => {
+  it('accepts a valid label', () => {
+    const result = safeParse(locationSchema, { label: 'Kitchen' })
+    expect(result.success).toBe(true)
+  })
 
-  it("rejects empty label", () => {
-    const result = safeParse(locationSchema, { label: "" });
-    expect(result.success).toBe(false);
-  });
+  it('rejects empty label', () => {
+    const result = safeParse(locationSchema, { label: '' })
+    expect(result.success).toBe(false)
+  })
 
-  it("rejects missing label", () => {
-    const result = safeParse(locationSchema, {});
-    expect(result.success).toBe(false);
-  });
-});
+  it('rejects missing label', () => {
+    const result = safeParse(locationSchema, {})
+    expect(result.success).toBe(false)
+  })
+})
 
-describe("storeSchema", () => {
-  it("accepts a valid label", () => {
-    const result = safeParse(storeSchema, { label: "Indomaret" });
-    expect(result.success).toBe(true);
-  });
+describe('storeSchema', () => {
+  it('accepts a valid label', () => {
+    const result = safeParse(storeSchema, { label: 'Indomaret' })
+    expect(result.success).toBe(true)
+  })
 
-  it("rejects empty label", () => {
-    const result = safeParse(storeSchema, { label: "" });
-    expect(result.success).toBe(false);
-  });
+  it('rejects empty label', () => {
+    const result = safeParse(storeSchema, { label: '' })
+    expect(result.success).toBe(false)
+  })
 
-  it("rejects missing label", () => {
-    const result = safeParse(storeSchema, {});
-    expect(result.success).toBe(false);
-  });
-});
+  it('rejects missing label', () => {
+    const result = safeParse(storeSchema, {})
+    expect(result.success).toBe(false)
+  })
+})

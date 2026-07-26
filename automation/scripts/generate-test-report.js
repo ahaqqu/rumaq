@@ -1,108 +1,106 @@
 #!/usr/bin/env node
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { resolve, dirname, relative, basename } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
+import { resolve, dirname, relative, basename } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
-const ROOT = resolve(__dirname, "../..");
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const ROOT = resolve(__dirname, '../..')
 
-const vitestJsonPath = resolve(ROOT, "automation/test-results/vitest/api-results.json");
-const playwrightReportDir = resolve(ROOT, "automation/test-results/playwright");
-const outputPath = resolve(ROOT, "automation/test-results/test-report.html");
+const vitestJsonPath = resolve(ROOT, 'automation/test-results/vitest/api-results.json')
+const playwrightReportDir = resolve(ROOT, 'automation/test-results/playwright')
+const outputPath = resolve(ROOT, 'automation/test-results/test-report.html')
 
-const timestamp = new Date().toISOString().replace("T", " ").slice(0, 19);
+const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 19)
 
 function readVitestResults() {
-  if (!existsSync(vitestJsonPath)) return null;
-  return JSON.parse(readFileSync(vitestJsonPath, "utf-8"));
+  if (!existsSync(vitestJsonPath)) return null
+  return JSON.parse(readFileSync(vitestJsonPath, 'utf-8'))
 }
 
 function esc(s) {
-  return String(s ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+  return String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
 }
 
 function stepPrefix(title) {
-  const t = title.trim();
-  if (/^returns/i.test(t)) return "Then";
-  if (/^filters/i.test(t)) return "When";
-  if (/^orders/i.test(t)) return "Then";
-  if (/^allows/i.test(t)) return "Then";
-  if (/^rejects/i.test(t)) return "Then";
-  if (/^requires/i.test(t)) return "Then";
-  if (/^sends/i.test(t)) return "And";
-  return "";
+  const t = title.trim()
+  if (/^returns/i.test(t)) return 'Then'
+  if (/^filters/i.test(t)) return 'When'
+  if (/^orders/i.test(t)) return 'Then'
+  if (/^allows/i.test(t)) return 'Then'
+  if (/^rejects/i.test(t)) return 'Then'
+  if (/^requires/i.test(t)) return 'Then'
+  if (/^sends/i.test(t)) return 'And'
+  return ''
 }
 
 function generateHtml(vitest) {
-  const apiPassed = vitest?.numPassedTests ?? 0;
-  const apiFailed = vitest?.numFailedTests ?? 0;
-  const apiSkipped = vitest?.numPendingTests ?? 0;
-  const apiTotal = vitest?.numTotalTests ?? 0;
-  const apiFiles = vitest?.testResults ?? [];
-  const apiSuccess = apiFailed === 0 && apiTotal > 0;
+  const apiPassed = vitest?.numPassedTests ?? 0
+  const apiFailed = vitest?.numFailedTests ?? 0
+  const apiSkipped = vitest?.numPendingTests ?? 0
+  const apiTotal = vitest?.numTotalTests ?? 0
+  const apiFiles = vitest?.testResults ?? []
+  const apiSuccess = apiFailed === 0 && apiTotal > 0
 
-  const playwrightIndex = existsSync(resolve(playwrightReportDir, "index.html"));
+  const playwrightIndex = existsSync(resolve(playwrightReportDir, 'index.html'))
 
   // Group tests by ancestor (describe block) per file
-  let scenarioHtml = "";
+  let scenarioHtml = ''
   for (const file of apiFiles) {
-    const tests = file.assertionResults ?? [];
-    if (!tests.length) continue;
+    const tests = file.assertionResults ?? []
+    if (!tests.length) continue
 
-    const fileName = basename(file.name ?? "", ".test.js")
-      .replace(/\.spec$/, "")
-      .replace(/[-_]/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    const fileName = basename(file.name ?? '', '.test.js')
+      .replace(/\.spec$/, '')
+      .replace(/[-_]/g, ' ')
+      .replace(/\b\w/g, (c) => c.toUpperCase())
 
     // Group by ancestorTitles (first element = scenario)
-    const groups = {};
+    const groups = {}
     for (const t of tests) {
-      const key = (t.ancestorTitles ?? [""]).join(" > ");
-      if (!groups[key]) groups[key] = { ancestor: t.ancestorTitles ?? [], tests: [] };
-      groups[key].tests.push(t);
+      const key = (t.ancestorTitles ?? ['']).join(' > ')
+      if (!groups[key]) groups[key] = { ancestor: t.ancestorTitles ?? [], tests: [] }
+      groups[key].tests.push(t)
     }
 
     for (const [groupKey, group] of Object.entries(groups)) {
-      const scenario = group.ancestor[0] ?? groupKey;
+      const scenario = group.ancestor[0] ?? groupKey
       const steps = group.tests
         .map((t) => {
           const status =
-            t.status === "passed" ? "passed" : t.status === "failed" ? "failed" : "skipped";
-          const prefix = stepPrefix(t.title);
-          const failureMsg = t.failureMessages?.length ? t.failureMessages[0] : "";
+            t.status === 'passed' ? 'passed' : t.status === 'failed' ? 'failed' : 'skipped'
+          const prefix = stepPrefix(t.title)
+          const failureMsg = t.failureMessages?.length ? t.failureMessages[0] : ''
           const errorBlock = failureMsg
             ? `<details class="error-detail"><summary>details</summary><pre>${esc(failureMsg.slice(0, 500))}</pre></details>`
-            : "";
+            : ''
           return `<div class="step ${status}">
-          <span class="step-icon">${status === "passed" ? "✓" : status === "failed" ? "✗" : "○"}</span>
-          ${prefix ? `<span class="step-keyword">${prefix}</span>` : ""}
+          <span class="step-icon">${status === 'passed' ? '✓' : status === 'failed' ? '✗' : '○'}</span>
+          ${prefix ? `<span class="step-keyword">${prefix}</span>` : ''}
           <span class="step-text">${esc(t.title)}</span>
           ${errorBlock}
-        </div>`;
+        </div>`
         })
-        .join("\n");
+        .join('\n')
 
-      const groupPassed = group.tests.every((t) => t.status === "passed");
-      const groupFailed = group.tests.some((t) => t.status === "failed");
-      const groupSkipped = group.tests.some(
-        (t) => t.status === "pending" || t.status === "skipped",
-      );
-      const groupStatus = groupFailed ? "failed" : groupPassed ? "passed" : "skipped";
+      const groupPassed = group.tests.every((t) => t.status === 'passed')
+      const groupFailed = group.tests.some((t) => t.status === 'failed')
+      const groupSkipped = group.tests.some((t) => t.status === 'pending' || t.status === 'skipped')
+      const groupStatus = groupFailed ? 'failed' : groupPassed ? 'passed' : 'skipped'
 
       scenarioHtml += `<div class="scenario ${groupStatus}">
         <div class="scenario-header">
           <span class="scenario-status">
-            ${groupFailed ? "✗" : groupPassed ? "✓" : "○"}
+            ${groupFailed ? '✗' : groupPassed ? '✓' : '○'}
           </span>
           <span class="scenario-name">${esc(scenario)}</span>
-          <span class="scenario-count">${group.tests.length} ${group.tests.length === 1 ? "step" : "steps"}</span>
+          <span class="scenario-count">${group.tests.length} ${group.tests.length === 1 ? 'step' : 'steps'}</span>
         </div>
         ${steps}
-      </div>`;
+      </div>`
     }
   }
 
@@ -219,8 +217,8 @@ function generateHtml(vitest) {
   <h1>🧪 RumaQ Test Report</h1>
   <p class="subtitle">${esc(timestamp)} &middot; run via Docker test suite</p>
 
-  <div class="overall ${apiSuccess ? "pass" : apiTotal === 0 ? "skip" : "fail"}">
-    ${apiSuccess ? "All tests passed ✓" : apiTotal === 0 ? "No API tests found" : "Some tests failed ✗"}
+  <div class="overall ${apiSuccess ? 'pass' : apiTotal === 0 ? 'skip' : 'fail'}">
+    ${apiSuccess ? 'All tests passed ✓' : apiTotal === 0 ? 'No API tests found' : 'Some tests failed ✗'}
   </div>
 
   <div class="summary">
@@ -230,22 +228,22 @@ function generateHtml(vitest) {
     <div class="stat skip"><div class="num">${apiSkipped}</div><div class="label">Skipped</div></div>
   </div>
 
-  ${playwrightIndex ? `<a class="playwright-link" href="./playwright/index.html" target="_blank">▶ View E2E (Playwright) report</a>` : ""}
+  ${playwrightIndex ? `<a class="playwright-link" href="./playwright/index.html" target="_blank">▶ View E2E (Playwright) report</a>` : ''}
 
   <h2 style="font-size:1rem;margin-bottom:12px;">Scenarios</h2>
 
   ${scenarioHtml || '<p style="color:var(--text-muted)">No test results</p>'}
 </div>
 </body>
-</html>`;
+</html>`
 }
 
-const vitest = readVitestResults();
+const vitest = readVitestResults()
 if (vitest) {
-  const html = generateHtml(vitest);
-  writeFileSync(outputPath, html, "utf-8");
-  console.log(`✓ Test report written to ${relative(ROOT, outputPath)}`);
+  const html = generateHtml(vitest)
+  writeFileSync(outputPath, html, 'utf-8')
+  console.log(`✓ Test report written to ${relative(ROOT, outputPath)}`)
 } else {
-  console.log("No vitest results found at", vitestJsonPath);
-  process.exit(1);
+  console.log('No vitest results found at', vitestJsonPath)
+  process.exit(1)
 }
