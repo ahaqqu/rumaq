@@ -8,6 +8,7 @@ import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { propsAuthMiddleware } from '../auth.js'
 import { encryptAiKey, decryptAiKey } from '../lib/crypto.js'
+import { getRateLimitConfig, isRateLimited } from '../lib/rate-limit.js'
 import { computeRunOutDays } from '../lib/stock.js'
 import { computePatterns } from '../lib/patterns.js'
 import {
@@ -58,6 +59,22 @@ const apiApp = new Hono<Env>()
 
 apiApp.use(logger())
 apiApp.use('*', createCors())
+
+// General per-user/per-IP API rate limiting. Applied after CORS but before auth
+// so that unauthenticated bursts are also throttled. Keys are in-memory only;
+// move to KV for multi-instance deployments.
+apiApp.use('*', async (c, next) => {
+  const clientIp = c.req.header('CF-Connecting-IP') || 'unknown'
+  const key = `api:${clientIp}`
+  const { windowMs, maxRequests } = getRateLimitConfig(c.env)
+  const { limited, retryAfter } = isRateLimited(key, windowMs, maxRequests)
+  if (limited) {
+    return c.json({ error: 'Too many requests. Please slow down.' }, 429, {
+      'Retry-After': String(retryAfter),
+    })
+  }
+  await next()
+})
 
 apiApp.onError((err, c) => {
   console.error(err)
@@ -341,9 +358,9 @@ apiApp.patch(
     updates.push('run_out_days = ?', 'basis = ?')
     params.push(runOut.run_out_days, runOut.basis)
 
-    params.push(stockId)
+    params.push(stockId, householdId)
     await c.env.DB.prepare(
-      `UPDATE stock SET ${updates.join(', ')}, updated_at = datetime('now') WHERE id = ?`
+      `UPDATE stock SET ${updates.join(', ')}, updated_at = datetime('now') WHERE id = ? AND household_id = ?`
     )
       .bind(...params)
       .run()
@@ -353,9 +370,9 @@ apiApp.patch(
        FROM stock s
        JOIN items i ON i.id = s.item_id
        LEFT JOIN locations l ON l.id = s.location_id
-       WHERE s.id = ?`
+       WHERE s.id = ? AND s.household_id = ?`
     )
-      .bind(stockId)
+      .bind(stockId, householdId)
       .first()
 
     const res = c.json({ stock: updated })
@@ -786,7 +803,8 @@ apiApp.post(
         {
           error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
         },
-        429
+        429,
+        { 'Retry-After': '86400' }
       )
     }
 
@@ -980,7 +998,8 @@ apiApp.post(
         {
           error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
         },
-        429
+        429,
+        { 'Retry-After': '86400' }
       )
     }
 
@@ -1145,8 +1164,8 @@ apiApp.post(
         const runOut = await computeRunOutDays(householdId, itemId, newQty, c.env.DB)
         statements.push(
           c.env.DB.prepare(
-            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`
-          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id)
+            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ? AND household_id = ?`
+          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id, householdId)
         )
       } else {
         const stockId = crypto.randomUUID()
@@ -1549,9 +1568,9 @@ apiApp.post(
       .run()
 
     const created = await c.env.DB.prepare(
-      'SELECT id, label, sort_order FROM locations WHERE id = ?'
+      'SELECT id, label, sort_order FROM locations WHERE id = ? AND household_id = ?'
     )
-      .bind(id)
+      .bind(id, c.get('householdId'))
       .first()
 
     const res = c.json({ location: created }, 201)
@@ -1593,7 +1612,9 @@ apiApp.delete(
       return c.json({ error: 'Cannot delete location because it is used by stock items' }, 409)
     }
 
-    await c.env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(locationId).run()
+    await c.env.DB.prepare('DELETE FROM locations WHERE id = ? AND household_id = ?')
+      .bind(locationId, c.get('householdId'))
+      .run()
 
     return c.newResponse(null, 204)
   }
@@ -1663,8 +1684,10 @@ apiApp.post(
       .bind(id, c.get('householdId'), label)
       .run()
 
-    const created = await c.env.DB.prepare('SELECT id, label FROM stores WHERE id = ?')
-      .bind(id)
+    const created = await c.env.DB.prepare(
+      'SELECT id, label FROM stores WHERE id = ? AND household_id = ?'
+    )
+      .bind(id, c.get('householdId'))
       .first()
 
     const res = c.json({ store: created }, 201)
@@ -1714,7 +1737,9 @@ apiApp.delete(
       return c.json({ error: 'Cannot delete store because it is used by plan items' }, 409)
     }
 
-    await c.env.DB.prepare('DELETE FROM stores WHERE id = ?').bind(storeId).run()
+    await c.env.DB.prepare('DELETE FROM stores WHERE id = ? AND household_id = ?')
+      .bind(storeId, c.get('householdId'))
+      .run()
 
     return c.newResponse(null, 204)
   }
@@ -1877,7 +1902,8 @@ apiApp.post(
         {
           error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
         },
-        429
+        429,
+        { 'Retry-After': '86400' }
       )
     }
 
@@ -2062,8 +2088,8 @@ apiApp.post(
     if (existingActive) {
       statements.push(
         c.env.DB.prepare(
-          "UPDATE plans SET status = 'archived', updated_at = datetime('now') WHERE id = ?"
-        ).bind(existingActive.id)
+          "UPDATE plans SET status = 'archived', updated_at = datetime('now') WHERE id = ? AND household_id = ?"
+        ).bind(existingActive.id, householdId)
       )
     }
 
@@ -2150,21 +2176,22 @@ apiApp.post(
     }
 
     const plan = await c.env.DB.prepare(
-      'SELECT id, household_id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ?'
+      'SELECT id, household_id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ? AND household_id = ?'
     )
-      .bind(planId)
+      .bind(planId, householdId)
       .first()
 
     const { results: planItems } = await c.env.DB.prepare(
       `SELECT pi.id, pi.item_id, pi.store_id, i.name AS item_name,
               s.label AS store_label, pi.qty, pi.unit, pi.price_estimate, pi.why, pi.status
        FROM plan_items pi
+       JOIN plans p ON p.id = pi.plan_id
        LEFT JOIN items i ON i.id = pi.item_id
        LEFT JOIN stores s ON s.id = pi.store_id
-       WHERE pi.plan_id = ?
+       WHERE pi.plan_id = ? AND p.household_id = ?
        ORDER BY pi.created_at`
     )
-      .bind(planId)
+      .bind(planId, householdId)
       .all<{
         id: string
         item_id: string | null
@@ -2242,8 +2269,8 @@ apiApp.patch(
 
     statements.push(
       c.env.DB.prepare(
-        `UPDATE plan_items SET status = ?, updated_at = datetime('now') WHERE id = ?`
-      ).bind(body.status, itemId)
+        `UPDATE plan_items SET status = ?, updated_at = datetime('now') WHERE id = ? AND plan_id IN (SELECT id FROM plans WHERE id = ? AND household_id = ?)`
+      ).bind(body.status, itemId, planId, householdId)
     )
 
     if (body.status === 'bought' && planItem.item_id && planItem.status !== 'bought') {
@@ -2288,8 +2315,8 @@ apiApp.patch(
         const runOut = await computeRunOutDays(householdId, planItem.item_id, newQty, c.env.DB)
         statements.push(
           c.env.DB.prepare(
-            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`
-          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id)
+            `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ? AND household_id = ?`
+          ).bind(newQty, runOut.run_out_days, runOut.basis, existingStock.id, householdId)
         )
       } else {
         const stockId = crypto.randomUUID()
@@ -2323,18 +2350,20 @@ apiApp.patch(
     }
 
     const { results: allItems } = await c.env.DB.prepare(
-      `SELECT status FROM plan_items WHERE plan_id = ?`
+      `SELECT pi.status FROM plan_items pi
+       JOIN plans p ON p.id = pi.plan_id
+       WHERE pi.plan_id = ? AND p.household_id = ?`
     )
-      .bind(planId)
+      .bind(planId, householdId)
       .all<{ status: string }>()
 
     const allResolved = allItems.every((i) => i.status !== 'pending')
     if (allResolved) {
       const newStatus = body.status === 'bought' ? 'completed' : 'completed'
       await c.env.DB.prepare(
-        `UPDATE plans SET status = ?, updated_at = datetime('now') WHERE id = ?`
+        `UPDATE plans SET status = ?, updated_at = datetime('now') WHERE id = ? AND household_id = ?`
       )
-        .bind(newStatus, planId)
+        .bind(newStatus, planId, householdId)
         .run()
     }
 
@@ -2342,17 +2371,18 @@ apiApp.patch(
       `SELECT pi.id, pi.item_id, pi.store_id, i.name AS item_name,
               s.label AS store_label, pi.qty, pi.unit, pi.price_estimate, pi.why, pi.status
        FROM plan_items pi
+       JOIN plans p ON p.id = pi.plan_id
        LEFT JOIN items i ON i.id = pi.item_id
        LEFT JOIN stores s ON s.id = pi.store_id
-       WHERE pi.id = ?`
+       WHERE pi.id = ? AND p.household_id = ?`
     )
-      .bind(itemId)
+      .bind(itemId, householdId)
       .first()
 
     const updatedPlan = await c.env.DB.prepare(
-      'SELECT id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ?'
+      'SELECT id, status, total_estimate, created_at, updated_at FROM plans WHERE id = ? AND household_id = ?'
     )
-      .bind(planId)
+      .bind(planId, householdId)
       .first()
 
     const res = c.json({ item: updatedItem, plan: updatedPlan })

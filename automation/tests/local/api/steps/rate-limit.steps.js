@@ -1,0 +1,121 @@
+import { describe, test as it, beforeEach } from 'vitest'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
+import { ApiContext } from './helpers.js'
+
+setJestCucumberConfiguration({ runner: { describe, test: it } })
+
+const feature = loadFeature('automation/tests/local/api/features/rate-limit.feature')
+
+async function seedAiUsage(ctx) {
+  const today = new Date().toISOString().slice(0, 10)
+  const id = '00000000-0000-0000-0000-000000000099'
+  await ctx.sendRequestWithBody('POST', `/api/__test/direct-sql`, {
+    sql: `INSERT INTO ai_usage (id, user_id, date, provider, used, daily_limit) VALUES ('${id}', '${ctx.testUserId}', '${today}', 'openai', 20, 20)`,
+  })
+}
+
+async function sendTestImage(ctx, method, path) {
+  const img = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
+  await ctx.sendMultipart(method, path, 'image', img, 'receipt.jpg', 'image/jpeg')
+}
+
+defineFeature(feature, (test) => {
+  let ctx
+
+  beforeEach(() => {
+    ctx = new ApiContext()
+  })
+
+  test('AI scan returns 429 after daily limit is exceeded', ({ given, when, then, and }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+    and('the user has exceeded the AI usage limit', async () => {
+      await seedAiUsage(ctx)
+    })
+    when(/I send a (POST) request to (\S+) with a test image/, async (method, path) => {
+      await sendTestImage(ctx, method, path)
+    })
+    then('the response status should be 429', () => {
+      ctx.expectStatus(429)
+    })
+    and('the response should contain a Retry-After header', () => {
+      expect(ctx.response.headers.get('Retry-After')).toBeTruthy()
+    })
+  })
+
+  test('AI plan generation returns 429 after daily limit is exceeded', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+    and('the user has exceeded the AI usage limit', async () => {
+      await seedAiUsage(ctx)
+    })
+    when(/I send a (POST) request to (\S+)/, async (method, path) => {
+      await ctx.sendRequest(method, path)
+    })
+    then('the response status should be 429', () => {
+      ctx.expectStatus(429)
+    })
+    and('the response should contain a Retry-After header', () => {
+      expect(ctx.response.headers.get('Retry-After')).toBeTruthy()
+    })
+  })
+
+  test('AI chat returns 429 after daily limit is exceeded', ({ given, when, then, and }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+    })
+    and('I am authenticated as a test user', async () => {
+      await ctx.authenticate()
+    })
+    and('the user has exceeded the AI usage limit', async () => {
+      await seedAiUsage(ctx)
+    })
+    when(/I send a (POST) request to (\S+) with body/, async (method, path, body) => {
+      await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+    })
+    then('the response status should be 429', () => {
+      ctx.expectStatus(429)
+    })
+    and('the response should contain a Retry-After header', () => {
+      expect(ctx.response.headers.get('Retry-After')).toBeTruthy()
+    })
+  })
+
+  test('General API returns 429 after too many requests from one IP', ({
+    given,
+    when,
+    then,
+    and,
+  }) => {
+    given('the database has seed data', async () => {
+      await ctx.resetAndSeed()
+      // Configure a very tight window so we can trigger the limit quickly.
+      process.env.RATE_LIMIT_WINDOW_MS = '60000'
+      process.env.RATE_LIMIT_MAX_REQUESTS = '100'
+    })
+    when('a single IP sends 101 GET requests to /api/health within one minute', async () => {
+      for (let i = 0; i < 101; i++) {
+        await ctx.sendRequest('GET', '/api/health')
+      }
+    })
+    then('the last response status should be 429', () => {
+      ctx.expectStatus(429)
+    })
+    and('the response should contain a Retry-After header', () => {
+      expect(ctx.response.headers.get('Retry-After')).toBeTruthy()
+    })
+  })
+})

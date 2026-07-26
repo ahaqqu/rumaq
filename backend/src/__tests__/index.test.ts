@@ -109,7 +109,7 @@ describe('apiApp (cached routes)', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
   })
 
-  it('cors uses configured PAGES_ORIGIN for unknown origins', async () => {
+  it('cors rejects unknown origins in production', async () => {
     const env = createMockEnv()
     env.PAGES_ORIGIN = 'https://custom.pages.dev'
     const res = await apiApp.request(
@@ -119,10 +119,10 @@ describe('apiApp (cached routes)', () => {
       },
       env
     )
-    expect(res.headers.get('access-control-allow-origin')).toBe('https://custom.pages.dev')
+    expect(res.headers.get('access-control-allow-origin')).toBe('null')
   })
 
-  it('cors uses default origin when PAGES_ORIGIN is not set', async () => {
+  it('cors rejects unknown origins when PAGES_ORIGIN is not set', async () => {
     const env = createMockEnv()
     env.PAGES_ORIGIN = ''
     const res = await apiApp.request(
@@ -132,7 +132,33 @@ describe('apiApp (cached routes)', () => {
       },
       env
     )
-    expect(res.headers.get('access-control-allow-origin')).toBe('https://rumaq.pages.dev')
+    expect(res.headers.get('access-control-allow-origin')).toBe('null')
+  })
+
+  it('cors allows branch previews under the configured Pages hostname', async () => {
+    const env = createMockEnv()
+    env.PAGES_ORIGIN = 'https://custom.pages.dev'
+    const res = await apiApp.request(
+      '/api/health',
+      {
+        headers: { Origin: 'https://branch.custom.pages.dev' },
+      },
+      env
+    )
+    expect(res.headers.get('access-control-allow-origin')).toBe('https://branch.custom.pages.dev')
+  })
+
+  it('cors rejects unrelated pages.dev origins', async () => {
+    const env = createMockEnv()
+    env.PAGES_ORIGIN = 'https://custom.pages.dev'
+    const res = await apiApp.request(
+      '/api/health',
+      {
+        headers: { Origin: 'https://other-project.pages.dev' },
+      },
+      env
+    )
+    expect(res.headers.get('access-control-allow-origin')).toBe('null')
   })
 
   it('error responses have private no-cache Cache-Control', async () => {

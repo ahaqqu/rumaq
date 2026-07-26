@@ -313,13 +313,15 @@ If usage grows, the first upgrade is Workers Paid ($5/mo) for higher request and
 
 ## 10. Security checklist
 
-- [x] Session JWT is `HttpOnly`, `Secure`, `SameSite=Lax`, and signed.
+- [x] Session JWT is `HttpOnly`, `Secure`, `SameSite=None`, and signed.
 - [x] AI API keys are encrypted at rest (AES-GCM) and only decrypted in the Worker.
 - [x] Google OAuth `state` and PKCE verifier prevent CSRF/replay.
-- [ ] R2 objects are private; frontend receives receipt images through `GET /api/purchases/:id/receipt` (proxy stream). R2 signed URLs are out of current scope (open security item).
+- [x] R2 objects are private; frontend receives receipt images through `GET /api/purchases/:id/receipt` (proxy stream). R2 signed URLs are out of current scope (open security item).
 - [x] D1 queries are parameterized; no string concatenation.
-- [x] CORS allows only the Pages origin in production.
-- [ ] AI prompts never expose another user's data.
+- [x] Every D1 query that reads or writes household-scoped data filters by `household_id` or `user_id`.
+- [ ] CORS allows only the configured Pages origin, localhost, and branch previews; unknown origins are rejected in production.
+- [ ] AI prompts never expose another user's data and avoid internal DB IDs where possible.
+- [ ] General API rate limiting returns 429 with `Retry-After`.
 
 ## 11. Testing
 

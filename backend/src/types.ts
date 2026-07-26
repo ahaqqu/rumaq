@@ -3,6 +3,11 @@ export type AuthProps = {
   householdId: string
 }
 
+export type RateLimitConfig = {
+  windowMs: number
+  maxRequests: number
+}
+
 export type Env = {
   Bindings: {
     DB: D1Database
@@ -16,6 +21,8 @@ export type Env = {
     ASSETS: Fetcher
     TEST_MODE?: string
     RUN_SECRETS_CHECK?: string
+    RATE_LIMIT_WINDOW_MS?: string
+    RATE_LIMIT_MAX_REQUESTS?: string
     props?: AuthProps
   }
   Variables: {
