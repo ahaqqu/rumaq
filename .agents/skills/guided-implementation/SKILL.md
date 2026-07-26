@@ -1,6 +1,10 @@
-# Guided Implementation Skill
+---
+name: guided-implementation
+description: |
+  Guided implementation of plans from markdown files. Invoke when the user says "implement plan", "follow plan", or "execute implementation". Do NOT invoke for simply fixing CI or pushing commits — only when a new implementation needs to be started or an existing implementation needs to be updated.
+---
 
-Use this skill when implementing a plan from a markdown file that is difficult, unclear, or may affect architecture.
+# guided-implementation
 
 ## Workflow
 
