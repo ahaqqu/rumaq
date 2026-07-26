@@ -7,6 +7,8 @@ import { AppProvider } from '../context/AppContext.jsx'
 
 const mutateAsync = vi.fn()
 
+const mockUseSettings = vi.fn(() => ({ data: { has_ai_key: false } }))
+
 vi.mock('../lib/queries/index.js', () => ({
   useUsage: () => ({
     data: { used: 3, daily_limit: 20, provider: 'opencode' },
@@ -15,6 +17,7 @@ vi.mock('../lib/queries/index.js', () => ({
     isPending: false,
     mutateAsync,
   }),
+  useSettings: () => mockUseSettings(),
 }))
 
 function renderWithProviders(ui) {
@@ -71,6 +74,15 @@ describe('Assistant', () => {
     expect(container.querySelector('.assistant__action')).toBeTruthy()
   })
 
+  it('shows body when backend has_ai_key is true even without local aiKey', () => {
+    mockUseSettings.mockReturnValue({ data: { has_ai_key: true } })
+    const { container } = renderWithProviders(
+      React.createElement(Assistant, baseProps({ open: true }))
+    )
+    expect(container.querySelector('.assistant__body')).toBeTruthy()
+    expect(container.querySelector('.assistant__action')).toBeTruthy()
+  })
+
   it('renders chat input when aiKey present', () => {
     const { container } = renderWithProviders(
       React.createElement(
@@ -83,6 +95,7 @@ describe('Assistant', () => {
   })
 
   it('calls onNavigate when add key button is clicked', () => {
+    mockUseSettings.mockReturnValue({ data: { has_ai_key: false } })
     const onClose = vi.fn()
     const onNavigate = vi.fn()
     const { container } = renderWithProviders(
@@ -91,7 +104,9 @@ describe('Assistant', () => {
         baseProps({ open: true, onClose, onNavigate })
       )
     )
-    const settingsBtn = container.querySelector('.btn--primary')
+    const settingsBtn = container.querySelector(
+      '.assistant__keystate .btn--primary'
+    )
     if (settingsBtn) {
       fireEvent.click(settingsBtn)
       expect(onClose).toHaveBeenCalled()

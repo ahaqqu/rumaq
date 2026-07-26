@@ -13,7 +13,11 @@ import {
 import { usePersona } from '../context/PersonaContext.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { personaText } from '../lib/persona.js'
-import { useUsage, useSendChatMessage } from '../lib/queries/index.js'
+import {
+  useUsage,
+  useSendChatMessage,
+  useSettings,
+} from '../lib/queries/index.js'
 
 const QUICK = [
   {
@@ -56,7 +60,11 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
   const { persona } = usePersona()
   const { setAssistantProposal } = useApp()
   const { data: usage } = useUsage()
+  const { data: settings } = useSettings()
   const chat = useSendChatMessage()
+
+  const hasBackendKey = settings?.has_ai_key === true
+  const isConnected = Boolean(aiKey) || hasBackendKey
 
   const used = usage?.used ?? 0
   const limit = usage?.daily_limit ?? 20
@@ -78,7 +86,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
   }
 
   const trigger = (q) => {
-    if (!aiKey) return
+    if (!isConnected) return
     send(q.prompt)
   }
 
@@ -122,7 +130,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
               <div>
                 <div className="assistant__title">{t('assistant.title')}</div>
                 <div className="assistant__status">
-                  {aiKey ? (
+                  {isConnected ? (
                     <>
                       <span
                         className={`rail__dot ${danger ? 'is-off' : warn ? 'is-warn' : ''}`}
@@ -145,7 +153,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
               </button>
             </header>
 
-            {!aiKey ? (
+            {!isConnected ? (
               <div className="assistant__keystate">
                 <div
                   className="empty__icon"

@@ -13,6 +13,7 @@ import {
 import { AI_USAGE, usageState } from '../data/mock.js'
 import { useApp } from '../context/AppContext.jsx'
 import { useMe, useLogout } from '../lib/queries/me.js'
+import { useSettings } from '../lib/queries/index.js'
 import { Assistant } from './Assistant.jsx'
 import { OfflineBanner } from './OfflineBanner.jsx'
 
@@ -30,9 +31,12 @@ export function AppShell({ children }) {
   const matches = useMatches()
   const { aiKey, assistantOpen, setAssistantOpen } = useApp()
   const { data: me } = useMe()
+  const { data: settings } = useSettings()
   const logout = useLogout()
   const [imgError, setImgError] = useState(false)
 
+  const hasBackendKey = settings?.has_ai_key === true
+  const isAiConnected = Boolean(aiKey) || hasBackendKey
   const { pct, warn, danger } = usageState()
   const usageTone = danger ? 'is-danger' : warn ? 'is-warn' : ''
 
@@ -100,10 +104,10 @@ export function AppShell({ children }) {
             </div>
           )}
           <div className="rail__keystate">
-            <span className={`rail__dot ${aiKey ? '' : 'is-off'}`} />
-            {aiKey ? t('assistant.connected') : t('assistant.noKey')}
+            <span className={`rail__dot ${isAiConnected ? '' : 'is-off'}`} />
+            {isAiConnected ? t('assistant.connected') : t('assistant.noKey')}
           </div>
-          {aiKey && (
+          {isAiConnected && (
             <div className="rail__usage">
               <div className="rail__usage-row">
                 <span className="rail__usage-label">
