@@ -10,9 +10,7 @@
     "deploy": "wrangler deploy --config wrangler.cloudflare.toml",
     "deploy:prod": "wrangler deploy --config wrangler.cloudflare.toml --env production",
     "db:create": "bun ../scripts/deploy/setup-db.js",
-    "db:migrate": "wrangler d1 migrations apply rumaq",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "db:migrate": "wrangler d1 migrations apply rumaq"
   },
   "dependencies": {
     "@hono/standard-validator": "^0.2.3",

@@ -48,7 +48,7 @@
   },
   "devEngines": {
     "packageManager": "bun",
-    "runtime": "node"
+    "runtime": "bun"
   },
   "packageManager": "bun@1.3.14"
 }
