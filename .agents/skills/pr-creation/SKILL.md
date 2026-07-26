@@ -16,9 +16,11 @@ description: |
 3. Analyze the security implications of the actual changes.
 4. Analyze the performance implications of the actual changes.
 5. Read `docs/` (`README.md` and all `.md` files), validate them against the code, and update whichever side is out of sync so they stay consistent.
-6. Ensure all acceptance criteria in `docs/TEST_STRATEGY.md` pass.
+6. Ensure all acceptance criteria in `docs/TEST_STRATEGY.md` are met and pass.
 7. Run `./scripts/github/ci.sh` and fix any failures until it exits successfully.
-8. Create the PR when the acceptance criteria in `docs/TEST_STRATEGY.md` are met.
+8. Push the changes and create the PR with below format.
+9. Check the CI gates on GitHub. If any fail, fix them and push the changes to the PR branch.
+10. Once all CI gates pass, request a human review and wait for approval before merging. 
 
 ## PR Title Format
 
