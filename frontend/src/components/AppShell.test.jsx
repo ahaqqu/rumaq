@@ -1,26 +1,32 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, fireEvent } from '@testing-library/react'
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AppProvider } from '../context/AppContext.jsx'
 import { AppShell } from './AppShell.jsx'
+import { useSettings, useUsage, useSendChatMessage } from '../lib/queries/index.js'
+import { useMe, useLogout } from '../lib/queries/me.js'
+
+const mockUsage = { used: 17, daily_limit: 20, provider: 'Gemini' }
+let mockUsageState = { pct: 85, remaining: 3, warn: true, danger: false }
 
 vi.mock('../data/mock.js', async () => {
   const actual = await vi.importActual('../data/mock.js')
   return {
     ...actual,
-    usageState: () => ({ pct: 85, remaining: 3, warn: true, danger: false }),
+    usageState: () => mockUsageState,
   }
 })
 
 vi.mock('../lib/queries/me.js', () => ({
-  useMe: () => ({
-    data: {
-      user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null },
-    },
-    isLoading: false,
-  }),
-  useLogout: () => ({ mutate: vi.fn(), data: null }),
+  useMe: vi.fn(),
+  useLogout: vi.fn(),
+}))
+
+vi.mock('../lib/queries/index.js', () => ({
+  useSettings: vi.fn(),
+  useUsage: vi.fn(),
+  useSendChatMessage: vi.fn(),
 }))
 
 function renderWithProviders(ui) {
@@ -37,6 +43,18 @@ function renderWithProviders(ui) {
 }
 
 describe('AppShell', () => {
+  beforeEach(() => {
+    mockUsageState = { pct: 85, remaining: 3, warn: true, danger: false }
+    vi.mocked(useMe).mockReturnValue({
+      data: { user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null } },
+      isLoading: false,
+    })
+    vi.mocked(useLogout).mockReturnValue({ mutate: vi.fn(), data: null })
+    vi.mocked(useSettings).mockReturnValue({ data: { has_ai_key: false } })
+    vi.mocked(useUsage).mockReturnValue({ data: mockUsage })
+    vi.mocked(useSendChatMessage).mockReturnValue({ mutateAsync: vi.fn(), isPending: false })
+  })
+
   it('renders app shell', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
@@ -70,5 +88,41 @@ describe('AppShell', () => {
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
     expect(container.querySelector('.topbar')).toBeTruthy()
+  })
+
+  it('renders user initials when no picture', () => {
+    const { container } = renderWithProviders(
+      React.createElement(AppShell, null, React.createElement('div', null, 'content'))
+    )
+    expect(container.querySelector('.rail__avatar--initials').textContent).toBe('A')
+  })
+
+  it('calls logout on logout button click', () => {
+    const mutate = vi.fn()
+    vi.mocked(useLogout).mockReturnValue({ mutate, data: null })
+    const { container } = renderWithProviders(
+      React.createElement(AppShell, null, React.createElement('div', null, 'content'))
+    )
+    const logoutBtn = container.querySelector('.rail__logout')
+    if (logoutBtn) fireEvent.click(logoutBtn)
+    expect(mutate).toHaveBeenCalled()
+  })
+
+  it('shows AI connected state when settings has_ai_key is true', () => {
+    vi.mocked(useSettings).mockReturnValue({ data: { has_ai_key: true } })
+    const { container } = renderWithProviders(
+      React.createElement(AppShell, null, React.createElement('div', null, 'content'))
+    )
+    expect(container.querySelector('.rail__usage')).toBeTruthy()
+  })
+
+  it('shows danger usage tone', () => {
+    mockUsageState = { pct: 100, remaining: 0, warn: false, danger: true }
+    vi.mocked(useSettings).mockReturnValue({ data: { has_ai_key: true } })
+    vi.mocked(useUsage).mockReturnValue({ data: { used: 20, daily_limit: 20, provider: 'Gemini' } })
+    const { container } = renderWithProviders(
+      React.createElement(AppShell, null, React.createElement('div', null, 'content'))
+    )
+    expect(container.querySelector('.is-danger')).toBeTruthy()
   })
 })

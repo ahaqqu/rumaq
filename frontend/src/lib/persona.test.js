@@ -143,6 +143,26 @@ describe('buildSystemPrompt', () => {
     const p = buildSystemPrompt({ enabled: true, userRole: 'tamu', aiRole: 'host' }, idT)
     expect(p).not.toContain('form')
   })
+
+  it('detects servant-to-royal mood', () => {
+    const p = buildSystemPrompt({ enabled: true, userRole: 'ratu', aiRole: 'pelayan' }, idT)
+    expect(p).toContain('respectful')
+  })
+
+  it('detects student-to-teacher mood', () => {
+    const p = buildSystemPrompt({ enabled: true, userRole: 'guru', aiRole: 'murid' }, idT)
+    expect(p).toContain('polite')
+  })
+
+  it('detects medical mood', () => {
+    const p = buildSystemPrompt({ enabled: true, userRole: 'dokter', aiRole: 'pasien' }, idT)
+    expect(p).toContain('professional')
+  })
+
+  it('detects casual mood from AI role', () => {
+    const p = buildSystemPrompt({ enabled: true, userRole: 'saya', aiRole: 'teman' }, idT)
+    expect(p).toContain('casual')
+  })
 })
 
 describe('applyTheme', () => {
