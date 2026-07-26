@@ -26,8 +26,8 @@ This is the final P0 phase. After it, the app is fully functional end-to-end and
 7. Secrets management is documented step-by-step.
 8. The plan in `docs/PROJECT_PLAN.md` is updated to mark all P0 items as `Done`.
 9. End-to-end verification passes on the live URL.
-10. All tests pass (`npm test`, integration, E2E smoke).
-11. `npm test` and `npx tsc --noEmit` pass.
+10. All tests pass (`vp test`, integration, E2E smoke).
+11. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

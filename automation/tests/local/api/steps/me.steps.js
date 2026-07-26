@@ -1,9 +1,5 @@
 import { describe, test as it, beforeEach, expect } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
@@ -31,12 +27,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Authenticated access returns user profile', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Authenticated access returns user profile', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -57,20 +48,12 @@ defineFeature(feature, (test) => {
       expect(ctx.responseBody.user).toBeDefined()
     })
 
-    and(
-      'the user should have id, email, and name matching the test user',
-      () => {
-        ctx.expectUserShape()
-      }
-    )
+    and('the user should have id, email, and name matching the test user', () => {
+      ctx.expectUserShape()
+    })
   })
 
-  test('Authenticated response has per-user cache headers', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Authenticated response has per-user cache headers', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

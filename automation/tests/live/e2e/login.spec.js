@@ -32,12 +32,9 @@ test('login and logout with alice@rumaq.dev', async ({ page }) => {
   })
 
   // 7. Should redirect back to the app
-  await expect(page).toHaveURL(
-    new RegExp(APP.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')),
-    {
-      timeout: 10_000,
-    }
-  )
+  await expect(page).toHaveURL(new RegExp(APP.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')), {
+    timeout: 10_000,
+  })
 
   // 8. Should see login page (email form) — no longer logged in
   await page.waitForSelector('input#email', { timeout: 10_000 })

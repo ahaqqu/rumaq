@@ -58,9 +58,7 @@ export async function computeRunOutDays(
   }
 }
 
-export function weightedDailyConsumption(
-  sorted: Array<{ qty: number; date: string }>
-): number {
+export function weightedDailyConsumption(sorted: Array<{ qty: number; date: string }>): number {
   const n = sorted.length
   if (n < 2) return 0
   const firstDate = new Date(sorted[0].date).getTime()

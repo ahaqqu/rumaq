@@ -34,16 +34,10 @@ export function PwaUpdatePrompt() {
       }}
     >
       <span style={{ fontSize: 'var(--fs-sm)' }}>Update available</span>
-      <button
-        className="btn btn--primary btn--sm"
-        onClick={() => updateServiceWorker(true)}
-      >
+      <button className="btn btn--primary btn--sm" onClick={() => updateServiceWorker(true)}>
         Update
       </button>
-      <button
-        className="btn btn--ghost btn--sm"
-        onClick={() => setNeedRefresh(false)}
-      >
+      <button className="btn btn--ghost btn--sm" onClick={() => setNeedRefresh(false)}>
         Dismiss
       </button>
     </div>

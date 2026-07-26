@@ -3,8 +3,7 @@ import { resetDb, seedDb } from '../../../support/db.js'
 import { signTestCookie } from '../../../support/auth.js'
 
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
-const TEST_USER_ID =
-  process.env.TEST_USER_ID || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+const TEST_USER_ID = process.env.TEST_USER_ID || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 
 export class ApiContext {
   constructor() {
@@ -110,9 +109,7 @@ export class ApiContext {
   }
 
   expectOrderedByRunOutDays() {
-    const runOutDays = this.responseBody.stock
-      .map((s) => s.run_out_days)
-      .filter(Boolean)
+    const runOutDays = this.responseBody.stock.map((s) => s.run_out_days).filter(Boolean)
     expect(runOutDays).toEqual([3, 7, 14])
   }
 
@@ -229,14 +226,7 @@ export class ApiContext {
     }
   }
 
-  async sendMultipart(
-    method,
-    path,
-    fieldName,
-    fileContent,
-    fileName,
-    fileType
-  ) {
+  async sendMultipart(method, path, fieldName, fileContent, fileName, fileType) {
     const formData = new FormData()
     const blob = new Blob([fileContent], { type: fileType })
     formData.append(fieldName, blob, fileName)
@@ -279,9 +269,7 @@ export class ApiContext {
   }
 
   expectStockForItem(name, qty) {
-    const item = this.responseBody.stock.find(
-      (s) => s.name.toLowerCase() === name.toLowerCase()
-    )
+    const item = this.responseBody.stock.find((s) => s.name.toLowerCase() === name.toLowerCase())
     expect(item).toBeDefined()
     expect(item.qty).toBe(qty)
   }
@@ -327,9 +315,7 @@ export class ApiContext {
   }
 
   expectPurchasesContainItem(name) {
-    const allItems = this.responseBody.purchases.flatMap((p) =>
-      p.items.map((i) => i.name)
-    )
+    const allItems = this.responseBody.purchases.flatMap((p) => p.items.map((i) => i.name))
     expect(allItems.filter(Boolean)).toContain(name)
   }
 

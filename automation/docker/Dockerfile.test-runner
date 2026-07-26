@@ -3,16 +3,23 @@ FROM mcr.microsoft.com/playwright:v1.61.1-jammy
 
 WORKDIR /app
 
+# Install Bun on top of the Playwright Node image
+RUN apt-get update && apt-get install -y --no-install-recommends curl unzip \
+  && curl -fsSL https://bun.sh/install | bash \
+  && ln -s /root/.bun/bin/bun /usr/local/bin/bun \
+  && apt-get purge -y curl unzip \
+  && rm -rf /var/lib/apt/lists/*
+
 # Layer 1: dependencies (cached until lockfiles change)
-COPY .npmrc package.json package-lock.json ./
+COPY bun.lock package.json ./
 COPY frontend/package.json ./frontend/
 COPY backend/package.json ./backend/
-RUN --mount=type=cache,target=/root/.npm \
-  npm install --no-audit --no-fund --prefer-offline \
-  || npm install --no-audit --no-fund --prefer-offline --network-timeout=300000 \
-  || (npm cache clean --force && npm install --no-audit --no-fund)
+RUN --mount=type=cache,target=/root/.bun \
+  bun install --frozen-lockfile
 
 # Layer 2: stable configs & migrations (rarely change)
+COPY vite.config.ts ./
+COPY backend/vite.config.ts ./backend/
 COPY backend/tsconfig.json ./backend/
 COPY backend/migrations/ ./backend/migrations/
 COPY automation/playwright.config.js ./automation/playwright.config.js
@@ -27,4 +34,4 @@ COPY automation/tests/ ./automation/tests/
 
 ENV TEST_BASE_URL=http://proxy:3000
 
-CMD ["sh", "-c", "npm run test:api && npm run test:e2e && sync"]
+CMD ["sh", "-c", "vp run test:api && vp run test:e2e && sync"]

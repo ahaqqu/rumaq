@@ -4,13 +4,7 @@ import { i18n } from '../i18n/index.js'
 import { UsageMeter, SkeletonRows } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText, deriveHue } from '../lib/persona.js'
-import {
-  IconCheck,
-  IconTrash,
-  IconPin,
-  IconBolt,
-  IconPlus,
-} from '../components/icons.jsx'
+import { IconCheck, IconTrash, IconPin, IconBolt, IconPlus } from '../components/icons.jsx'
 import {
   useSettings,
   useUpdateSettings,
@@ -120,12 +114,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
         persona_enabled: personaDraft.enabled,
       })
 
-      if (
-        personaDraft.enabled &&
-        personaDraft.userRole &&
-        personaDraft.aiRole &&
-        aiKey
-      ) {
+      if (personaDraft.enabled && personaDraft.userRole && personaDraft.aiRole && aiKey) {
         await regenerateCopy(aiKey, provider, {
           ...personaDraft,
           hue: deriveHue(personaDraft.userRole, personaDraft.aiRole),
@@ -136,8 +125,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
       setTimeout(() => setPersonaApplied(false), 2000)
     } catch (err) {
       setPersonaError(
-        err.message ||
-          'Failed to generate persona text. Try again or use fallback without AI.'
+        err.message || 'Failed to generate persona text. Try again or use fallback without AI.'
       )
     } finally {
       setPersonaLoading(false)
@@ -225,9 +213,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
               <div className="setting">
                 <div className="setting__main">
                   <div className="setting__title">{t('settings.provider')}</div>
-                  <div className="setting__desc">
-                    {t('settings.providerDesc')}
-                  </div>
+                  <div className="setting__desc">{t('settings.providerDesc')}</div>
                 </div>
                 <select
                   value={provider}
@@ -244,9 +230,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
               <div className="setting" style={{ flexWrap: 'wrap' }}>
                 <div className="setting__main">
                   <div className="setting__title">{t('settings.apiKey')}</div>
-                  <div className="setting__desc">
-                    {t('settings.apiKeyDesc')}
-                  </div>
+                  <div className="setting__desc">{t('settings.apiKeyDesc')}</div>
                 </div>
                 <div className="key-input">
                   <input
@@ -265,50 +249,29 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                     onClick={test}
                     disabled={!draft || testing}
                   >
-                    {testing ? (
-                      <IconBolt size={15} className="spin" />
-                    ) : (
-                      <IconCheck size={15} />
-                    )}{' '}
+                    {testing ? <IconBolt size={15} className="spin" /> : <IconCheck size={15} />}{' '}
                     {t('settings.test')}
                   </button>
                 </div>
               </div>
               {testOk === true && (
-                <div
-                  className="setting"
-                  style={{ background: 'var(--ok-soft)' }}
-                >
+                <div className="setting" style={{ background: 'var(--ok-soft)' }}>
                   <div className="setting__main">
-                    <div
-                      className="setting__title"
-                      style={{ color: 'var(--ok)' }}
-                    >
+                    <div className="setting__title" style={{ color: 'var(--ok)' }}>
                       {t('settings.connectionSuccess')}
                     </div>
-                    <div className="setting__desc">
-                      {t('settings.connectionSuccessDesc')}
-                    </div>
+                    <div className="setting__desc">{t('settings.connectionSuccessDesc')}</div>
                   </div>
                 </div>
               )}
               {testOk === false && (
-                <div
-                  className="setting"
-                  style={{ background: 'var(--warn-soft)' }}
-                >
+                <div className="setting" style={{ background: 'var(--warn-soft)' }}>
                   <div className="setting__main">
-                    <div
-                      className="setting__title"
-                      style={{ color: 'var(--warn)' }}
-                    >
+                    <div className="setting__title" style={{ color: 'var(--warn)' }}>
                       {t('settings.connectionFailed', 'Connection failed')}
                     </div>
                     <div className="setting__desc">
-                      {t(
-                        'settings.connectionFailedDesc',
-                        'Check your API key and try again.'
-                      )}
+                      {t('settings.connectionFailedDesc', 'Check your API key and try again.')}
                     </div>
                   </div>
                 </div>
@@ -317,9 +280,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                 <div className="setting__main">
                   <div className="setting__title">{t('settings.status')}</div>
                   <div className="setting__desc">
-                    {settingsData?.has_ai_key
-                      ? t('settings.active')
-                      : t('settings.inactive')}
+                    {settingsData?.has_ai_key ? t('settings.active') : t('settings.inactive')}
                   </div>
                 </div>
                 <button
@@ -365,9 +326,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                   style={{ width: '100%', marginBottom: 'var(--sp-3)' }}
                 >
                   <div className="setting__title">{t('settings.iAm')}</div>
-                  <div className="setting__desc">
-                    {t('settings.personalizationDesc')}
-                  </div>
+                  <div className="setting__desc">{t('settings.personalizationDesc')}</div>
                 </div>
                 <div
                   style={{
@@ -412,8 +371,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                   >
                     {personaLoading ? (
                       <>
-                        <IconBolt size={15} className="spin" />{' '}
-                        {t('settings.loading')}
+                        <IconBolt size={15} className="spin" /> {t('settings.loading')}
                       </>
                     ) : personaApplied ? (
                       <>
@@ -470,13 +428,8 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
               </div>
               <div className="setting">
                 <div className="setting__main">
-                  <div
-                    className="setting__desc"
-                    style={{ fontSize: 'var(--fs-xs)' }}
-                  >
-                    {aiKey
-                      ? t('settings.personaInfoWithKey')
-                      : t('settings.personaInfoNoKey')}
+                  <div className="setting__desc" style={{ fontSize: 'var(--fs-xs)' }}>
+                    {aiKey ? t('settings.personaInfoWithKey') : t('settings.personaInfoNoKey')}
                   </div>
                 </div>
               </div>
@@ -489,10 +442,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                   }}
                 >
                   <div className="setting__main">
-                    <div
-                      className="setting__desc"
-                      style={{ color: 'var(--danger)' }}
-                    >
+                    <div className="setting__desc" style={{ color: 'var(--danger)' }}>
                       {personaError}
                     </div>
                   </div>
@@ -516,10 +466,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                 <div className="setting" key={l.id}>
                   <div className="setting__main">
                     <div className="setting__title">
-                      <IconPin
-                        size={14}
-                        style={{ verticalAlign: '-2px', marginRight: 6 }}
-                      />
+                      <IconPin size={14} style={{ verticalAlign: '-2px', marginRight: 6 }} />
                       {l.label}
                     </div>
                   </div>
@@ -537,12 +484,8 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
               ))}
               <div className="setting">
                 <div className="setting__main">
-                  <div className="setting__title">
-                    {t('settings.addLocation')}
-                  </div>
-                  <div className="setting__desc">
-                    {t('settings.addLocationHint')}
-                  </div>
+                  <div className="setting__title">{t('settings.addLocation')}</div>
+                  <div className="setting__desc">{t('settings.addLocationHint')}</div>
                 </div>
                 <div className="key-input">
                   <input
@@ -595,9 +538,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
               <div className="setting">
                 <div className="setting__main">
                   <div className="setting__title">{t('settings.addStore')}</div>
-                  <div className="setting__desc">
-                    {t('settings.addStoreHint')}
-                  </div>
+                  <div className="setting__desc">{t('settings.addStoreHint')}</div>
                 </div>
                 <div className="key-input">
                   <input
@@ -633,15 +574,9 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
               <div className="setting">
                 <div className="setting__main">
                   <div className="setting__title">{t('settings.motion')}</div>
-                  <div className="setting__desc">
-                    {t('settings.motionDesc')}
-                  </div>
+                  <div className="setting__desc">{t('settings.motionDesc')}</div>
                 </div>
-                <div
-                  className="motion-scale"
-                  role="group"
-                  aria-label={t('settings.aria.motion')}
-                >
+                <div className="motion-scale" role="group" aria-label={t('settings.aria.motion')}>
                   {MOTION_OPTS.map((m) => (
                     <button
                       key={m.id}
@@ -659,15 +594,9 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
               <div className="setting">
                 <div className="setting__main">
                   <div className="setting__title">{t('settings.language')}</div>
-                  <div className="setting__desc">
-                    {t('settings.languageDesc')}
-                  </div>
+                  <div className="setting__desc">{t('settings.languageDesc')}</div>
                 </div>
-                <div
-                  className="motion-scale"
-                  role="group"
-                  aria-label={t('settings.language')}
-                >
+                <div className="motion-scale" role="group" aria-label={t('settings.language')}>
                   {LANGUAGES.map((l) => (
                     <button
                       key={l.code}

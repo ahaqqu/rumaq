@@ -62,8 +62,6 @@ describe('App', () => {
 
   it('sets motion on document', async () => {
     render(React.createElement(App))
-    await waitFor(() =>
-      expect(document.documentElement.dataset.motion).toBe('standard')
-    )
+    await waitFor(() => expect(document.documentElement.dataset.motion).toBe('standard'))
   })
 })

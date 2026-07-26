@@ -31,8 +31,7 @@ export function savePersona(persona) {
 
 export function personaText(key, persona, t) {
   const base = t ? t(`persona.${key}`) : i18n.t(`persona.${key}`)
-  if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole)
-    return base
+  if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole) return base
   if (persona.generatedCopy?.[key]) return persona.generatedCopy[key]
   return base
 }
@@ -61,15 +60,10 @@ function detectMood(userRole, aiRole) {
   const a = normalize(aiRole)
 
   // servant-to-royal — user is royalty
-  if (
-    /(raja|ratu|pangeran|putri|king|queen|prince|princess|majesty|lord|lad)/i.test(
-      u
-    )
-  )
+  if (/(raja|ratu|pangeran|putri|king|queen|prince|princess|majesty|lord|lad)/i.test(u))
     return 'servant-to-royal'
   // student-to-teacher — user is teacher
-  if (/(guru|dosen|teacher|professor|lecturer|master|sensei)/i.test(u))
-    return 'student-to-teacher'
+  if (/(guru|dosen|teacher|professor|lecturer|master|sensei)/i.test(u)) return 'student-to-teacher'
   // medical — user is medical professional
   if (/(dokter|doctor|physician|nurse)/i.test(u)) return 'medical'
   // employee-to-boss — user is boss
@@ -87,8 +81,7 @@ export function speak(text, _persona, _t) {
 
 export function buildSystemPrompt(persona, t) {
   const base = t ? t('persona.systemPrompt') : i18n.t('persona.systemPrompt')
-  if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole)
-    return base
+  if (!persona || !persona.enabled || !persona.userRole || !persona.aiRole) return base
 
   const u = persona.userRole
   const a = persona.aiRole
@@ -98,8 +91,7 @@ export function buildSystemPrompt(persona, t) {
     ? t('persona.roleInstructionBase', { user: u, ai: a })
     : i18n.t('persona.roleInstructionBase', { user: u, ai: a })
 
-  const moodInstruction =
-    mood !== 'generic' ? ` ${resolveMoodInstruction(mood, persona, t)}` : ''
+  const moodInstruction = mood !== 'generic' ? ` ${resolveMoodInstruction(mood, persona, t)}` : ''
 
   return `${base} ${roleInstruction}${moodInstruction}`
 }
@@ -108,21 +100,16 @@ function resolveMoodInstruction(mood, persona, t) {
   const instructions = {
     'servant-to-royal':
       'Gunakan bahasa yang sangat hormat, sopan, dan layaknya laporan kepada raja/ratu.',
-    'student-to-teacher':
-      'Gunakan bahasa yang sopan seperti anak didik berbicara kepada gurunya.',
+    'student-to-teacher': 'Gunakan bahasa yang sopan seperti anak didik berbicara kepada gurunya.',
     medical: 'Gunakan bahasa yang tenang, jelas, dan profesional.',
-    'employee-to-boss':
-      'Gunakan bahasa formal dan ringkas seperti laporan kepada atasan.',
+    'employee-to-boss': 'Gunakan bahasa formal dan ringkas seperti laporan kepada atasan.',
     casual: 'Gunakan bahasa santai dan akrab.',
   }
   const enInstructions = {
-    'servant-to-royal':
-      'Use very respectful, polite language befitting a report to royalty.',
-    'student-to-teacher':
-      'Use polite language like a student speaking to a teacher.',
+    'servant-to-royal': 'Use very respectful, polite language befitting a report to royalty.',
+    'student-to-teacher': 'Use polite language like a student speaking to a teacher.',
     medical: 'Use calm, clear, and professional language.',
-    'employee-to-boss':
-      'Use formal, concise language like a report to a superior.',
+    'employee-to-boss': 'Use formal, concise language like a report to a superior.',
     casual: 'Use casual, friendly language.',
   }
   const lang = (t && t.language) || i18n.language
@@ -183,10 +170,7 @@ export function generatePersonaCopy(persona, aiKey, provider, t) {
       }
       const result = {}
       for (const key of copyEntries) {
-        result[key] =
-          typeof parsed[key] === 'string'
-            ? parsed[key]
-            : translate(`persona.${key}`)
+        result[key] = typeof parsed[key] === 'string' ? parsed[key] : translate(`persona.${key}`)
       }
       return result
     })
@@ -258,29 +242,17 @@ async function callAI(prompt, aiKey, provider) {
     case 'anthropic':
       return callAnthropic(prompt, aiKey)
     case 'openai':
-      return callOpenAICompatible(
-        prompt,
-        aiKey,
-        'https://api.openai.com/v1',
-        'gpt-4o-mini'
-      )
+      return callOpenAICompatible(prompt, aiKey, 'https://api.openai.com/v1', 'gpt-4o-mini')
     case 'opencode':
     default:
-      return callOpenAICompatible(
-        prompt,
-        aiKey,
-        'https://api.opencode.ai/v1',
-        'opencode-mini'
-      )
+      return callOpenAICompatible(prompt, aiKey, 'https://api.opencode.ai/v1', 'opencode-mini')
   }
 }
 
 export async function testAiKey(provider, aiKey) {
   switch (provider) {
     case 'gemini': {
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1/models?key=${aiKey}`
-      )
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1/models?key=${aiKey}`)
       if (!res.ok) throw new Error('Invalid API key')
       return true
     }

@@ -160,8 +160,8 @@ case "$MODE" in
     info "Starting stack and running API integration tests..."
     docker compose -f "$COMPOSE_FILE" up --build -d api web proxy
     sleep 5
-    info "Running: npm run test:api against http://localhost:3000"
-    npm run test:api
+    info "Running: vp run test:api against http://localhost:3000"
+    vp run test:api
     docker compose -f "$COMPOSE_FILE" down --volumes
     ;;
 
@@ -169,8 +169,8 @@ case "$MODE" in
     info "Starting stack and running E2E tests..."
     docker compose -f "$COMPOSE_FILE" up --build -d api web proxy
     sleep 5
-    info "Running: npm run test:e2e against http://localhost:3000"
-    npm run test:e2e
+    info "Running: vp run test:e2e against http://localhost:3000"
+    vp run test:e2e
     docker compose -f "$COMPOSE_FILE" down --volumes
     ;;
 

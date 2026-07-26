@@ -17,9 +17,7 @@ export function useUpdateSettings() {
     onMutate: async (payload) => {
       await queryClient.cancelQueries({ queryKey: ['settings'] })
       const previous = queryClient.getQueryData(['settings'])
-      queryClient.setQueryData(['settings'], (old) =>
-        old ? { ...old, ...payload } : old
-      )
+      queryClient.setQueryData(['settings'], (old) => (old ? { ...old, ...payload } : old))
       return { previous }
     },
     onError: (_err, _vars, context) => {

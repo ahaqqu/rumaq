@@ -3,12 +3,7 @@ import { getCookie, setCookie, deleteCookie } from 'hono/cookie'
 import { openAPIRouteHandler, describeRoute } from 'hono-openapi'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
-import {
-  signJwt,
-  verifyPassword,
-  base64UrlEncode,
-  randomState,
-} from '../auth.js'
+import { signJwt, verifyPassword, base64UrlEncode, randomState } from '../auth.js'
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -42,10 +37,7 @@ authApp.get(
     const verifier = randomState()
     const origin = new URL(c.req.url).origin
     const redirectUri = `${origin}/api/auth/callback`
-    const sha256 = await crypto.subtle.digest(
-      'SHA-256',
-      new TextEncoder().encode(verifier)
-    )
+    const sha256 = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
     const challenge = base64UrlEncode(sha256)
 
     setCookie(c, 'rumaq_oauth_state', `${state}:${verifier}:${origin}`, {
@@ -73,8 +65,7 @@ authApp.get(
 authApp.get(
   '/callback',
   describeRoute({
-    description:
-      'Google OAuth callback. Sets rumaq_session and redirects to /.',
+    description: 'Google OAuth callback. Sets rumaq_session and redirects to /.',
     responses: {
       302: { description: 'Redirect to app' },
       400: { description: 'Bad request' },
@@ -144,9 +135,9 @@ authApp.get(
       googleUser.sub
     )
 
-    const lookupStmt = c.env.DB.prepare(
-      'SELECT id FROM users WHERE google_id = ?'
-    ).bind(googleUser.sub)
+    const lookupStmt = c.env.DB.prepare('SELECT id FROM users WHERE google_id = ?').bind(
+      googleUser.sub
+    )
 
     const batchResults = await c.env.DB.batch([userStmt, lookupStmt])
     const rows = batchResults[1]?.results as { id?: string }[] | undefined
@@ -172,9 +163,11 @@ authApp.get(
       ]
 
       await c.env.DB.batch([
-        c.env.DB.prepare(
-          'INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)'
-        ).bind(householdId, 'Rumahku', actualUserId),
+        c.env.DB.prepare('INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)').bind(
+          householdId,
+          'Rumahku',
+          actualUserId
+        ),
         c.env.DB.prepare(
           'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
         ).bind(householdId, actualUserId, 'owner'),
@@ -187,9 +180,11 @@ authApp.get(
           ).bind(loc.id, householdId, loc.label, loc.sort_order)
         ),
         ...storeSeeds.map((store) =>
-          c.env.DB.prepare(
-            'INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)'
-          ).bind(store.id, householdId, store.label)
+          c.env.DB.prepare('INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)').bind(
+            store.id,
+            householdId,
+            store.label
+          )
         ),
       ])
     }
@@ -220,8 +215,7 @@ authApp.get(
 authApp.all(
   '/logout',
   describeRoute({
-    description:
-      'Clears the session cookie. POST returns { ok: true }; GET redirects to /.',
+    description: 'Clears the session cookie. POST returns { ok: true }; GET redirects to /.',
     responses: {
       200: {
         description: 'OK',
@@ -326,9 +320,11 @@ authApp.post(
       ]
 
       await c.env.DB.batch([
-        c.env.DB.prepare(
-          'INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)'
-        ).bind(householdId, 'Rumahku', user.id),
+        c.env.DB.prepare('INSERT INTO households (id, name, created_by) VALUES (?, ?, ?)').bind(
+          householdId,
+          'Rumahku',
+          user.id
+        ),
         c.env.DB.prepare(
           'INSERT INTO household_members (household_id, user_id, role) VALUES (?, ?, ?)'
         ).bind(householdId, user.id, 'owner'),
@@ -341,9 +337,11 @@ authApp.post(
           ).bind(loc.id, householdId, loc.label, loc.sort_order)
         ),
         ...storeSeeds.map((store) =>
-          c.env.DB.prepare(
-            'INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)'
-          ).bind(store.id, householdId, store.label)
+          c.env.DB.prepare('INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)').bind(
+            store.id,
+            householdId,
+            store.label
+          )
         ),
       ])
     }

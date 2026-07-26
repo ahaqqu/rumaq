@@ -78,9 +78,7 @@ export function SkeletonRows({ n = 5 }) {
 
 export function UsageMeter({ usage }) {
   const { t } = useTranslation()
-  const normalized = usage
-    ? { ...usage, limit: usage.limit ?? usage.daily_limit ?? 20 }
-    : AI_USAGE
+  const normalized = usage ? { ...usage, limit: usage.limit ?? usage.daily_limit ?? 20 } : AI_USAGE
   const { pct, remaining, warn, danger } = usageState(normalized)
   const tone = danger ? 'is-danger' : warn ? 'is-warn' : ''
   return (
@@ -103,17 +101,11 @@ export function UsageMeter({ usage }) {
         <div className={`usage__fill ${tone}`} style={{ width: pct + '%' }} />
       </div>
       {danger ? (
-        <div className="usage__note is-danger">
-          {t('ui.dailyLimitReachedDesc')}
-        </div>
+        <div className="usage__note is-danger">{t('ui.dailyLimitReachedDesc')}</div>
       ) : warn ? (
-        <div className="usage__note is-warn">
-          {t('ui.closeToLimitDesc', { remaining })}
-        </div>
+        <div className="usage__note is-warn">{t('ui.closeToLimitDesc', { remaining })}</div>
       ) : (
-        <div className="usage__note">
-          {t('ui.remainingRequests', { remaining })}
-        </div>
+        <div className="usage__note">{t('ui.remainingRequests', { remaining })}</div>
       )}
     </div>
   )

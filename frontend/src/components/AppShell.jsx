@@ -91,13 +91,8 @@ export function AppShell({ children }) {
                 </div>
               )}
               <div className="rail__user-info">
-                <div className="rail__user-name">
-                  {user.name || t('nav.settings')}
-                </div>
-                <button
-                  className="rail__logout"
-                  onClick={() => logout.mutate()}
-                >
+                <div className="rail__user-name">{user.name || t('nav.settings')}</div>
+                <button className="rail__logout" onClick={() => logout.mutate()}>
                   {t('nav.logout', 'Logout')}
                 </button>
               </div>
@@ -121,19 +116,12 @@ export function AppShell({ children }) {
                 </span>
               </div>
               <div className="rail__mini-bar">
-                <div
-                  className={`rail__mini-fill ${usageTone}`}
-                  style={{ width: pct + '%' }}
-                />
+                <div className={`rail__mini-fill ${usageTone}`} style={{ width: pct + '%' }} />
               </div>
               {danger ? (
-                <div className="rail__usage-note is-danger">
-                  {t('ui.dailyLimitReached')}
-                </div>
+                <div className="rail__usage-note is-danger">{t('ui.dailyLimitReached')}</div>
               ) : warn ? (
-                <div className="rail__usage-note is-warn">
-                  {t('assistant.closeToLimit')}
-                </div>
+                <div className="rail__usage-note is-warn">{t('assistant.closeToLimit')}</div>
               ) : null}
             </div>
           )}
@@ -145,18 +133,10 @@ export function AppShell({ children }) {
         <header className="topbar">
           <h1 className="topbar__title">{title}</h1>
           <div className="topbar__spacer" />
-          <Link
-            to="/add"
-            className="topbar__btn"
-            aria-label={t('nav.addFromReceipt')}
-          >
+          <Link to="/add" className="topbar__btn" aria-label={t('nav.addFromReceipt')}>
             <IconReceipt size={18} />
           </Link>
-          <Link
-            to="/settings"
-            className="topbar__btn"
-            aria-label={t('nav.settings')}
-          >
+          <Link to="/settings" className="topbar__btn" aria-label={t('nav.settings')}>
             <IconSettings size={18} />
           </Link>
         </header>
@@ -189,9 +169,7 @@ export function AppShell({ children }) {
         onOpen={() => setAssistantOpen(true)}
         onClose={() => setAssistantOpen(false)}
         aiKey={aiKey}
-        onNavigate={(view) =>
-          navigate({ to: `/${view === 'home' ? '' : view}` })
-        }
+        onNavigate={(view) => navigate({ to: `/${view === 'home' ? '' : view}` })}
       />
     </div>
   )

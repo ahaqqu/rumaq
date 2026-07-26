@@ -11,8 +11,7 @@ import { signJwt } from '../../../backend/src/auth.ts'
 
 const DEFAULT_SECRET = process.env.TEST_JWT_SECRET || 'test-jwt-secret'
 
-const DEFAULT_USER_ID =
-  process.env.TEST_USER_ID || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
+const DEFAULT_USER_ID = process.env.TEST_USER_ID || 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee'
 
 /**
  * Sign a JWT and return a Cookie header string for use in fetch().

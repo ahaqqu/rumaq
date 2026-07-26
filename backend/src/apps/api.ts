@@ -3,16 +3,7 @@ import { logger } from 'hono/logger'
 
 import { sValidator } from '@hono/standard-validator'
 import { openAPIRouteHandler, describeRoute } from 'hono-openapi'
-import {
-  object,
-  string,
-  optional,
-  picklist,
-  number,
-  integer,
-  minValue,
-  pipe,
-} from 'valibot'
+import { object, string, optional, picklist, number, integer, minValue, pipe } from 'valibot'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { propsAuthMiddleware } from '../auth.js'
@@ -108,10 +99,7 @@ apiApp.get(
     },
   }),
   (c) => {
-    c.res.headers.set(
-      'Cache-Control',
-      'public, max-age=60, stale-while-revalidate=300'
-    )
+    c.res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
     return c.json({ ok: true })
   }
 )
@@ -135,10 +123,7 @@ apiApp.get(
     },
   }),
   (c) => {
-    c.res.headers.set(
-      'Cache-Control',
-      'public, max-age=60, stale-while-revalidate=300'
-    )
+    c.res.headers.set('Cache-Control', 'public, max-age=60, stale-while-revalidate=300')
     return c.json({ enabled: c.env.EMAIL_AUTH_ENABLED === 'true' })
   }
 )
@@ -194,9 +179,7 @@ apiApp.get(
     },
   }),
   async (c) => {
-    const user = await c.env.DB.prepare(
-      'SELECT id, email, name, picture FROM users WHERE id = ?'
-    )
+    const user = await c.env.DB.prepare('SELECT id, email, name, picture FROM users WHERE id = ?')
       .bind(c.get('userId'))
       .first()
     const res = c.json({ user })
@@ -322,9 +305,7 @@ apiApp.patch(
           itemId = existing.id
         } else {
           itemId = crypto.randomUUID()
-          await c.env.DB.prepare(
-            'INSERT INTO items (id, household_id, name) VALUES (?, ?, ?)'
-          )
+          await c.env.DB.prepare('INSERT INTO items (id, household_id, name) VALUES (?, ?, ?)')
             .bind(itemId, householdId, trimmed)
             .run()
         }
@@ -356,12 +337,7 @@ apiApp.patch(
     }
 
     const finalQty = body.qty ?? stockRow.qty
-    const runOut = await computeRunOutDays(
-      householdId,
-      itemId,
-      finalQty,
-      c.env.DB
-    )
+    const runOut = await computeRunOutDays(householdId, itemId, finalQty, c.env.DB)
     updates.push('run_out_days = ?', 'basis = ?')
     params.push(runOut.run_out_days, runOut.basis)
 
@@ -501,8 +477,7 @@ apiApp.get(
       theme_hue: settings?.theme_hue ?? null,
       active_household_id: settings?.active_household_id ?? null,
       active_household_name: household?.name ?? null,
-      has_ai_key:
-        settings?.encrypted_ai_key != null && settings.encrypted_ai_key !== '',
+      has_ai_key: settings?.encrypted_ai_key != null && settings.encrypted_ai_key !== '',
     })
     res.headers.set('Cache-Control', 'private, no-cache')
     return res
@@ -527,15 +502,11 @@ apiApp.patch(
     const params: unknown[] = []
 
     if (body.ai_key !== undefined) {
-      const normalized =
-        typeof body.ai_key === 'string' ? body.ai_key.trim() : ''
+      const normalized = typeof body.ai_key === 'string' ? body.ai_key.trim() : ''
       if (normalized.length === 0) {
         updates.push('encrypted_ai_key = NULL')
       } else {
-        const encrypted = await encryptAiKey(
-          normalized,
-          c.env.WORKER_ENCRYPTION_KEY
-        )
+        const encrypted = await encryptAiKey(normalized, c.env.WORKER_ENCRYPTION_KEY)
         updates.push('encrypted_ai_key = ?')
         params.push(encrypted)
       }
@@ -604,8 +575,7 @@ apiApp.patch(
       persona_ai_role: settings?.persona_ai_role ?? null,
       persona_enabled: settings?.persona_enabled === 1,
       theme_hue: settings?.theme_hue ?? null,
-      has_ai_key:
-        settings?.encrypted_ai_key != null && settings.encrypted_ai_key !== '',
+      has_ai_key: settings?.encrypted_ai_key != null && settings.encrypted_ai_key !== '',
     })
     res.headers.set('Cache-Control', 'private, no-cache')
     return res
@@ -645,10 +615,7 @@ apiApp.post(
         return c.json({ error: 'No API key saved' }, 400)
       }
 
-      apiKey = await decryptAiKey(
-        settings.encrypted_ai_key,
-        c.env.WORKER_ENCRYPTION_KEY
-      )
+      apiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY)
     }
 
     try {
@@ -755,8 +722,7 @@ apiApp.get(
 apiApp.post(
   '/api/ai/chat',
   describeRoute({
-    description:
-      'Send a message to the household-scoped assistant and receive a reply.',
+    description: 'Send a message to the household-scoped assistant and receive a reply.',
     security: [{ cookieAuth: [] }],
     responses: {
       200: { description: 'Reply' },
@@ -790,17 +756,13 @@ apiApp.post(
     if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
       return c.json(
         {
-          error:
-            'AI provider not configured. Go to Settings to set up your AI key.',
+          error: 'AI provider not configured. Go to Settings to set up your AI key.',
         },
         402
       )
     }
 
-    const aiKey = await decryptAiKey(
-      settings.encrypted_ai_key,
-      c.env.WORKER_ENCRYPTION_KEY
-    )
+    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY)
 
     const today = new Date().toISOString().slice(0, 10)
     let usageRow = await c.env.DB.prepare(
@@ -822,8 +784,7 @@ apiApp.post(
     if (usageRow.used >= usageRow.daily_limit) {
       return c.json(
         {
-          error:
-            'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+          error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
         },
         429
       )
@@ -936,8 +897,7 @@ apiApp.post(
 apiApp.post(
   '/api/purchases/scan',
   describeRoute({
-    description:
-      'Upload a receipt image, scan with AI OCR, return parsed items.',
+    description: 'Upload a receipt image, scan with AI OCR, return parsed items.',
     security: [{ cookieAuth: [] }],
     responses: {
       200: { description: 'Scan complete' },
@@ -960,11 +920,7 @@ apiApp.post(
     try {
       const formData = await c.req.parseBody()
       const uploaded = formData['image']
-      if (
-        uploaded &&
-        typeof uploaded !== 'string' &&
-        'arrayBuffer' in uploaded
-      ) {
+      if (uploaded && typeof uploaded !== 'string' && 'arrayBuffer' in uploaded) {
         file = {
           name: uploaded.name,
           data: await uploaded.arrayBuffer(),
@@ -976,10 +932,7 @@ apiApp.post(
     }
 
     if (!file) {
-      return c.json(
-        { error: 'No image file provided. Use field name "image".' },
-        400
-      )
+      return c.json({ error: 'No image file provided. Use field name "image".' }, 400)
     }
 
     const fileObj = { type: file.type, size: file.data.byteLength }
@@ -997,17 +950,13 @@ apiApp.post(
     if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
       return c.json(
         {
-          error:
-            'AI provider not configured. Go to Settings to set up your AI key.',
+          error: 'AI provider not configured. Go to Settings to set up your AI key.',
         },
         402
       )
     }
 
-    const aiKey = await decryptAiKey(
-      settings.encrypted_ai_key,
-      c.env.WORKER_ENCRYPTION_KEY
-    )
+    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY)
 
     const today = new Date().toISOString().slice(0, 10)
     let usageRow = await c.env.DB.prepare(
@@ -1029,8 +978,7 @@ apiApp.post(
     if (usageRow.used >= usageRow.daily_limit) {
       return c.json(
         {
-          error:
-            'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+          error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
         },
         429
       )
@@ -1058,12 +1006,7 @@ apiApp.post(
       }
     } else {
       try {
-        scanResult = await extractReceiptItems(
-          file.data,
-          file.type,
-          settings.ai_provider,
-          aiKey
-        )
+        scanResult = await extractReceiptItems(file.data, file.type, settings.ai_provider, aiKey)
       } catch (err) {
         return c.json(
           {
@@ -1108,8 +1051,7 @@ apiApp.post(
 apiApp.post(
   '/api/purchases',
   describeRoute({
-    description:
-      'Create a purchase with items, updating stock and purchase history.',
+    description: 'Create a purchase with items, updating stock and purchase history.',
     security: [{ cookieAuth: [] }],
     responses: {
       201: { description: 'Purchase created' },
@@ -1189,15 +1131,7 @@ apiApp.post(
       statements.push(
         c.env.DB.prepare(
           'INSERT INTO purchase_items (id, purchase_id, item_id, qty, unit, price, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        ).bind(
-          purchaseItemId,
-          purchaseId,
-          itemId,
-          item.qty,
-          item.unit,
-          item.price,
-          now
-        )
+        ).bind(purchaseItemId, purchaseId, itemId, item.qty, item.unit, item.price, now)
       )
 
       const existingStock = await c.env.DB.prepare(
@@ -1208,12 +1142,7 @@ apiApp.post(
 
       if (existingStock) {
         const newQty = existingStock.qty + item.qty
-        const runOut = await computeRunOutDays(
-          householdId,
-          itemId,
-          newQty,
-          c.env.DB
-        )
+        const runOut = await computeRunOutDays(householdId, itemId, newQty, c.env.DB)
         statements.push(
           c.env.DB.prepare(
             `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`
@@ -1225,16 +1154,7 @@ apiApp.post(
         statements.push(
           c.env.DB.prepare(
             'INSERT INTO stock (id, household_id, item_id, location_id, qty, unit, run_out_days, basis, updated_at) VALUES (?, ?, ?, ?, ?, ?, 30, ?, ?)'
-          ).bind(
-            stockId,
-            householdId,
-            itemId,
-            locationId,
-            item.qty,
-            item.unit,
-            'default',
-            now
-          )
+          ).bind(stockId, householdId, itemId, locationId, item.qty, item.unit, 'default', now)
         )
       }
     }
@@ -1322,10 +1242,7 @@ apiApp.get(
     }
 
     const headers = new Headers()
-    headers.set(
-      'Content-Type',
-      object.httpMetadata?.contentType || 'image/jpeg'
-    )
+    headers.set('Content-Type', object.httpMetadata?.contentType || 'image/jpeg')
     headers.set('Cache-Control', 'private, no-cache')
 
     const body = await object.blob()
@@ -1336,8 +1253,7 @@ apiApp.get(
 apiApp.get(
   '/api/purchases/patterns',
   describeRoute({
-    description:
-      'Return top purchase patterns for the active household (avg interval, avg qty).',
+    description: 'Return top purchase patterns for the active household (avg interval, avg qty).',
     security: [{ cookieAuth: [] }],
     responses: {
       200: { description: 'OK' },
@@ -1356,8 +1272,7 @@ apiApp.get(
 apiApp.get(
   '/api/purchases',
   describeRoute({
-    description:
-      'List purchase history for the active household with filters and pagination.',
+    description: 'List purchase history for the active household with filters and pagination.',
     security: [{ cookieAuth: [] }],
     responses: {
       200: { description: 'OK' },
@@ -1504,10 +1419,7 @@ apiApp.get(
 
     const avgPerMonth =
       monthTotals.length > 0
-        ? Math.round(
-            monthTotals.reduce((sum, m) => sum + m.total, 0) /
-              monthTotals.length
-          )
+        ? Math.round(monthTotals.reduce((sum, m) => sum + m.total, 0) / monthTotals.length)
         : 0
 
     const res = c.json({
@@ -1678,15 +1590,10 @@ apiApp.delete(
       .first<{ cnt: number }>()
 
     if (stockRef && stockRef.cnt > 0) {
-      return c.json(
-        { error: 'Cannot delete location because it is used by stock items' },
-        409
-      )
+      return c.json({ error: 'Cannot delete location because it is used by stock items' }, 409)
     }
 
-    await c.env.DB.prepare('DELETE FROM locations WHERE id = ?')
-      .bind(locationId)
-      .run()
+    await c.env.DB.prepare('DELETE FROM locations WHERE id = ?').bind(locationId).run()
 
     return c.newResponse(null, 204)
   }
@@ -1752,15 +1659,11 @@ apiApp.post(
     const { label } = c.req.valid('json')
 
     const id = crypto.randomUUID()
-    await c.env.DB.prepare(
-      'INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)'
-    )
+    await c.env.DB.prepare('INSERT INTO stores (id, household_id, label) VALUES (?, ?, ?)')
       .bind(id, c.get('householdId'), label)
       .run()
 
-    const created = await c.env.DB.prepare(
-      'SELECT id, label FROM stores WHERE id = ?'
-    )
+    const created = await c.env.DB.prepare('SELECT id, label FROM stores WHERE id = ?')
       .bind(id)
       .first()
 
@@ -1783,9 +1686,7 @@ apiApp.delete(
   async (c) => {
     const storeId = c.req.param('id')
 
-    const store = await c.env.DB.prepare(
-      'SELECT id FROM stores WHERE id = ? AND household_id = ?'
-    )
+    const store = await c.env.DB.prepare('SELECT id FROM stores WHERE id = ? AND household_id = ?')
       .bind(storeId, c.get('householdId'))
       .first()
 
@@ -1800,10 +1701,7 @@ apiApp.delete(
       .first<{ cnt: number }>()
 
     if (purchaseRef && purchaseRef.cnt > 0) {
-      return c.json(
-        { error: 'Cannot delete store because it is used by purchases' },
-        409
-      )
+      return c.json({ error: 'Cannot delete store because it is used by purchases' }, 409)
     }
 
     const planRef = await c.env.DB.prepare(
@@ -1813,15 +1711,10 @@ apiApp.delete(
       .first<{ cnt: number }>()
 
     if (planRef && planRef.cnt > 0) {
-      return c.json(
-        { error: 'Cannot delete store because it is used by plan items' },
-        409
-      )
+      return c.json({ error: 'Cannot delete store because it is used by plan items' }, 409)
     }
 
-    await c.env.DB.prepare('DELETE FROM stores WHERE id = ?')
-      .bind(storeId)
-      .run()
+    await c.env.DB.prepare('DELETE FROM stores WHERE id = ?').bind(storeId).run()
 
     return c.newResponse(null, 204)
   }
@@ -1954,17 +1847,13 @@ apiApp.post(
     if (!settings?.ai_provider || !settings?.encrypted_ai_key) {
       return c.json(
         {
-          error:
-            'AI provider not configured. Go to Settings to set up your AI key.',
+          error: 'AI provider not configured. Go to Settings to set up your AI key.',
         },
         402
       )
     }
 
-    const aiKey = await decryptAiKey(
-      settings.encrypted_ai_key,
-      c.env.WORKER_ENCRYPTION_KEY
-    )
+    const aiKey = await decryptAiKey(settings.encrypted_ai_key, c.env.WORKER_ENCRYPTION_KEY)
 
     const today = new Date().toISOString().slice(0, 10)
     let usageRow = await c.env.DB.prepare(
@@ -1986,8 +1875,7 @@ apiApp.post(
     if (usageRow.used >= usageRow.daily_limit) {
       return c.json(
         {
-          error:
-            'AI usage limit reached for today. Upgrade or wait until tomorrow.',
+          error: 'AI usage limit reached for today. Upgrade or wait until tomorrow.',
         },
         429
       )
@@ -2126,9 +2014,7 @@ apiApp.post(
           qty: item.qty,
           unit: item.unit,
           store_id: item.store_id,
-          store_label: item.store_id
-            ? storeLabels.get(item.store_id) || null
-            : null,
+          store_label: item.store_id ? storeLabels.get(item.store_id) || null : null,
           price_estimate: item.price_estimate,
           why: item.why,
           item_id: existingItem?.id || null,
@@ -2137,10 +2023,7 @@ apiApp.post(
       })
     )
 
-    const total_estimate = items.reduce(
-      (sum, it) => sum + (it.price_estimate || 0),
-      0
-    )
+    const total_estimate = items.reduce((sum, it) => sum + (it.price_estimate || 0), 0)
 
     const res = c.json({
       items,
@@ -2187,10 +2070,7 @@ apiApp.post(
     const planId = crypto.randomUUID()
     const now = new Date().toISOString()
 
-    const totalEstimate = body.items.reduce(
-      (sum, it) => sum + (it.price_estimate || 0),
-      0
-    )
+    const totalEstimate = body.items.reduce((sum, it) => sum + (it.price_estimate || 0), 0)
 
     statements.push(
       c.env.DB.prepare(
@@ -2210,10 +2090,7 @@ apiApp.post(
           .bind(item.store_id, householdId)
           .first<{ id: string }>()
         if (!store) {
-          return c.json(
-            { error: `Store ${item.store_id} not found in this household` },
-            400
-          )
+          return c.json({ error: `Store ${item.store_id} not found in this household` }, 400)
         }
       }
 
@@ -2369,11 +2246,7 @@ apiApp.patch(
       ).bind(body.status, itemId)
     )
 
-    if (
-      body.status === 'bought' &&
-      planItem.item_id &&
-      planItem.status !== 'bought'
-    ) {
+    if (body.status === 'bought' && planItem.item_id && planItem.status !== 'bought') {
       const defaultLocation = await c.env.DB.prepare(
         'SELECT id FROM locations WHERE household_id = ? ORDER BY sort_order LIMIT 1'
       )
@@ -2385,13 +2258,7 @@ apiApp.patch(
         c.env.DB.prepare(
           `INSERT INTO purchases (id, household_id, store_id, date, created_at)
            VALUES (?, ?, ?, ?, ?)`
-        ).bind(
-          purchaseId,
-          householdId,
-          planItem.store_id || null,
-          now.slice(0, 10),
-          now
-        )
+        ).bind(purchaseId, householdId, planItem.store_id || null, now.slice(0, 10), now)
       )
 
       const purchaseItemId = crypto.randomUUID()
@@ -2418,12 +2285,7 @@ apiApp.patch(
 
       if (existingStock) {
         const newQty = existingStock.qty + planItem.qty
-        const runOut = await computeRunOutDays(
-          householdId,
-          planItem.item_id,
-          newQty,
-          c.env.DB
-        )
+        const runOut = await computeRunOutDays(householdId, planItem.item_id, newQty, c.env.DB)
         statements.push(
           c.env.DB.prepare(
             `UPDATE stock SET qty = ?, run_out_days = ?, basis = ?, updated_at = datetime('now') WHERE id = ?`

@@ -85,21 +85,15 @@ describe('deriveHue', () => {
 describe('speak', () => {
   it('returns text as-is regardless of persona', () => {
     expect(speak('hello', DEFAULT_PERSONA, idT)).toBe('hello')
-    expect(
-      speak(
-        'hello',
-        { enabled: true, userRole: 'raja', aiRole: 'prajurit' },
-        idT
-      )
-    ).toBe('hello')
+    expect(speak('hello', { enabled: true, userRole: 'raja', aiRole: 'prajurit' }, idT)).toBe(
+      'hello'
+    )
   })
 })
 
 describe('personaText', () => {
   it('returns base text when persona is not enabled', () => {
-    expect(personaText('homeLead', DEFAULT_PERSONA, idT)).toBe(
-      ID_TEMPLATES['persona.homeLead']
-    )
+    expect(personaText('homeLead', DEFAULT_PERSONA, idT)).toBe(ID_TEMPLATES['persona.homeLead'])
   })
 
   it('returns AI-generated copy when available', () => {
@@ -134,28 +128,19 @@ describe('buildSystemPrompt', () => {
   })
 
   it('includes role instruction for enabled persona', () => {
-    const p = buildSystemPrompt(
-      { enabled: true, userRole: 'raja', aiRole: 'prajurit' },
-      idT
-    )
+    const p = buildSystemPrompt({ enabled: true, userRole: 'raja', aiRole: 'prajurit' }, idT)
     expect(p).toContain('Bayangkan')
     expect(p).toContain('raja')
     expect(p).toContain('prajurit')
   })
 
   it('includes mood instruction for employee-to-boss mood', () => {
-    const p = buildSystemPrompt(
-      { enabled: true, userRole: 'bos', aiRole: 'pegawai' },
-      idT
-    )
+    const p = buildSystemPrompt({ enabled: true, userRole: 'bos', aiRole: 'pegawai' }, idT)
     expect(p).toContain('formal')
   })
 
   it('does not include mood instruction for generic mood', () => {
-    const p = buildSystemPrompt(
-      { enabled: true, userRole: 'tamu', aiRole: 'host' },
-      idT
-    )
+    const p = buildSystemPrompt({ enabled: true, userRole: 'tamu', aiRole: 'host' }, idT)
     expect(p).not.toContain('form')
   })
 })
@@ -170,23 +155,14 @@ describe('applyTheme', () => {
 
   it('sets custom properties when persona is enabled', () => {
     const el = { style: { setProperty: vi.fn() }, dataset: {} }
-    applyTheme(
-      { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 },
-      el
-    )
-    expect(el.style.setProperty).toHaveBeenCalledWith(
-      '--accent',
-      expect.any(String)
-    )
+    applyTheme({ enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: 270 }, el)
+    expect(el.style.setProperty).toHaveBeenCalledWith('--accent', expect.any(String))
     expect(el.dataset.persona).toBe('raja|prajurit')
   })
 
   it('derives hue when persona hue is null', () => {
     const el = { style: { setProperty: vi.fn() }, dataset: {} }
-    applyTheme(
-      { enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: null },
-      el
-    )
+    applyTheme({ enabled: true, userRole: 'raja', aiRole: 'prajurit', hue: null }, el)
     expect(el.style.setProperty).toHaveBeenCalled()
   })
 
@@ -199,12 +175,7 @@ describe('applyTheme', () => {
 
 describe('generatePersonaCopy', () => {
   it('returns null when persona is not enabled', async () => {
-    const result = await generatePersonaCopy(
-      DEFAULT_PERSONA,
-      'sk-test',
-      'opencode',
-      idT
-    )
+    const result = await generatePersonaCopy(DEFAULT_PERSONA, 'sk-test', 'opencode', idT)
     expect(result).toBeNull()
   })
 

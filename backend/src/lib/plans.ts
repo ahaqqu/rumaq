@@ -73,10 +73,7 @@ export function buildPlanPrompt(
     )
     .join('\n')
   const expiringLines = expiring
-    .map(
-      (s) =>
-        `${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, expires: ${s.expiry_date})`
-    )
+    .map((s) => `${s.name} (qty: ${s.qty}${s.unit ? ' ' + s.unit : ''}, expires: ${s.expiry_date})`)
     .join('\n')
   const purchaseLines = recentPurchases
     .map((p) => `${p.name}${p.store_label ? ' @ ' + p.store_label : ''}`)
@@ -141,20 +138,12 @@ export async function generateAiPlan(
   stores: Array<{ id: string; label: string }>,
   currency: string
 ): Promise<PlanItem[]> {
-  const prompt = buildPlanPrompt(
-    lowStock,
-    expiring,
-    recentPurchases,
-    stores,
-    currency
-  )
+  const prompt = buildPlanPrompt(lowStock, expiring, recentPurchases, stores, currency)
   const systemPrompt = `You are a helpful shopping plan assistant. Generate concise, practical shopping plans in JSON format.`
 
   const content = await completeText(provider, apiKey, systemPrompt, prompt)
 
-  const parsed = JSON.parse(
-    content.match(/\{[\s\S]*\}/)?.[0] || '{}'
-  ) as Record<string, unknown>
+  const parsed = JSON.parse(content.match(/\{[\s\S]*\}/)?.[0] || '{}') as Record<string, unknown>
   const items = (parsed.items || []) as Record<string, unknown>[]
 
   return items.slice(0, 50).map((it) => ({
@@ -162,8 +151,7 @@ export async function generateAiPlan(
     qty: Number(it.qty) || 1,
     unit: String(it.unit || 'pcs'),
     store_id: it.store_id ? String(it.store_id) : null,
-    price_estimate:
-      it.price_estimate != null ? Math.round(Number(it.price_estimate)) : null,
+    price_estimate: it.price_estimate != null ? Math.round(Number(it.price_estimate)) : null,
     why: String(it.why || ''),
   }))
 }

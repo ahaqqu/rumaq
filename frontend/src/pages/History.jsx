@@ -4,11 +4,7 @@ import { formatRp } from '../data/mock.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
 import { IconSpark } from '../components/icons.jsx'
-import {
-  useHistory,
-  usePurchasePatterns,
-  useStores,
-} from '../lib/queries/index.js'
+import { useHistory, usePurchasePatterns, useStores } from '../lib/queries/index.js'
 import { getReceiptUrl } from '../lib/api.js'
 
 export function History({ askAssistant }) {
@@ -135,10 +131,7 @@ export function History({ askAssistant }) {
       </div>
 
       {history.isLoading && (
-        <div
-          className="panel"
-          style={{ padding: 'var(--sp-5)', textAlign: 'center' }}
-        >
+        <div className="panel" style={{ padding: 'var(--sp-5)', textAlign: 'center' }}>
           {t('history.loading')}
         </div>
       )}
@@ -157,10 +150,7 @@ export function History({ askAssistant }) {
       )}
 
       {!history.isLoading && !history.isError && purchases.length === 0 && (
-        <div
-          className="panel"
-          style={{ padding: 'var(--sp-5)', textAlign: 'center' }}
-        >
+        <div className="panel" style={{ padding: 'var(--sp-5)', textAlign: 'center' }}>
           <div className="empty__title">{t('history.empty')}</div>
           <div className="empty__desc" style={{ color: 'var(--text-muted)' }}>
             {t('history.emptyDesc')}
@@ -185,8 +175,7 @@ export function History({ askAssistant }) {
               <strong>{t('history.total')}</strong> {formatRp(totalSpend)}
             </div>
             <div>
-              <strong>{t('history.avgPerMonth')}</strong>{' '}
-              {formatRp(avgPerMonth)}
+              <strong>{t('history.avgPerMonth')}</strong> {formatRp(avgPerMonth)}
             </div>
           </div>
 
@@ -224,9 +213,7 @@ export function History({ askAssistant }) {
                 onClick={loadMore}
                 disabled={history.isFetching}
               >
-                {history.isFetching
-                  ? t('history.loading')
-                  : t('history.loadMore')}
+                {history.isFetching ? t('history.loading') : t('history.loadMore')}
               </button>
             </div>
           )}
@@ -344,8 +331,7 @@ function Group({ g, monthLabel, fmtDate, t, formatRp, onReceiptClick }) {
     <>
       <tr className="month-sep">
         <td colSpan={5}>
-          {monthLabel(g.month)} ·{' '}
-          {t('history.purchases_count', { count: g.rows.length })} ·{' '}
+          {monthLabel(g.month)} · {t('history.purchases_count', { count: g.rows.length })} ·{' '}
           {t('history.total')} {formatRp(g.total)}
         </td>
       </tr>

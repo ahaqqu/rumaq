@@ -35,23 +35,17 @@ beforeEach(() => {
 
 describe('AddFromReceipt', () => {
   it('renders capture phase by default', () => {
-    const { container } = render(
-      React.createElement(AddFromReceipt, { onDone: vi.fn() })
-    )
+    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
     expect(container.querySelector('.dropzone')).toBeTruthy()
   })
 
   it('renders page lead', () => {
-    const { container } = render(
-      React.createElement(AddFromReceipt, { onDone: vi.fn() })
-    )
+    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
     expect(container.querySelector('.page__lead')).toBeTruthy()
   })
 
   it('shows error for unsupported file type', async () => {
-    const { container } = render(
-      React.createElement(AddFromReceipt, { onDone: vi.fn() })
-    )
+    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
     const file = createFile('test.gif', 'image/gif', 100)
     selectFile(container, file)
 
@@ -61,9 +55,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('shows error for oversized file', async () => {
-    const { container } = render(
-      React.createElement(AddFromReceipt, { onDone: vi.fn() })
-    )
+    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
     const file = createFile('test.jpg', 'image/jpeg', 6 * 1024 * 1024)
     selectFile(container, file)
 
@@ -73,9 +65,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('transitions to scanning phase on valid file upload', async () => {
-    const { container } = render(
-      React.createElement(AddFromReceipt, { onDone: vi.fn() })
-    )
+    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
 
     api.scanReceipt.mockResolvedValueOnce({
       items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
@@ -99,9 +89,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('shows review phase after successful scan', async () => {
-    const { container } = render(
-      React.createElement(AddFromReceipt, { onDone: vi.fn() })
-    )
+    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
 
     api.scanReceipt.mockResolvedValueOnce({
       items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
@@ -125,9 +113,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('shows done state after confirm', async () => {
-    const { container } = render(
-      React.createElement(AddFromReceipt, { onDone: vi.fn() })
-    )
+    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
 
     api.scanReceipt.mockResolvedValueOnce({
       items: [{ name: 'Milk', qty: 1, unit: 'L', price: 20000 }],
@@ -166,9 +152,7 @@ describe('AddFromReceipt', () => {
   })
 
   it('shows error when scan fails', async () => {
-    const { container } = render(
-      React.createElement(AddFromReceipt, { onDone: vi.fn() })
-    )
+    const { container } = render(React.createElement(AddFromReceipt, { onDone: vi.fn() }))
 
     api.scanReceipt.mockRejectedValueOnce(new Error('Scan failed'))
 

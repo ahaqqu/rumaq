@@ -9,12 +9,8 @@ export function base64UrlEncode(buffer: ArrayBuffer | Uint8Array): string {
 
 export function base64UrlDecode(str: string): ArrayBuffer {
   const normalized = str.replace(/-/g, '+').replace(/_/g, '/')
-  const padded = normalized.padEnd(
-    normalized.length + ((4 - (normalized.length % 4)) % 4),
-    '='
-  )
-  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0))
-    .buffer as ArrayBuffer
+  const padded = normalized.padEnd(normalized.length + ((4 - (normalized.length % 4)) % 4), '=')
+  return Uint8Array.from(atob(padded), (c) => c.charCodeAt(0)).buffer as ArrayBuffer
 }
 
 async function deriveAesKey(
@@ -43,10 +39,7 @@ async function deriveAesKey(
   )
 }
 
-export async function encryptAiKey(
-  plainText: string,
-  key: string
-): Promise<string> {
+export async function encryptAiKey(plainText: string, key: string): Promise<string> {
   const encoder = new TextEncoder()
   const aesKey = await deriveAesKey(key, ['encrypt'])
   const iv = crypto.getRandomValues(new Uint8Array(12))
@@ -61,10 +54,7 @@ export async function encryptAiKey(
   return `v1:${base64UrlEncode(combined)}`
 }
 
-export async function decryptAiKey(
-  cipherText: string,
-  key: string
-): Promise<string> {
+export async function decryptAiKey(cipherText: string, key: string): Promise<string> {
   if (!cipherText.startsWith('v1:')) {
     throw new Error('Unsupported encryption version')
   }
@@ -74,10 +64,6 @@ export async function decryptAiKey(
   const data = combined.slice(12)
   const encoder = new TextEncoder()
   const aesKey = await deriveAesKey(key, ['decrypt'])
-  const plain = await crypto.subtle.decrypt(
-    { name: 'AES-GCM', iv, tagLength: 128 },
-    aesKey,
-    data
-  )
+  const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv, tagLength: 128 }, aesKey, data)
   return new TextDecoder().decode(plain)
 }

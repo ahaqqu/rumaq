@@ -1,16 +1,10 @@
 import { describe, test as it, beforeEach } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
 
-const feature = loadFeature(
-  'automation/tests/local/api/features/purchases.feature'
-)
+const feature = loadFeature('automation/tests/local/api/features/purchases.feature')
 
 defineFeature(feature, (test) => {
   let ctx
@@ -84,12 +78,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Create purchase with new item creates item and stock', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Create purchase with new item creates item and stock', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -128,12 +117,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Create purchase with existing item updates qty', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Create purchase with existing item updates qty', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -177,23 +161,16 @@ defineFeature(feature, (test) => {
       await ctx.authenticate()
     })
 
-    when(
-      /I send a (POST) request to (\S+) with body/,
-      async (method, path, body) => {
-        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
-      }
-    )
+    when(/I send a (POST) request to (\S+) with body/, async (method, path, body) => {
+      await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+    })
 
     then('the response status should be 400', () => {
       ctx.expectStatus(400)
     })
   })
 
-  test('Another household cannot access purchase receipt', ({
-    given,
-    when,
-    then,
-  }) => {
+  test('Another household cannot access purchase receipt', ({ given, when, then }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -211,11 +188,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Unauthenticated access to patterns returns 401', ({
-    given,
-    when,
-    then,
-  }) => {
+  test('Unauthenticated access to patterns returns 401', ({ given, when, then }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -229,12 +202,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('List purchases returns history with items', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('List purchases returns history with items', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -294,12 +262,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('List purchases filtered by date range', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('List purchases filtered by date range', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -316,20 +279,12 @@ defineFeature(feature, (test) => {
       ctx.expectStatus(200)
     })
 
-    and(
-      /^all purchases should be within date range (\S+) to (\S+)$/,
-      (from, to) => {
-        ctx.expectAllPurchasesInDateRange(from, to)
-      }
-    )
+    and(/^all purchases should be within date range (\S+) to (\S+)$/, (from, to) => {
+      ctx.expectAllPurchasesInDateRange(from, to)
+    })
   })
 
-  test('List purchases filtered by text search', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('List purchases filtered by text search', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

@@ -1,20 +1,10 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
-import {
-  LocChip,
-  TimeSignal,
-  EmptyState,
-  SkeletonRows,
-} from '../components/ui.jsx'
+import { LocChip, TimeSignal, EmptyState, SkeletonRows } from '../components/ui.jsx'
 import { useStock, useUpdateStock, useLocations } from '../lib/queries/index.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
-import {
-  IconSearch,
-  IconBox,
-  IconPlus,
-  IconMinus,
-} from '../components/icons.jsx'
+import { IconSearch, IconBox, IconPlus, IconMinus } from '../components/icons.jsx'
 
 function getDaysUntil(expiryDate) {
   if (!expiryDate) return null
@@ -39,10 +29,7 @@ export function Inventory() {
   const updateStock = useUpdateStock()
 
   const rows = stockData?.stock ?? []
-  const locations = useMemo(
-    () => locationsData?.locations ?? [],
-    [locationsData]
-  )
+  const locations = useMemo(() => locationsData?.locations ?? [], [locationsData])
 
   const handleSearch = useCallback((value) => {
     setQ(value)

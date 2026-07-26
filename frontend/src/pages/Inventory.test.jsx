@@ -37,13 +37,8 @@ vi.mock('../lib/queries/index.js', () => ({
   useStock: ({ location, q }) => {
     let filtered = [...mockStock]
     if (location)
-      filtered = filtered.filter(
-        (s) => s.location === location || s.location_id === location
-      )
-    if (q)
-      filtered = filtered.filter((s) =>
-        s.name.toLowerCase().includes(q.toLowerCase())
-      )
+      filtered = filtered.filter((s) => s.location === location || s.location_id === location)
+    if (q) filtered = filtered.filter((s) => s.name.toLowerCase().includes(q.toLowerCase()))
     return { data: { stock: filtered }, isLoading: false }
   },
   useUpdateStock: () => ({ mutate: vi.fn(), isPending: false }),

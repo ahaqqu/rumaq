@@ -26,7 +26,7 @@ This phase builds on the stock and purchase data from Phases 02 and 03.
 7. All endpoints use Valibot validation and household-scoped queries.
 8. API integration tests cover plan CRUD, generate endpoint, and check-off flow.
 9. Frontend tests cover the plan UI and state changes.
-10. `npm test` and `npx tsc --noEmit` pass.
+10. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

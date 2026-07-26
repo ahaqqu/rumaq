@@ -88,10 +88,7 @@ type OpenCodeResponse = {
   }>
 }
 
-async function callOpenAI(
-  apiKey: string,
-  messages: ChatMessage[]
-): Promise<string> {
+async function callOpenAI(apiKey: string, messages: ChatMessage[]): Promise<string> {
   const res = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -117,16 +114,11 @@ async function callOpenAI(
   return content
 }
 
-async function callGemini(
-  apiKey: string,
-  messages: ChatMessage[]
-): Promise<string> {
+async function callGemini(apiKey: string, messages: ChatMessage[]): Promise<string> {
   const systemMsg = messages.find((m) => m.role === 'system')
   const userMsg = messages.find((m) => m.role === 'user')
 
-  const parts: Array<
-    { text: string } | { inline_data: { mime_type: string; data: string } }
-  > = []
+  const parts: Array<{ text: string } | { inline_data: { mime_type: string; data: string } }> = []
 
   if (systemMsg) {
     parts.push({
@@ -176,10 +168,7 @@ async function callGemini(
   return content
 }
 
-async function callAnthropic(
-  apiKey: string,
-  messages: ChatMessage[]
-): Promise<string> {
+async function callAnthropic(apiKey: string, messages: ChatMessage[]): Promise<string> {
   const systemMsg = messages.find((m) => m.role === 'system')
   const chatMessages = messages.filter((m) => m.role !== 'system')
 
@@ -234,10 +223,7 @@ async function callAnthropic(
   return content
 }
 
-async function callOpenCode(
-  apiKey: string,
-  messages: ChatMessage[]
-): Promise<string> {
+async function callOpenCode(apiKey: string, messages: ChatMessage[]): Promise<string> {
   const res = await fetch('https://api.opencode.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -343,9 +329,7 @@ export async function extractReceiptItems(
   const content = await callProvider(provider, apiKey, messages)
   const result = parseJsonResponse<ScanResult>(content)
 
-  const items: ParsedItem[] = (
-    (result.items || []) as Record<string, unknown>[]
-  ).map((it) => ({
+  const items: ParsedItem[] = ((result.items || []) as Record<string, unknown>[]).map((it) => ({
     name: String(it.name || ''),
     qty: Number(it.qty) || 1,
     unit: String(it.unit || 'pcs'),

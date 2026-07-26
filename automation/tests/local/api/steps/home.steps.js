@@ -1,9 +1,5 @@
 import { describe, test as it, beforeEach } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
@@ -31,12 +27,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Home returns zero stats for a new user', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Home returns zero stats for a new user', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -92,12 +83,9 @@ defineFeature(feature, (test) => {
       ctx.expectLowStockLength(1)
     })
 
-    and(
-      'each low stock item should have id, name, qty, unit, and location',
-      () => {
-        ctx.expectLowStockItemShape()
-      }
-    )
+    and('each low stock item should have id, name, qty, unit, and location', () => {
+      ctx.expectLowStockItemShape()
+    })
   })
 
   test('Home has authenticated cache headers', ({ given, when, then, and }) => {

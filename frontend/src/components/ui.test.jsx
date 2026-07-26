@@ -13,53 +13,39 @@ import {
 
 describe('LocChip', () => {
   it('renders location name', () => {
-    const { container } = render(
-      React.createElement(LocChip, { loc: 'Kulkas' })
-    )
+    const { container } = render(React.createElement(LocChip, { loc: 'Kulkas' }))
     expect(container.textContent).toContain('Kulkas')
   })
 })
 
 describe('TimeSignal', () => {
   it('renders danger for expiring tomorrow', () => {
-    const { container } = render(
-      React.createElement(TimeSignal, { expiryDays: 1, runOut: 1 })
-    )
+    const { container } = render(React.createElement(TimeSignal, { expiryDays: 1, runOut: 1 }))
     expect(container.querySelector('.ts--danger')).toBeTruthy()
   })
 
   it('renders warn for expiring in 3 days', () => {
-    const { container } = render(
-      React.createElement(TimeSignal, { expiryDays: 3, runOut: 3 })
-    )
+    const { container } = render(React.createElement(TimeSignal, { expiryDays: 3, runOut: 3 }))
     expect(container.querySelector('.ts--warn')).toBeTruthy()
   })
 
   it('renders muted for expiring in 7 days', () => {
-    const { container } = render(
-      React.createElement(TimeSignal, { expiryDays: 7, runOut: 5 })
-    )
+    const { container } = render(React.createElement(TimeSignal, { expiryDays: 7, runOut: 5 }))
     expect(container.querySelector('.ts--muted')).toBeTruthy()
   })
 
   it('shows danger for runOut <= 2 when no expiry', () => {
-    const { container } = render(
-      React.createElement(TimeSignal, { expiryDays: null, runOut: 2 })
-    )
+    const { container } = render(React.createElement(TimeSignal, { expiryDays: null, runOut: 2 }))
     expect(container.querySelector('.ts--danger')).toBeTruthy()
   })
 
   it('shows warn for runOut === 3 when no expiry', () => {
-    const { container } = render(
-      React.createElement(TimeSignal, { expiryDays: null, runOut: 3 })
-    )
+    const { container } = render(React.createElement(TimeSignal, { expiryDays: null, runOut: 3 }))
     expect(container.querySelector('.ts--warn')).toBeTruthy()
   })
 
   it('shows muted for runOut > 3 when no expiry', () => {
-    const { container } = render(
-      React.createElement(TimeSignal, { expiryDays: null, runOut: 10 })
-    )
+    const { container } = render(React.createElement(TimeSignal, { expiryDays: null, runOut: 10 }))
     expect(container.querySelector('.ts--muted')).toBeTruthy()
   })
 
@@ -75,9 +61,7 @@ describe('TimeSignal', () => {
   })
 
   it('shows muted for expiry days > 3 within useExpiry branch', () => {
-    const { container } = render(
-      React.createElement(TimeSignal, { expiryDays: 4, runOut: 5 })
-    )
+    const { container } = render(React.createElement(TimeSignal, { expiryDays: 4, runOut: 5 }))
     expect(container.querySelector('.ts--muted')).toBeTruthy()
   })
 })
@@ -153,9 +137,7 @@ describe('UsageMeter', () => {
 
 describe('MetaItem', () => {
   it('renders children', () => {
-    const { container } = render(
-      React.createElement(MetaItem, { icon: IconPin }, 'test children')
-    )
+    const { container } = render(React.createElement(MetaItem, { icon: IconPin }, 'test children'))
     expect(container.textContent).toContain('test children')
   })
 })

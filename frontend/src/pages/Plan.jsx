@@ -1,10 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import {
-  usePlans,
-  useGeneratePlan,
-  useSavePlan,
-  useUpdatePlanItem,
-} from '../lib/queries/index.js'
+import { usePlans, useGeneratePlan, useSavePlan, useUpdatePlanItem } from '../lib/queries/index.js'
 import { useSettings } from '../lib/queries/index.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { useApp } from '../context/AppContext.jsx'
@@ -82,10 +77,7 @@ export function Plan({ askAssistant, setView }) {
   }
 
   const allDone =
-    activePlan &&
-    activePlan.items.every(
-      (it) => it.status === 'bought' || it.status === 'skipped'
-    )
+    activePlan && activePlan.items.every((it) => it.status === 'bought' || it.status === 'skipped')
 
   const itemsByStore = (items) => {
     const map = {}
@@ -137,9 +129,7 @@ export function Plan({ askAssistant, setView }) {
     return (
       <>
         <div className="page__head">
-          <p className="page__lead">
-            {personaText('planLeadNoKey', persona, t)}
-          </p>
+          <p className="page__lead">{personaText('planLeadNoKey', persona, t)}</p>
         </div>
         {renderProposalBanner()}
         <div className="panel">
@@ -148,10 +138,7 @@ export function Plan({ askAssistant, setView }) {
             title={t('plan.connectApiKey')}
             desc={t('plan.bringYourOwnKey')}
             action={
-              <button
-                className="btn btn--primary"
-                onClick={() => setView('settings')}
-              >
+              <button className="btn btn--primary" onClick={() => setView('settings')}>
                 <IconKey size={18} /> {t('plan.addApiKey')}
               </button>
             }
@@ -177,10 +164,7 @@ export function Plan({ askAssistant, setView }) {
 
   if (generatedItems) {
     const stores = itemsByStore(generatedItems)
-    const grandTotal = generatedItems.reduce(
-      (s, it) => s + (it.price_estimate || 0),
-      0
-    )
+    const grandTotal = generatedItems.reduce((s, it) => s + (it.price_estimate || 0), 0)
 
     return (
       <>
@@ -219,17 +203,12 @@ export function Plan({ askAssistant, setView }) {
           </button>
           {grandTotal > 0 && (
             <div className="chip" style={{ alignSelf: 'center' }}>
-              {t('plan.stores', { count: stores.length })} ·{' '}
-              {formatPrice(grandTotal, currency)}
+              {t('plan.stores', { count: stores.length })} · {formatPrice(grandTotal, currency)}
             </div>
           )}
         </div>
         {stores.map((store) => (
-          <div
-            className="trip"
-            key={store.store_id}
-            style={{ marginBottom: 'var(--sp-4)' }}
-          >
+          <div className="trip" key={store.store_id} style={{ marginBottom: 'var(--sp-4)' }}>
             <div className="trip__head">
               <div className="trip__store">
                 <IconShop size={18} /> {store.store_label}
@@ -237,10 +216,7 @@ export function Plan({ askAssistant, setView }) {
               <div className="trip__total">
                 {t('home.itemCount', { count: store.items.length })} ·{' '}
                 {formatPrice(
-                  store.items.reduce(
-                    (s, it) => s + (it.price_estimate || 0),
-                    0
-                  ),
+                  store.items.reduce((s, it) => s + (it.price_estimate || 0), 0),
                   currency
                 )}
               </div>
@@ -297,10 +273,7 @@ export function Plan({ askAssistant, setView }) {
   }
 
   const stores = itemsByStore(activePlan.items)
-  const grandTotal = activePlan.items.reduce(
-    (s, it) => s + (it.price_estimate || 0),
-    0
-  )
+  const grandTotal = activePlan.items.reduce((s, it) => s + (it.price_estimate || 0), 0)
 
   return (
     <>
@@ -327,18 +300,13 @@ export function Plan({ askAssistant, setView }) {
         </button>
         {grandTotal > 0 && (
           <div className="chip" style={{ alignSelf: 'center' }}>
-            {t('plan.stores', { count: stores.length })} ·{' '}
-            {formatPrice(grandTotal, currency)}
+            {t('plan.stores', { count: stores.length })} · {formatPrice(grandTotal, currency)}
           </div>
         )}
       </div>
 
       {stores.map((store) => (
-        <div
-          className="trip"
-          key={store.store_id}
-          style={{ marginBottom: 'var(--sp-4)' }}
-        >
+        <div className="trip" key={store.store_id} style={{ marginBottom: 'var(--sp-4)' }}>
           <div className="trip__head">
             <div className="trip__store">
               <IconShop size={18} /> {store.store_label}
@@ -365,9 +333,7 @@ export function Plan({ askAssistant, setView }) {
                     className="plan-item__check"
                     checked={isDone}
                     disabled={isDone || isSkipped}
-                    onChange={() =>
-                      handleCheckItem(activePlan.id, it.id, it.status)
-                    }
+                    onChange={() => handleCheckItem(activePlan.id, it.id, it.status)}
                   />
                   <div className="plan-item__main">
                     <div className="plan-item__name">
@@ -404,10 +370,7 @@ export function Plan({ askAssistant, setView }) {
           <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
             <strong>{t('plan.allBought')}</strong> {t('plan.allBoughtDesc')}
           </div>
-          <button
-            className="btn btn--primary btn--sm"
-            onClick={() => generateMutation.mutate()}
-          >
+          <button className="btn btn--primary btn--sm" onClick={() => generateMutation.mutate()}>
             <IconSpark size={16} /> {t('plan.generateNext')}
           </button>
         </div>

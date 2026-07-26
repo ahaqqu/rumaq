@@ -27,9 +27,7 @@ describe('computePatterns', () => {
   })
 
   it('returns "recently purchased" pattern for single-purchase items', async () => {
-    const rows: Row[] = [
-      { item_id: 'i1', item_name: 'Milk', qty: 1, date: '2026-07-01' },
-    ]
+    const rows: Row[] = [{ item_id: 'i1', item_name: 'Milk', qty: 1, date: '2026-07-01' }]
     const { db } = mockDb(rows)
     const result = await computePatterns('h1', db)
     expect(result).toHaveLength(1)
@@ -81,18 +79,14 @@ describe('computePatterns', () => {
   })
 
   it('uses "Unknown" name when item_name is null', async () => {
-    const rows: Row[] = [
-      { item_id: 'i1', item_name: null, qty: 2, date: '2026-07-01' },
-    ]
+    const rows: Row[] = [{ item_id: 'i1', item_name: null, qty: 2, date: '2026-07-01' }]
     const { db } = mockDb(rows)
     const result = await computePatterns('h1', db)
     expect(result[0].name).toBe('Unknown')
   })
 
   it('binds the household id when computing patterns', async () => {
-    const rows: Row[] = [
-      { item_id: 'i1', item_name: 'Milk', qty: 1, date: '2026-07-01' },
-    ]
+    const rows: Row[] = [{ item_id: 'i1', item_name: 'Milk', qty: 1, date: '2026-07-01' }]
     const { db, bindMock } = mockDb(rows)
     const result = await computePatterns('h1', db)
     expect(result).toHaveLength(1)

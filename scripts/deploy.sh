@@ -72,8 +72,8 @@ fi
 # ------------------------------------------------------------------
 check_prereqs() {
   require_cmd node "Install Node.js (https://nodejs.org)."
-  require_cmd npm "Install Node.js first."
-  require_cmd wrangler "Install Wrangler: npm install --no-fund -g wrangler"
+  require_cmd bun "Install Bun (https://bun.sh)."
+  require_cmd wrangler "Install Wrangler: bun add -g wrangler"
 }
 
 # ------------------------------------------------------------------
@@ -152,7 +152,7 @@ EOF
 # ------------------------------------------------------------------
 install_deps() {
   log "Installing workspace dependencies..."
-  npm install --no-fund
+  bun install --frozen-lockfile
 }
 
 # ------------------------------------------------------------------
@@ -181,7 +181,7 @@ setup_database_remote() {
   db_id=$(grep -oP 'database_id\s*=\s*"\K[^"]+' "$config_file" 2> /dev/null || true)
 
   if [[ $db_id == "YOUR_DATABASE_ID" || -z $db_id ]]; then
-    db_id=$(node --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" d1-setup)
+    db_id=$(bun --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" d1-setup)
     if [[ -n $db_id ]]; then
       sed -i "s|database_id = \".*\"|database_id = \"$db_id\"|" "$config_file"
       ok "Updated database_id in wrangler.cloudflare.toml."
@@ -202,7 +202,7 @@ ensure_r2_bucket() {
   local bucket_name="${R2_BUCKET_NAME:-rumaq-receipts}"
   log "Ensuring R2 bucket \"${bucket_name}\"..."
   cd "$BACKEND_DIR"
-  result=$(node --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" r2-ensure)
+  result=$(bun --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" r2-ensure)
   if [[ $result == "EXISTS" ]]; then
     ok "R2 bucket \"$bucket_name\" already exists."
   else
@@ -223,8 +223,8 @@ deploy_worker() {
     exit 1
   fi
 
-  npx wrangler deploy \
-    --config "$BACKEND_DIR/wrangler.cloudflare.toml" \
+  bunx wrangler deploy \
+    --config "$BACKEND_DIR/dist/api/wrangler.json" \
     --name "$WORKER_NAME" \
     --var PAGES_ORIGIN:"$PAGES_ORIGIN"
   ok "Worker deployed to ${WORKER_URL}."
@@ -239,7 +239,7 @@ put_worker_secrets() {
   for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
     val="${!key:-}"
     if [ -n "$val" ]; then
-      printf '%s' "$val" | npx wrangler secret put "$key" --name "$WORKER_NAME" > /dev/null 2>&1 || true
+      printf '%s' "$val" | bunx wrangler secret put "$key" --name "$WORKER_NAME" > /dev/null 2>&1 || true
       echo "  ✓  $key"
     else
       echo "  -  $key (skipped — not set)"
@@ -254,8 +254,8 @@ put_worker_secrets() {
 # ------------------------------------------------------------------
 deploy_frontend() {
   log "Building frontend with Worker URL: ${WORKER_URL}..."
-  npm install --no-fund
-  VITE_API_BASE="$WORKER_URL" npm run build -w frontend
+  bun install --frozen-lockfile
+  VITE_API_BASE="$WORKER_URL" vp build frontend
 
   log "Deploying static assets to Cloudflare Pages (project: ${PAGES_PROJECT}, branch: ${PAGES_BRANCH})..."
   wrangler pages deploy frontend/dist \
@@ -270,8 +270,8 @@ deploy_frontend() {
 # ------------------------------------------------------------------
 build_frontend() {
   log "Building frontend (dry-run)..."
-  npm install --no-fund
-  npm run build -w frontend
+  bun install --frozen-lockfile
+  vp build frontend
   ok "Frontend build succeeded (no deployment was made)."
 }
 
@@ -301,7 +301,7 @@ summary_local() {
   echo "============================================"
   echo ""
   echo "  Start the dev servers:"
-  echo "    npm run dev"
+  echo "    vp run dev"
   echo ""
   echo "  Make sure backend/.dev.vars has real secrets."
   echo "============================================"
@@ -369,11 +369,11 @@ do_local() {
   trap cleanup EXIT INT TERM
 
   log "Starting frontend (Vite) on http://localhost:5173..."
-  npm run dev -w frontend &
+  vp dev frontend &
   FRONTEND_PID=$!
 
   log "Starting backend (Worker) on http://localhost:8787..."
-  npm run dev -w backend &
+  vp dev backend &
   BACKEND_PID=$!
 
   echo ""

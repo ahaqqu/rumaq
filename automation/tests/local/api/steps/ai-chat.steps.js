@@ -1,16 +1,10 @@
 import { describe, test as it, beforeEach } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
 
-const feature = loadFeature(
-  'automation/tests/local/api/features/ai-chat.feature'
-)
+const feature = loadFeature('automation/tests/local/api/features/ai-chat.feature')
 
 defineFeature(feature, (test) => {
   let ctx
@@ -53,12 +47,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('Chat returns a reply with valid AI key', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('Chat returns a reply with valid AI key', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })

@@ -1,9 +1,4 @@
-const ALLOWED_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/heic',
-  'image/webp',
-])
+const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/heic', 'image/webp'])
 const MAX_SIZE = 5 * 1024 * 1024
 
 const EXT_MAP: Record<string, string> = {
@@ -13,10 +8,7 @@ const EXT_MAP: Record<string, string> = {
   'image/webp': 'webp',
 }
 
-export function validateImage(file: {
-  type: string
-  size: number
-}): string | null {
+export function validateImage(file: { type: string; size: number }): string | null {
   if (!ALLOWED_TYPES.has(file.type)) {
     return 'Unsupported file type. Accepted: JPEG, PNG, HEIC, WEBP.'
   }
@@ -26,11 +18,7 @@ export function validateImage(file: {
   return null
 }
 
-export function buildKey(
-  householdId: string,
-  userId: string,
-  ext: string
-): string {
+export function buildKey(householdId: string, userId: string, ext: string): string {
   const now = new Date()
   const yyyy = now.getUTCFullYear()
   const mm = String(now.getUTCMonth() + 1).padStart(2, '0')

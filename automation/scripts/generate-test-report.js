@@ -6,10 +6,7 @@ import { fileURLToPath } from 'node:url'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = resolve(__dirname, '../..')
 
-const vitestJsonPath = resolve(
-  ROOT,
-  'automation/test-results/vitest/api-results.json'
-)
+const vitestJsonPath = resolve(ROOT, 'automation/test-results/vitest/api-results.json')
 const playwrightReportDir = resolve(ROOT, 'automation/test-results/playwright')
 const outputPath = resolve(ROOT, 'automation/test-results/test-report.html')
 
@@ -65,8 +62,7 @@ function generateHtml(vitest) {
     const groups = {}
     for (const t of tests) {
       const key = (t.ancestorTitles ?? ['']).join(' > ')
-      if (!groups[key])
-        groups[key] = { ancestor: t.ancestorTitles ?? [], tests: [] }
+      if (!groups[key]) groups[key] = { ancestor: t.ancestorTitles ?? [], tests: [] }
       groups[key].tests.push(t)
     }
 
@@ -75,15 +71,9 @@ function generateHtml(vitest) {
       const steps = group.tests
         .map((t) => {
           const status =
-            t.status === 'passed'
-              ? 'passed'
-              : t.status === 'failed'
-                ? 'failed'
-                : 'skipped'
+            t.status === 'passed' ? 'passed' : t.status === 'failed' ? 'failed' : 'skipped'
           const prefix = stepPrefix(t.title)
-          const failureMsg = t.failureMessages?.length
-            ? t.failureMessages[0]
-            : ''
+          const failureMsg = t.failureMessages?.length ? t.failureMessages[0] : ''
           const errorBlock = failureMsg
             ? `<details class="error-detail"><summary>details</summary><pre>${esc(failureMsg.slice(0, 500))}</pre></details>`
             : ''
@@ -98,14 +88,8 @@ function generateHtml(vitest) {
 
       const groupPassed = group.tests.every((t) => t.status === 'passed')
       const groupFailed = group.tests.some((t) => t.status === 'failed')
-      const groupSkipped = group.tests.some(
-        (t) => t.status === 'pending' || t.status === 'skipped'
-      )
-      const groupStatus = groupFailed
-        ? 'failed'
-        : groupPassed
-          ? 'passed'
-          : 'skipped'
+      const groupSkipped = group.tests.some((t) => t.status === 'pending' || t.status === 'skipped')
+      const groupStatus = groupFailed ? 'failed' : groupPassed ? 'passed' : 'skipped'
 
       scenarioHtml += `<div class="scenario ${groupStatus}">
         <div class="scenario-header">

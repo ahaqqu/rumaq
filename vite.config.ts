@@ -1,0 +1,100 @@
+import { defineConfig } from 'vite-plus'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+export default defineConfig({
+  check: {
+    fmt: true,
+    lint: true,
+  },
+  lint: {
+    options: {
+      // Keep linting close to the previous ESLint setup while we migrate.
+      // Type-aware rules are disabled for now; use `tsc --noEmit` for type checking.
+      typeAware: false,
+      typeCheck: false,
+    },
+    plugins: ['import'],
+    rules: {
+      'import/no-default-export': 'error',
+      'import/no-anonymous-default-export': 'error',
+    },
+    overrides: [
+      {
+        files: ['backend/src/index.ts'],
+        rules: {
+          'import/no-default-export': 'off',
+          'import/no-anonymous-default-export': 'off',
+        },
+      },
+      {
+        files: ['**/*.config.{js,ts,mjs,cjs}', 'automation/**/*.mjs', 'automation/**/*.js'],
+        rules: {
+          'import/no-default-export': 'off',
+          'import/no-anonymous-default-export': 'off',
+        },
+      },
+    ],
+  },
+  fmt: {
+    semi: false,
+    singleQuote: true,
+    trailingComma: 'es5',
+    overrides: [
+      {
+        files: ['**/*.sh'],
+        formatter: 'prettier',
+      },
+    ],
+  },
+  resolve: {
+    alias: {
+      'virtual:pwa-register/react': path.resolve(
+        __dirname,
+        'frontend/src/__mocks__/virtual-pwa-register-react.js'
+      ),
+    },
+  },
+  test: {
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'frontend',
+          root: 'frontend',
+          environment: 'jsdom',
+          include: ['src/**/*.test.{js,jsx}'],
+          setupFiles: ['src/test-setup.js'],
+          testTimeout: 15000,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'backend',
+          root: 'backend',
+          environment: 'node',
+          include: ['src/**/*.test.ts'],
+          testTimeout: 15000,
+        },
+      },
+    ],
+  },
+  coverage: {
+    exclude: [
+      'frontend/src/styles/**',
+      'frontend/src/routes/**',
+      'frontend/src/lib/queries/**',
+      'frontend/src/context/AppContext.jsx',
+      'frontend/src/lib/cn.js',
+    ],
+    thresholds: {
+      statements: 90,
+      branches: 75,
+      functions: 85,
+      lines: 90,
+    },
+  },
+})

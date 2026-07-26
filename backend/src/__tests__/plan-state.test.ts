@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import {
-  planItemPatchSchema,
-  planCreateSchema,
-  planGenerateResponseSchema,
-} from '../lib/plans.js'
+import { planItemPatchSchema, planCreateSchema, planGenerateResponseSchema } from '../lib/plans.js'
 import { safeParse } from 'valibot'
 
 describe('planItemPatchSchema', () => {

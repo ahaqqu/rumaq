@@ -1,16 +1,10 @@
 import { describe, test as it, beforeEach } from 'vitest'
-import {
-  setJestCucumberConfiguration,
-  loadFeature,
-  defineFeature,
-} from 'jest-cucumber'
+import { setJestCucumberConfiguration, loadFeature, defineFeature } from 'jest-cucumber'
 import { ApiContext } from './helpers.js'
 
 setJestCucumberConfiguration({ runner: { describe, test: it } })
 
-const feature = loadFeature(
-  'automation/tests/local/api/features/settings.feature'
-)
+const feature = loadFeature('automation/tests/local/api/features/settings.feature')
 
 defineFeature(feature, (test) => {
   let ctx
@@ -31,12 +25,7 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('GET settings returns public fields without AI key', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('GET settings returns public fields without AI key', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -49,12 +38,9 @@ defineFeature(feature, (test) => {
     then('the response status should be 200', () => {
       ctx.expectStatus(200)
     })
-    and(
-      'the settings should include motion_preference, currency, and has_ai_key',
-      () => {
-        ctx.expectSettingsShape()
-      }
-    )
+    and('the settings should include motion_preference, currency, and has_ai_key', () => {
+      ctx.expectSettingsShape()
+    })
     and('has_ai_key should be false', () => {
       ctx.expectHasAiKey(false)
     })
@@ -67,12 +53,9 @@ defineFeature(feature, (test) => {
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
-    when(
-      /I send a (PATCH) request to (\S+) with body/,
-      async (method, path, body) => {
-        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
-      }
-    )
+    when(/I send a (PATCH) request to (\S+) with body/, async (method, path, body) => {
+      await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+    })
     then('the response status should be 200', () => {
       ctx.expectStatus(200)
     })
@@ -84,24 +67,16 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('PATCH settings updates persona and currency', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('PATCH settings updates persona and currency', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
-    when(
-      /I send a (PATCH) request to (\S+) with body/,
-      async (method, path, body) => {
-        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
-      }
-    )
+    when(/I send a (PATCH) request to (\S+) with body/, async (method, path, body) => {
+      await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+    })
     then('the response status should be 200', () => {
       ctx.expectStatus(200)
     })
@@ -113,24 +88,16 @@ defineFeature(feature, (test) => {
     })
   })
 
-  test('GET settings returns has_ai_key true after key is saved', ({
-    given,
-    when,
-    then,
-    and,
-  }) => {
+  test('GET settings returns has_ai_key true after key is saved', ({ given, when, then, and }) => {
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
     and('I am authenticated as a test user', async () => {
       await ctx.authenticate()
     })
-    and(
-      /I send a (PATCH) request to (\S+) with body/,
-      async (method, path, body) => {
-        await ctx.sendRequestWithBody(method, path, JSON.parse(body))
-      }
-    )
+    and(/I send a (PATCH) request to (\S+) with body/, async (method, path, body) => {
+      await ctx.sendRequestWithBody(method, path, JSON.parse(body))
+    })
     when(/I send a (GET) request to (\S+)/, async (method, path) => {
       await ctx.sendRequest(method, path)
     })

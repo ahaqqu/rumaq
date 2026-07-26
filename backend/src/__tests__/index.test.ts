@@ -74,9 +74,7 @@ describe('apiApp (cached routes)', () => {
     env.props = { userId: 'user-123', householdId: 'house-456' }
     env.DB.prepare = vi.fn().mockReturnThis()
     env.DB.bind = vi.fn().mockReturnThis()
-    env.DB.all = vi
-      .fn()
-      .mockResolvedValue({ results: [{ id: 's1', name: 'Test' }] })
+    env.DB.all = vi.fn().mockResolvedValue({ results: [{ id: 's1', name: 'Test' }] })
 
     const res = await apiApp.request('/api/stock', {}, env)
     expect(res.status).toBe(200)
@@ -92,11 +90,7 @@ describe('apiApp (cached routes)', () => {
     env.DB.bind = vi.fn().mockReturnThis()
     env.DB.all = vi.fn().mockResolvedValue({ results: [] })
 
-    const res = await apiApp.request(
-      '/api/stock?location=kulkas&q=susu',
-      {},
-      env
-    )
+    const res = await apiApp.request('/api/stock?location=kulkas&q=susu', {}, env)
     expect(res.status).toBe(200)
   })
 
@@ -108,9 +102,7 @@ describe('apiApp (cached routes)', () => {
       },
       createMockEnv()
     )
-    expect(res.headers.get('access-control-allow-origin')).toBe(
-      'http://localhost:5173'
-    )
+    expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:5173')
   })
 
   it('cors uses configured PAGES_ORIGIN for unknown origins', async () => {
@@ -123,9 +115,7 @@ describe('apiApp (cached routes)', () => {
       },
       env
     )
-    expect(res.headers.get('access-control-allow-origin')).toBe(
-      'https://custom.pages.dev'
-    )
+    expect(res.headers.get('access-control-allow-origin')).toBe('https://custom.pages.dev')
   })
 
   it('cors uses default origin when PAGES_ORIGIN is not set', async () => {
@@ -138,9 +128,7 @@ describe('apiApp (cached routes)', () => {
       },
       env
     )
-    expect(res.headers.get('access-control-allow-origin')).toBe(
-      'https://rumaq.pages.dev'
-    )
+    expect(res.headers.get('access-control-allow-origin')).toBe('https://rumaq.pages.dev')
   })
 
   it('error responses have private no-cache Cache-Control', async () => {

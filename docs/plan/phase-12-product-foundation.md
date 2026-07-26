@@ -23,7 +23,7 @@ This is P2 and can happen after the MVP, but it is small and should be done befo
 4. A `docs/ONBOARDING.md` or section in `README.md` exists for first-time setup.
 5. Issue and PR templates are added or updated in `.github/`.
 6. All foundation docs are consistent and up to date with the current project structure.
-7. `npm test` and `npx tsc --noEmit` pass (no code changes expected).
+7. `vp test` and `vp check --no-fmt --no-lint` pass (no code changes expected).
 
 ---
 
@@ -43,7 +43,7 @@ Create `CONTRIBUTING.md` with the following sections:
 
 - **Welcome** — brief project purpose and values.
 - **Prerequisites** — Node.js version, Wrangler, Docker (for tests), Cloudflare account (for deployment).
-- **Setup** — clone, install, run locally (`npm run dev` or Wrangler), run tests.
+- **Setup** — clone, install, run locally (`vp run dev` or Wrangler), run tests.
 - **Development workflow** — branch naming, commit message style, PR process, required checks.
 - **Testing** — how to run unit tests, integration tests, E2E tests, and smoke tests. Reference `docs/TEST_STRATEGY.md`.
 - **Code style** — reference `docs/FRONTEND_CONVENTIONS.md` and `docs/BACKEND_CONVENTIONS.md`.

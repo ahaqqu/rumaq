@@ -25,7 +25,7 @@ This phase is intentionally after P0. It is a large refactor that should not blo
 6. Push notifications are implemented for expiry/run-out reminders via the service worker and a backend push endpoint (or a scheduled check).
 7. Mobile native wrappers (iOS/Android) are scoped and a decision is documented.
 8. All existing tests pass after the refactor.
-9. `npm test` and `npx tsc --noEmit` pass.
+9. `vp test` and `vp check --no-fmt --no-lint` pass.
 
 ---
 

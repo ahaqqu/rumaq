@@ -29,10 +29,7 @@ export function PersonaProvider({ children, initialPersona }) {
       const updated = {
         ...prev,
         ...next,
-        hue: deriveHue(
-          next.userRole ?? prev.userRole,
-          next.aiRole ?? prev.aiRole
-        ),
+        hue: deriveHue(next.userRole ?? prev.userRole, next.aiRole ?? prev.aiRole),
       }
       savePersona(updated)
       return updated
