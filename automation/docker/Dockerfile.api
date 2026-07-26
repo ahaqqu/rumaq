@@ -15,17 +15,16 @@ RUN --mount=type=cache,target=/root/.bun \
 COPY vite.config.ts ./
 COPY backend/vite.config.ts ./backend/
 COPY backend/tsconfig.json ./backend/
-COPY backend/migrations/ ./backend/migrations/
 COPY backend/wrangler.test.toml ./backend/
 
-# Layer 3: test support files (change moderately)
-COPY automation/tests/ ./automation/tests/
-
-# Layer 4: backend source (changes most frequently)
+# Layer 3: build source (changes most frequently). Keep migrations and test
+# support files out of this layer so backend-only edits don't invalidate them.
 COPY backend/src/ ./backend/src/
-
-# Layer 5: build (invalidated when src changes)
+COPY backend/migrations/ ./backend/migrations/
 RUN bunx vp build backend
+
+# Layer 4: test support files (change independently of backend source)
+COPY automation/tests/ ./automation/tests/
 
 EXPOSE 8787
 

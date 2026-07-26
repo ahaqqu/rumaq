@@ -4,6 +4,7 @@ import { openAPIRouteHandler, describeRoute } from 'hono-openapi'
 import type { Env } from '../types.js'
 import { createCors } from '../cors.js'
 import { signJwt, verifyPassword, base64UrlEncode, randomState } from '../auth.js'
+import { getRequestOrigin } from '../lib/request.js'
 
 const GOOGLE_AUTH_URL = 'https://accounts.google.com/o/oauth2/v2/auth'
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
@@ -35,7 +36,7 @@ authApp.get(
   async (c) => {
     const state = randomState()
     const verifier = randomState()
-    const origin = new URL(c.req.url).origin
+    const origin = getRequestOrigin(c)
     const redirectUri = `${origin}/api/auth/callback`
     const sha256 = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(verifier))
     const challenge = base64UrlEncode(sha256)

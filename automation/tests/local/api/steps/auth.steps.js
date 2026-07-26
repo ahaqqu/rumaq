@@ -89,17 +89,16 @@ defineFeature(feature, (test) => {
       ctx.response = await fetch(`${ctx.baseUrl}${path}`, {
         method,
         redirect: 'manual',
+        headers: ctx.headers,
       })
       ctx.responseBody = null
     })
 
     then('the response status should be 302', () => {
-      if (ctx.response.status === 500) return
       ctx.expectStatus(302)
     })
 
     and('the Location header should point to accounts.google.com', () => {
-      if (ctx.response.status !== 302) return
       const location = ctx.response.headers.get('Location') || ''
       expect(location).toContain('accounts.google.com')
     })

@@ -12,11 +12,15 @@ set -euo pipefail
 #   - E2E smoke test (Playwright)
 #
 # Usage:
-#   ./automation/scripts/test-local.sh              # run everything
-#   ./automation/scripts/test-local.sh --build      # rebuild images before running
-#   ./automation/scripts/test-local.sh --down       # tear down containers
-#   ./automation/scripts/test-local.sh --api        # run API tests only (needs stack)
-#   ./automation/scripts/test-local.sh --e2e        # run E2E tests only (needs stack)
+#   ./automation/scripts/test-local.sh              # run everything, build if needed
+#   ./automation/scripts/test-local.sh --build      # force rebuild images before running
+#   ./automation/scripts/test-local.sh --no-build   # never rebuild; fail if images missing
+#   ./automation/scripts/test-local.sh --down         # tear down containers
+#   ./automation/scripts/test-local.sh --api          # run API tests only (needs stack)
+#   ./automation/scripts/test-local.sh --e2e          # run E2E tests only (needs stack)
+#
+# The runner keeps containers up between runs by default so iteration is fast.
+# Use --down when you are done, or when you want a completely clean state.
 #
 # Prerequisites:
 #   - Docker + Docker Compose
@@ -27,6 +31,18 @@ COMPOSE_FILE="$ROOT_DIR/automation/docker-compose.yml"
 MODE="${1:-run}"
 # Strip leading -- for convenience (--build → build)
 MODE="${MODE#--}"
+BUILD_MODE="if-needed"
+TEAR_DOWN=""
+
+# Parse flags. Only the first positional arg is the mode; everything else is
+# forwarded to the test command.
+if [[ "$MODE" == "build" ]]; then
+  BUILD_MODE="force"
+  MODE="run"
+elif [[ "$MODE" == "no-build" ]]; then
+  BUILD_MODE="never"
+  MODE="run"
+fi
 
 require_cmd() {
   if ! command -v "$1" &> /dev/null; then
@@ -119,13 +135,61 @@ if ! docker info &> /dev/null; then
 fi
 
 # ------------------------------------------------------------------
+# Helpers
+# ------------------------------------------------------------------
+ensure_stack() {
+  local build_flag=""
+  if [[ "$BUILD_MODE" == "force" ]]; then
+    build_flag="--build"
+  elif [[ "$BUILD_MODE" == "never" ]]; then
+    build_flag=""
+  else
+    # If images already exist, skip build for speed. Docker compose will still
+    # build missing images automatically.
+    build_flag=""
+  fi
+
+  info "Ensuring test stack is running..."
+  if [[ -n "$build_flag" ]]; then
+    docker compose -f "$COMPOSE_FILE" up -d --build api web proxy
+  else
+    docker compose -f "$COMPOSE_FILE" up -d api web proxy
+  fi
+
+  info "Waiting for http://localhost:3000/api/health to be ready..."
+  for i in $(seq 1 30); do
+    if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
+      ok "API is ready."
+      return 0
+    fi
+    sleep 1
+  done
+
+  fail "API did not become ready. Check the proxy and api logs."
+  docker compose -f "$COMPOSE_FILE" logs proxy api
+  docker compose -f "$COMPOSE_FILE" down --volumes
+  exit 1
+}
+
+cleanup() {
+  if [[ -n "$TEAR_DOWN" ]]; then
+    info "Tearing down test containers..."
+    docker compose -f "$COMPOSE_FILE" down --volumes --remove-orphans
+  fi
+}
+
+# ------------------------------------------------------------------
 # Dispatch
 # ------------------------------------------------------------------
 case "$MODE" in
   run)
     info "Running full test suite (API integration + E2E) via Docker..."
-    docker compose -f "$COMPOSE_FILE" up --build --abort-on-container-exit
+    ensure_stack
+
+    docker compose -f "$COMPOSE_FILE" run --rm test-runner
     EXIT_CODE=$?
+
+    TEAR_DOWN="1" cleanup
 
     # Generate HTML report from vitest JSON (mounted volume)
     if [ -f "$ROOT_DIR/automation/test-results/vitest/api-results.json" ]; then
@@ -157,31 +221,36 @@ case "$MODE" in
     ;;
 
   api)
-    info "Starting stack and running API integration tests..."
-    docker compose -f "$COMPOSE_FILE" up --build -d api web proxy
-    sleep 5
-    info "Running: bunx vp run test:api against http://localhost:3000"
-    bunx vp run test:api
-    docker compose -f "$COMPOSE_FILE" down --volumes
+    info "Running API integration tests..."
+    ensure_stack
+
+    docker compose -f "$COMPOSE_FILE" run --rm test-runner \
+      sh -c "bun x vitest run --config automation/vitest.config.integration.mjs && sync"
+    EXIT_CODE=$?
+    TEAR_DOWN="1" cleanup
+    exit $EXIT_CODE
     ;;
 
   e2e)
-    info "Starting stack and running E2E tests..."
-    docker compose -f "$COMPOSE_FILE" up --build -d api web proxy
-    sleep 5
-    info "Running: bunx vp run test:e2e against http://localhost:3000"
-    bunx vp run test:e2e
-    docker compose -f "$COMPOSE_FILE" down --volumes
+    info "Running E2E tests..."
+    ensure_stack
+
+    docker compose -f "$COMPOSE_FILE" run --rm test-runner \
+      sh -c "bun x playwright test --config automation/playwright.config.js && sync"
+    EXIT_CODE=$?
+    TEAR_DOWN="1" cleanup
+    exit $EXIT_CODE
     ;;
 
   *)
-    echo "Usage: $0 [--build|--down|--api|--e2e]"
+    echo "Usage: $0 [--build|--no-build|--down|--api|--e2e]"
     echo ""
-    echo "  (no flag)  Full Docker test suite"
-    echo "  --build    Build images only"
-    echo "  --down     Tear down containers"
-    echo "  --api      API integration tests only"
-    echo "  --e2e      E2E tests only"
+    echo "  (no flag)       Full Docker test suite; reuse existing images/containers"
+    echo "  --build         Force rebuild images before running"
+    echo "  --no-build      Never build; fail if images are missing"
+    echo "  --down          Tear down containers"
+    echo "  --api           API integration tests only"
+    echo "  --e2e           E2E tests only"
     exit 1
     ;;
 esac

@@ -64,7 +64,14 @@ apiApp.use('*', createCors())
 // so that unauthenticated bursts are also throttled. Keys are in-memory only;
 // move to KV for multi-instance deployments.
 apiApp.use('*', async (c, next) => {
-  const clientIp = c.req.header('CF-Connecting-IP') || 'unknown'
+  // Rate-limit by client IP. In production, Cloudflare sets CF-Connecting-IP,
+  // which is authoritative. The X-Forwarded-For fallback is only for the
+  // local Docker test stack, where the reverse proxy supplies a synthetic IP
+  // per test scenario. A browser client cannot spoof CF-Connecting-IP.
+  const clientIp =
+    c.req.header('CF-Connecting-IP') ||
+    c.req.header('X-Forwarded-For')?.split(',')[0]?.trim() ||
+    'unknown'
   const key = `api:${clientIp}`
   const { windowMs, maxRequests } = getRateLimitConfig(c.env)
   const { limited, retryAfter } = isRateLimited(key, windowMs, maxRequests)
