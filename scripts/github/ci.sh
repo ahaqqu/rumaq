@@ -17,7 +17,7 @@ echo "=== CI: backend tests ==="
 "$ROOT_DIR/scripts/test.sh" unit backend --coverage
 
 echo "=== CI: audit ==="
-bun audit --ignore=CVE-2026-14257
+bun audit --severity=critical
 
 echo "=== CI: build ==="
 bash "$ROOT_DIR/scripts/build.sh"
