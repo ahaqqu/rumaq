@@ -78,6 +78,15 @@ describe('Assistant', () => {
     expect(container.querySelector('.assistant__action')).toBeTruthy()
   })
 
+  it('shows body when backend has_ai_key is true even without local aiKey', () => {
+    mockUseSettings.mockReturnValue({ data: { has_ai_key: true } })
+    const { container } = renderWithProviders(
+      React.createElement(Assistant, baseProps({ open: true }))
+    )
+    expect(container.querySelector('.assistant__body')).toBeTruthy()
+    expect(container.querySelector('.assistant__action')).toBeTruthy()
+  })
+
   it('renders chat input when aiKey present', () => {
     const { container } = renderWithProviders(
       React.createElement(Assistant, baseProps({ open: true, aiKey: 'sk-test' }))
