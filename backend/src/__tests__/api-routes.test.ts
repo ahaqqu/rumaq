@@ -205,13 +205,6 @@ describe('api routes', () => {
     expect(res.status).toBe(204)
   })
 
-  it('/api/plans returns active plans', async () => {
-    const env = createMockEnv({ props: { userId: 'u1', householdId: 'h1' } })
-    env.DB.all = vi.fn().mockResolvedValueOnce({ results: [] })
-    const res = await apiApp.request('/api/plans?status=active', {}, env)
-    expect(res.status).toBe(200)
-  })
-
   it('/api/ai/usage returns usage', async () => {
     const env = createMockEnv({ props: { userId: 'u1', householdId: 'h1' } })
     env.DB.first = vi

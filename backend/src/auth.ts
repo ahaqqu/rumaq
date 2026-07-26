@@ -119,7 +119,6 @@ export const propsAuthMiddleware = createMiddleware<Env>(async (c, next) => {
     await next()
     return
   }
-
   let token: string | undefined
   try {
     token = getCookie(c, 'rumaq_session')
