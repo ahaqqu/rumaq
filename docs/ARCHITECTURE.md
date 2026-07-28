@@ -194,7 +194,7 @@ Google OAuth 2.0 is implemented inside the Worker using the [Authorization Code 
 
 ### Email/password auth (testing mode)
 
-A second auth method is available for testing, gated behind the `EMAIL_AUTH_ENABLED` env variable. It is **off by default** and intended only for local/QA — Google OAuth remains the production path.
+A second auth method is available for testing, gated behind the `EMAIL_AUTH_ENABLED` env variable. Google OAuth remains the primary production path.
 
 1. `GET /api/auth/email-status`
    - Public endpoint returning `{ enabled: boolean }` so the frontend can decide whether to render the email form.
@@ -261,9 +261,9 @@ When not on `main`, `./scripts/deploy.sh cloudflare` deploys to a **branch-speci
 
 Pull request previews use a dedicated **staging D1 database** (`rumaq-preview`) so preview data never touches production. The preview database is created once and shared across all PR previews. Production deploys continue to use the `rumaq` database configured by `CLOUDFLARE_DATABASE_ID`.
 
-Branch Workers are cleaned up automatically via `.github/workflows/cleanup-branch.yml` when the PR is closed.
+Branch Workers are cleaned up automatically via `.github/workflows/cleanup-branch.yml` when the PR is closed. Cloudflare Pages preview branches are retained by the project.
 
-`.github/workflows/preview.yml` runs on every PR to main. It builds the frontend, deploys the branch Worker + Pages preview, and comments the preview URL on the PR.
+`.github/workflows/preview.yml` runs when a non-draft PR to `main` is opened. It deploys the branch Worker + Pages preview and comments the preview URL on the PR. Subsequent pushes must be redeployed manually via `workflow_dispatch` to stay within the Cloudflare Pages free build quota.
 
 ### One-time setup
 
@@ -321,7 +321,7 @@ Branch Workers are cleaned up automatically via `.github/workflows/cleanup-branc
 | `CLOUDFLARE_ACCOUNT_ID`  | Build/deploy  | Cloudflare account ID; used by Wrangler and the deploy script                                            |
 | `CLOUDFLARE_DATABASE_ID` | Build/deploy  | D1 database UUID; supplied to `wrangler.cloudflare.toml` at deploy time instead of being committed       |
 | `CLOUDFLARE_API_TOKEN`   | Build/deploy  | Optional API token for CI/automated deploys. If absent, `wrangler login` is used interactively           |
-| `EMAIL_AUTH_ENABLED`     | Worker var    | Set to `"true"` to enable email/password testing auth; `"false"` (default) keeps it disabled             |
+| `EMAIL_AUTH_ENABLED`     | Worker var    | Set to `"true"` or `"false"` to enable or disable email/password testing auth                            |
 | `RUN_SECRETS_CHECK`      | Worker var    | Set to `"true"` to enable missing-secrets check on startup (recommended for production); off by default  |
 | `WORKER_URL`             | Build env     | URL of the deployed Worker (e.g. `https://api.rumaq.workers.dev`); used at build time as `VITE_API_BASE` |
 | `PAGES_PROJECT_NAME`     | Deploy        | Cloudflare Pages project name (default: `rumaq`)                                                         |

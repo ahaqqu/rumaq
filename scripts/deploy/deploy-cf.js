@@ -82,26 +82,20 @@ async function putSecrets() {
     return
   }
 
-  const results = []
   for (const name of secrets) {
     const val = process.env[name]
     if (!val) {
-      results.push({ name, status: 'skipped' })
+      console.log(`  -  ${name} (skipped — not set)`)
       continue
     }
-    try {
-      await cf.workers.scripts.secrets.update(scriptName, {
-        account_id: accountId,
-        name,
-        text: val,
-        type: 'secret_text',
-      })
-      results.push({ name, status: 'set' })
-    } catch (e) {
-      results.push({ name, status: 'error', error: e.message })
-    }
+    await cf.workers.scripts.secrets.update(scriptName, {
+      account_id: accountId,
+      name,
+      text: val,
+      type: 'secret_text',
+    })
+    console.log(`  ✓  ${name}`)
   }
-  console.log(JSON.stringify(results))
 }
 
 async function pagesBindings() {

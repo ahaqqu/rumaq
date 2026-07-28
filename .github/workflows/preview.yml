@@ -3,6 +3,9 @@ name: Preview deployment
 on:
   pull_request:
     branches: [main]
+    # Only run on PR open. Redeploys after new pushes must be triggered
+    # manually via workflow_dispatch to stay within the Cloudflare Pages free
+    # build quota.
     types: [opened]
   workflow_dispatch:
 
@@ -12,6 +15,8 @@ concurrency:
 
 jobs:
   preview:
+    # Skip draft PRs to avoid deploying incomplete work.
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -27,9 +32,6 @@ jobs:
 
       - name: Install Wrangler
         run: bun add -g wrangler
-
-      - name: Build frontend
-        run: bash ./scripts/build.sh
 
       - name: Verify Cloudflare secrets
         run: |
@@ -62,7 +64,7 @@ jobs:
           CLOUDFLARE_DATABASE_ID="${{ secrets.CLOUDFLARE_PREVIEW_DATABASE_ID }}" \
           CLOUDFLARE_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}" \
           PAGES_PROJECT_NAME="${{ vars.PAGES_PROJECT_NAME || 'rumaq' }}" \
-          D1_DATABASE_NAME="${{ vars.D1_DATABASE_NAME || 'rumaq' }}" \
+          D1_DATABASE_NAME="${{ vars.D1_DATABASE_NAME || 'rumaq-preview' }}" \
           R2_BUCKET_NAME="${{ vars.R2_BUCKET_NAME || 'rumaq-receipts' }}" \
             bash ./scripts/deploy.sh cloudflare
         env:

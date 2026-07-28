@@ -64,7 +64,7 @@ Every PR to `main` gets a dedicated preview environment:
 - Pages preview: `https://{sanitized-branch}.rumaq.pages.dev`
 - Database: dedicated staging D1 database (`rumaq-preview`), separate from production
 
-`.github/workflows/preview.yml` deploys both and comments the URLs on the PR. The preview environment is deleted automatically when the PR is closed.
+`.github/workflows/preview.yml` deploys both and comments the URLs on the PR when a non-draft PR is opened. The branch-specific Worker is deleted automatically when the PR is closed; Cloudflare Pages preview branches are retained by the project.
 
 ### Production smoke tests
 

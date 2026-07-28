@@ -13,7 +13,6 @@ export default defineConfig({
     semi: false,
     singleQuote: true,
     trailingComma: 'es5',
-    ignorePatterns: ['.agents/**'],
     overrides: [
       {
         files: ['**/*.sh'],

@@ -47,6 +47,7 @@ BACKEND_DIR="$ROOT_DIR/backend"
 # Load .env from project root (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, etc.)
 if [[ -f $ROOT_DIR/.env ]]; then
   set -a
+  # shellcheck disable=SC1091
   source "$ROOT_DIR/.env"
   set +a
 fi
@@ -70,6 +71,18 @@ require_cmd() {
 log() { echo -e "==> $1"; }
 ok() { echo -e "  ok  $1"; }
 warn() { echo -e "  warn $1"; }
+
+# Run a command only when not in dry-run mode.
+# Prints a skip message in dry-run mode and returns success.
+run_when_live() {
+  local description="$1"
+  shift
+  if $DRY_RUN; then
+    ok "Skipping ${description} in dry-run mode."
+    return 0
+  fi
+  "$@"
+}
 
 wrangler_cmd() {
   local config=$1
@@ -112,7 +125,9 @@ else
   WORKER_NAME="${WORKER_NAME:-rumaq-api-${SANITIZED_BRANCH}}"
   PAGES_ORIGIN="${PAGES_ORIGIN:-https://${SANITIZED_BRANCH}.rumaq.pages.dev}"
   WORKER_URL="${WORKER_URL:-https://${WORKER_NAME}.rumaq.workers.dev}"
-  PAGES_BRANCH="$BRANCH_NAME"
+  # Use the sanitized branch name for the Pages preview branch so the deployed
+  # branch name matches the preview URL documented in README/ARCHITECTURE.
+  PAGES_BRANCH="${PAGES_BRANCH:-$SANITIZED_BRANCH}"
   log "Branch: ${BRANCH_NAME} -> Worker: ${WORKER_NAME}, Frontend preview: ${PAGES_BRANCH}"
 fi
 
@@ -217,11 +232,6 @@ setup_database_local() {
 setup_database_remote() {
   log "Setting up remote D1 database (${DB_NAME})..."
 
-  if $DRY_RUN; then
-    ok "Skipping remote D1 migration in dry-run mode."
-    return
-  fi
-
   local config_file
   config_file=$(resolve_wrangler_config)
   cd "$BACKEND_DIR"
@@ -246,7 +256,7 @@ setup_database_remote() {
     sed -i "s|^database_id = \"YOUR_DATABASE_ID\"|database_id = \"$db_id\"|" "$config_file"
   fi
 
-  wrangler_cmd "$config_file" "$DB_NAME" --remote
+  run_when_live "remote D1 migration" wrangler_cmd "$config_file" "$DB_NAME" --remote
   rm -f "$config_file"
   cd "$ROOT_DIR"
 }
@@ -257,20 +267,15 @@ setup_database_remote() {
 ensure_r2_bucket() {
   local bucket_name="${R2_BUCKET_NAME:-rumaq-receipts}"
 
-  if $DRY_RUN; then
-    ok "Skipping R2 bucket check in dry-run mode."
-    return
-  fi
-
-  log "Ensuring R2 bucket \"${bucket_name}\"..."
-  cd "$BACKEND_DIR"
-  result=$(bun --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" r2-ensure)
-  if [[ $result == "EXISTS" ]]; then
-    ok "R2 bucket \"$bucket_name\" already exists."
-  else
-    ok "Created R2 bucket \"$bucket_name\"."
-  fi
-  cd "$ROOT_DIR"
+  run_when_live "R2 bucket check" bash -c "
+    cd '$BACKEND_DIR'
+    result=\$(bun --no-deprecation '$ROOT_DIR/scripts/deploy/deploy-cf.js' r2-ensure)
+    if [[ \$result == 'EXISTS' ]]; then
+      echo '  ok  R2 bucket \"$bucket_name\" already exists.'
+    else
+      echo '  ok  Created R2 bucket \"$bucket_name\".'
+    fi
+  "
 }
 
 # ------------------------------------------------------------------
@@ -294,15 +299,10 @@ put_worker_secrets() {
     return
   fi
 
-  for key in GOOGLE_CLIENT_ID GOOGLE_CLIENT_SECRET WORKER_JWT_SECRET WORKER_ENCRYPTION_KEY; do
-    val="${!key:-}"
-    if [ -n "$val" ]; then
-      printf '%s' "$val" | bunx wrangler secret put "$key" --name "$WORKER_NAME" > /dev/null 2>&1 || true
-      echo "  ✓  $key"
-    else
-      echo "  -  $key (skipped — not set)"
-    fi
-  done
+  local script_name="$WORKER_NAME"
+  local results
+  results=$(bun --no-deprecation "$ROOT_DIR/scripts/deploy/deploy-cf.js" put-secrets --name "$script_name")
+  echo "$results"
 
   ok "Worker secrets set."
 }
@@ -375,37 +375,6 @@ pages_deploy() {
 deploy_frontend() {
   build_frontend
   pages_deploy
-}
-
-# ------------------------------------------------------------------
-# Dry-run validation for Cloudflare deploy
-# ------------------------------------------------------------------
-validate_cloudflare_deploy() {
-  echo "=== RumaQ: Cloudflare deploy dry-run ==="
-  check_prereqs
-  ensure_wrangler_toml cloudflare
-  validate_deploy_env
-  install_deps
-
-  log "Validating Worker build..."
-  local config_file
-  config_file=$(resolve_wrangler_config)
-
-  # shellcheck disable=SC2064
-  trap "rm -f '$config_file'" EXIT INT TERM
-
-  bunx wrangler deploy \
-    --config "$config_file" \
-    --name "$WORKER_NAME" \
-    --var PAGES_ORIGIN:"$PAGES_ORIGIN" \
-    --dry-run
-
-  rm -f "$config_file"
-  trap - EXIT INT TERM
-
-  log "Validating frontend build..."
-  build_frontend
-  ok "Dry-run complete. No resources were deployed."
 }
 
 # ------------------------------------------------------------------
@@ -500,8 +469,8 @@ do_local() {
   cleanup() {
     echo ""
     log "Shutting down dev servers..."
-    kill $FRONTEND_PID $BACKEND_PID 2> /dev/null || true
-    wait $FRONTEND_PID $BACKEND_PID 2> /dev/null || true
+    kill "$FRONTEND_PID" "$BACKEND_PID" 2> /dev/null || true
+    wait "$FRONTEND_PID" "$BACKEND_PID" 2> /dev/null || true
   }
   trap cleanup EXIT INT TERM
 
@@ -519,7 +488,7 @@ do_local() {
   echo "  Press Ctrl+C to stop both."
   echo ""
 
-  wait $FRONTEND_PID $BACKEND_PID
+  wait "$FRONTEND_PID" "$BACKEND_PID"
 }
 
 do_dry_run() {
