@@ -24,4 +24,10 @@ else
   echo "  -   Worker ${WORKER_NAME} not found or already deleted"
 fi
 
+# Cloudflare Pages preview branches are not deleted here because the
+# Pages project retains preview deployments per branch; removing the branch
+# Worker is sufficient to make the preview frontend non-functional.
+# If preview storage becomes a concern, add wrangler pages deployment
+# deletion later.
+
 echo "==> Cleanup complete"

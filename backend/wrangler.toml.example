@@ -43,4 +43,6 @@ bucket_name = "rumaq-receipts"
 # GOOGLE_CLIENT_SECRET
 # WORKER_JWT_SECRET
 # WORKER_ENCRYPTION_KEY
+#
+# Variables (set in [vars] above or via --var):
 # EMAIL_AUTH_ENABLED

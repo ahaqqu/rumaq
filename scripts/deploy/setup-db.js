@@ -70,7 +70,8 @@ if (!hasDb) {
   }
   console.log(create.stdout)
   console.log(
-    '\nIMPORTANT: copy the database_id above into backend/wrangler.cloudflare.toml under [[d1_databases]].\n'
+    '\nIMPORTANT: export the database_id above as CLOUDFLARE_DATABASE_ID or add it to your .env file.\n' +
+      'Do not commit it to backend/wrangler.cloudflare.toml.\n'
   )
 } else {
   console.log(`Database "${DB_NAME}" already exists.`)

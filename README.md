@@ -49,10 +49,22 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full architecture, au
 ### Deploy
 
 ```bash
+export CLOUDFLARE_ACCOUNT_ID=...
+export CLOUDFLARE_DATABASE_ID=...
 ./scripts/deploy.sh cloudflare
 ```
 
-Creates D1 database and R2 bucket if missing, deploys Worker and Pages. Idempotent. Prompts for `account_id` first time.
+Creates D1 database and R2 bucket if missing, deploys Worker and Pages. Idempotent. The first time, set `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_DATABASE_ID` as environment variables instead of editing `backend/wrangler.cloudflare.toml`.
+
+### Pull request previews
+
+Every PR to `main` gets a dedicated preview environment:
+
+- Branch Worker: `https://rumaq-api-{sanitized-branch}.rumaq.workers.dev`
+- Pages preview: `https://{sanitized-branch}.rumaq.pages.dev`
+- Database: dedicated staging D1 database (`rumaq-preview`), separate from production
+
+`.github/workflows/preview.yml` deploys both and comments the URLs on the PR when a non-draft PR is opened. The branch-specific Worker is deleted automatically when the PR is closed; Cloudflare Pages preview branches are retained by the project.
 
 ### Production smoke tests
 

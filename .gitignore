@@ -9,6 +9,7 @@
 .vscode/*
 backend/.dev.vars
 backend/.wrangler
+backend/wrangler.cloudflare.resolved.toml
 backend/wrangler.toml
 bun.lockb
 coverage

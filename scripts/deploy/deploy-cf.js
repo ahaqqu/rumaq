@@ -3,7 +3,11 @@ import Cloudflare from 'cloudflare'
 
 const accountId = process.env.CLOUDFLARE_ACCOUNT_ID
 const apiToken = process.env.CLOUDFLARE_API_TOKEN
-const command = process.argv[2]
+
+const args = process.argv.slice(2)
+const dryRun = args.includes('--dry-run')
+const commandArg = args.find((a) => !a.startsWith('--'))
+const command = commandArg || process.argv[2]
 
 if (!accountId || !apiToken) {
   console.error('Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN')
@@ -12,8 +16,22 @@ if (!accountId || !apiToken) {
 
 const cf = new Cloudflare({ apiToken })
 
+function workerName() {
+  const idx = args.indexOf('--name')
+  if (idx !== -1 && args[idx + 1]) {
+    return args[idx + 1]
+  }
+  return process.env.WORKER_NAME || 'api'
+}
+
 async function d1Setup() {
   const dbName = process.env.D1_DATABASE_NAME || 'rumaq'
+
+  if (dryRun) {
+    console.log(`DRY-RUN: would ensure D1 database "${dbName}" exists`)
+    return
+  }
+
   const resp = await cf.d1.database.list({ account_id: accountId })
   const dbs = resp.result
   const existing = dbs?.find((d) => d.name === dbName)
@@ -30,6 +48,12 @@ async function d1Setup() {
 
 async function r2Ensure() {
   const bucketName = process.env.R2_BUCKET_NAME || 'rumaq-receipts'
+
+  if (dryRun) {
+    console.log(`DRY-RUN: would ensure R2 bucket "${bucketName}" exists`)
+    return
+  }
+
   const { buckets } = await cf.r2.buckets.list({ account_id: accountId })
   const existing = buckets?.find((b) => b.name === bucketName)
   if (existing) {
@@ -41,39 +65,50 @@ async function r2Ensure() {
 }
 
 async function putSecrets() {
-  const scriptName = 'api'
+  const scriptName = workerName()
   const secrets = [
     'GOOGLE_CLIENT_ID',
     'GOOGLE_CLIENT_SECRET',
     'WORKER_JWT_SECRET',
     'WORKER_ENCRYPTION_KEY',
   ]
-  const results = []
+
+  if (dryRun) {
+    console.log(`DRY-RUN: would upload the following secrets to Worker "${scriptName}" if present:`)
+    for (const name of secrets) {
+      const status = process.env[name] ? 'set' : 'skipped (not in env)'
+      console.log(`  ${name}: ${status}`)
+    }
+    return
+  }
+
   for (const name of secrets) {
     const val = process.env[name]
     if (!val) {
-      results.push({ name, status: 'skipped' })
+      console.log(`  -  ${name} (skipped — not set)`)
       continue
     }
-    try {
-      await cf.workers.scripts.secrets.update(scriptName, {
-        account_id: accountId,
-        name,
-        text: val,
-        type: 'secret_text',
-      })
-      results.push({ name, status: 'set' })
-    } catch (e) {
-      results.push({ name, status: 'error', error: e.message })
-    }
+    await cf.workers.scripts.secrets.update(scriptName, {
+      account_id: accountId,
+      name,
+      text: val,
+      type: 'secret_text',
+    })
+    console.log(`  ✓  ${name}`)
   }
-  console.log(JSON.stringify(results))
 }
 
 async function pagesBindings() {
   const projectName = process.env.PAGES_PROJECT_NAME || 'rumaq'
   const dbName = process.env.D1_DATABASE_NAME || 'rumaq'
   const bucketName = process.env.R2_BUCKET_NAME || 'rumaq-receipts'
+
+  if (dryRun) {
+    console.log(
+      `DRY-RUN: would ensure Pages project "${projectName}" has DB=${dbName} and RECEIPTS=${bucketName} bindings`
+    )
+    return
+  }
 
   const dbs = await cf.d1.database.list({ account_id: accountId })
   const db = dbs.result?.find((d) => d.name === dbName)
@@ -88,9 +123,10 @@ async function pagesBindings() {
   const prod = project.deployment_configs?.production || {}
   const preview = project.deployment_configs?.preview || {}
 
-  const d1Databases = { ...prod.d1_databases, DB: { id: db.uuid } }
+  // Merge carefully: keep any existing bindings and only overwrite our known ones.
+  const d1Databases = { ...(prod.d1_databases || {}), DB: { id: db.uuid } }
   const r2Buckets = {
-    ...prod.r2_buckets,
+    ...(prod.r2_buckets || {}),
     RECEIPTS: { name: bucketName },
   }
 
@@ -120,7 +156,9 @@ async function main() {
         await pagesBindings()
         break
       default:
-        console.error(`Usage: deploy-cf.js <d1-setup|r2-ensure|put-secrets|pages-bindings>`)
+        console.error(
+          `Usage: deploy-cf.js [--dry-run] [--name <worker-name>] <d1-setup|r2-ensure|put-secrets|pages-bindings>`
+        )
         process.exit(1)
     }
   } catch (e) {
