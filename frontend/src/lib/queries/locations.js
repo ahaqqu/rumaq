@@ -4,7 +4,7 @@ import { getLocations, createLocation, deleteLocation } from '../api.js'
 export function useLocations() {
   return useQuery({
     queryKey: ['locations'],
-    queryFn: getLocations,
+    queryFn: () => getLocations(),
     staleTime: 1000 * 60 * 5,
   })
 }
@@ -14,7 +14,25 @@ export function useCreateLocation() {
 
   return useMutation({
     mutationFn: createLocation,
-    onSuccess: () => {
+    onMutate: async (label) => {
+      await queryClient.cancelQueries({ queryKey: ['locations'] })
+      const previous = queryClient.getQueryData(['locations'])
+      queryClient.setQueryData(['locations'], (old) => {
+        if (!old?.locations) return old
+        const tempId = `optimistic-${Date.now()}`
+        return {
+          ...old,
+          locations: [...old.locations, { id: tempId, label }],
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['locations'], context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })
     },
   })
@@ -25,7 +43,24 @@ export function useDeleteLocation() {
 
   return useMutation({
     mutationFn: deleteLocation,
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['locations'] })
+      const previous = queryClient.getQueryData(['locations'])
+      queryClient.setQueryData(['locations'], (old) => {
+        if (!old?.locations) return old
+        return {
+          ...old,
+          locations: old.locations.filter((loc) => loc.id !== id),
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['locations'], context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['locations'] })
     },
   })

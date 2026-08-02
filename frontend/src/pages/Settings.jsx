@@ -5,6 +5,7 @@ import { UsageMeter, SkeletonRows } from '../components/ui.jsx'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText, deriveHue } from '../lib/persona.js'
 import { IconCheck, IconTrash, IconPin, IconBolt, IconPlus } from '../components/icons.jsx'
+import { cn } from '../lib/cn.js'
 import {
   useSettings,
   useUpdateSettings,
@@ -17,6 +18,9 @@ import {
   useUsage,
 } from '../lib/queries/index.js'
 import { testAiKey } from '../lib/api.js'
+import { Button } from '../components/Button.jsx'
+import { Panel } from '../components/Panel.jsx'
+import { useOnlineStatus } from '../lib/useOnlineStatus.js'
 
 const MOTION_OPTS = [
   { id: 'none', key: 'settings.motionOpts.none' },
@@ -28,6 +32,77 @@ const LANGUAGES = [
   { code: 'en', label: 'English' },
   { code: 'id', label: 'Bahasa Indonesia' },
 ]
+
+function Setting({ title, desc, children, className, highlight }) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between gap-4 px-5 py-4 border-b border-border last:border-b-0',
+        highlight === 'ok' && 'bg-ok-soft/50',
+        highlight === 'warn' && 'bg-warn-soft/50',
+        highlight === 'danger' && 'bg-danger-soft/50 border-danger-border',
+        className
+      )}
+    >
+      <div className="min-w-0">
+        {title && <div className="font-medium">{title}</div>}
+        {desc && <div className="text-sm text-text-muted mt-0.5">{desc}</div>}
+      </div>
+      {children}
+    </div>
+  )
+}
+
+function ToggleGroup({ value, options, onChange, ariaLabel }) {
+  return (
+    <div
+      className="flex gap-1 bg-surface-inset rounded-pill p-1"
+      role="group"
+      aria-label={ariaLabel}
+    >
+      {options.map((opt) => (
+        <button
+          key={opt.id}
+          aria-pressed={value === opt.id}
+          onClick={() => onChange(opt.id)}
+          className={cn(
+            'px-4 py-2 rounded-pill text-sm font-medium text-text-muted transition-all',
+            value === opt.id && 'bg-surface-raised text-text shadow-sm'
+          )}
+        >
+          {opt.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function InlineInput({
+  value,
+  onChange,
+  onSubmit,
+  placeholder,
+  ariaLabel,
+  action,
+  disabled,
+  type = 'text',
+}) {
+  return (
+    <div className="flex gap-2 max-w-[360px] w-full">
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        aria-label={ariaLabel}
+        onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
+      />
+      <Button size="sm" variant="secondary" onClick={onSubmit} disabled={disabled}>
+        {action}
+      </Button>
+    </div>
+  )
+}
 
 export function Settings({ aiKey, setAiKey, motion, setMotion }) {
   const { t } = useTranslation()
@@ -48,6 +123,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
   const [personaLoading, setPersonaLoading] = useState(false)
   const [personaError, setPersonaError] = useState(null)
   const [currentLang, setCurrentLang] = useState(i18n.language)
+  const isOnline = useOnlineStatus()
 
   const { data: settingsData, isLoading: settingsLoading } = useSettings()
   const updateSettings = useUpdateSettings()
@@ -154,7 +230,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
 
   const addLoc = async () => {
     const v = newLoc.trim()
-    if (!v) return
+    if (!v || !isOnline) return
     try {
       await createLocation.mutateAsync(v)
       setNewLoc('')
@@ -164,6 +240,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
   }
 
   const removeLoc = async (id) => {
+    if (!isOnline) return
     try {
       await deleteLocation.mutateAsync(id)
     } catch (err) {
@@ -173,7 +250,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
 
   const addStore = async () => {
     const v = newStore.trim()
-    if (!v) return
+    if (!v || !isOnline) return
     try {
       await createStore.mutateAsync(v)
       setNewStore('')
@@ -183,6 +260,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
   }
 
   const removeStore = async (id) => {
+    if (!isOnline) return
     try {
       await deleteStore.mutateAsync(id)
     } catch (err) {
@@ -197,28 +275,26 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
 
   return (
     <>
-      <div className="page__head">
-        <p className="page__lead">{personaText('settingsLead', persona, t)}</p>
+      <div className="mb-6">
+        <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+          {personaText('settingsLead', persona, t)}
+        </p>
       </div>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>{t('settings.aiApiKey')}</h2>
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <h2 className="text-lg">{t('settings.aiApiKey')}</h2>
         </div>
-        <div className="panel">
+        <Panel>
           {settingsLoading ? (
             <SkeletonRows n={3} />
           ) : (
-            <div className="settings-group">
-              <div className="setting">
-                <div className="setting__main">
-                  <div className="setting__title">{t('settings.provider')}</div>
-                  <div className="setting__desc">{t('settings.providerDesc')}</div>
-                </div>
+            <div className="flex flex-col">
+              <Setting title={t('settings.provider')} desc={t('settings.providerDesc')}>
                 <select
                   value={provider}
                   onChange={(e) => setProvider(e.target.value)}
-                  style={{ width: 'auto' }}
+                  className="w-auto"
                   aria-label={t('settings.aria.provider')}
                 >
                   <option value="opencode">OpenCode</option>
@@ -226,67 +302,67 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                   <option value="anthropic">Anthropic</option>
                   <option value="gemini">Gemini</option>
                 </select>
-              </div>
-              <div className="setting" style={{ flexWrap: 'wrap' }}>
-                <div className="setting__main">
-                  <div className="setting__title">{t('settings.apiKey')}</div>
-                  <div className="setting__desc">{t('settings.apiKeyDesc')}</div>
-                </div>
-                <div className="key-input">
-                  <input
-                    type="password"
-                    value={draft}
-                    onChange={(e) => setDraft(e.target.value)}
-                    placeholder={
-                      settingsData?.has_ai_key
-                        ? t('settings.apiKeyChangePlaceholder')
-                        : t('settings.apiKeyPlaceholder')
-                    }
-                    aria-label={t('settings.apiKey')}
-                  />
-                  <button
-                    className="btn btn--secondary btn--sm"
-                    onClick={test}
-                    disabled={!draft || testing}
-                  >
-                    {testing ? <IconBolt size={15} className="spin" /> : <IconCheck size={15} />}{' '}
-                    {t('settings.test')}
-                  </button>
-                </div>
-              </div>
+              </Setting>
+
+              <Setting
+                title={t('settings.apiKey')}
+                desc={t('settings.apiKeyDesc')}
+                className="flex-wrap"
+              >
+                <InlineInput
+                  type="password"
+                  value={draft}
+                  onChange={setDraft}
+                  onSubmit={test}
+                  placeholder={
+                    settingsData?.has_ai_key
+                      ? t('settings.apiKeyChangePlaceholder')
+                      : t('settings.apiKeyPlaceholder')
+                  }
+                  ariaLabel={t('settings.apiKey')}
+                  disabled={!draft || testing}
+                  action={
+                    testing ? (
+                      <>
+                        <IconBolt size={15} className="animate-spin" /> {t('settings.test')}
+                      </>
+                    ) : (
+                      <>
+                        <IconCheck size={15} /> {t('settings.test')}
+                      </>
+                    )
+                  }
+                />
+              </Setting>
+
               {testOk === true && (
-                <div className="setting" style={{ background: 'var(--ok-soft)' }}>
-                  <div className="setting__main">
-                    <div className="setting__title" style={{ color: 'var(--ok)' }}>
-                      {t('settings.connectionSuccess')}
-                    </div>
-                    <div className="setting__desc">{t('settings.connectionSuccessDesc')}</div>
-                  </div>
-                </div>
+                <Setting
+                  title={<span className="text-ok">{t('settings.connectionSuccess')}</span>}
+                  desc={t('settings.connectionSuccessDesc')}
+                  highlight="ok"
+                />
               )}
               {testOk === false && (
-                <div className="setting" style={{ background: 'var(--warn-soft)' }}>
-                  <div className="setting__main">
-                    <div className="setting__title" style={{ color: 'var(--warn)' }}>
+                <Setting
+                  title={
+                    <span className="text-warn">
                       {t('settings.connectionFailed', 'Connection failed')}
-                    </div>
-                    <div className="setting__desc">
-                      {t('settings.connectionFailedDesc', 'Check your API key and try again.')}
-                    </div>
-                  </div>
-                </div>
+                    </span>
+                  }
+                  desc={t('settings.connectionFailedDesc', 'Check your API key and try again.')}
+                  highlight="warn"
+                />
               )}
-              <div className="setting">
-                <div className="setting__main">
-                  <div className="setting__title">{t('settings.status')}</div>
-                  <div className="setting__desc">
-                    {settingsData?.has_ai_key ? t('settings.active') : t('settings.inactive')}
-                  </div>
-                </div>
-                <button
-                  className="btn btn--primary btn--sm"
+
+              <Setting
+                title={t('settings.status')}
+                desc={settingsData?.has_ai_key ? t('settings.active') : t('settings.inactive')}
+              >
+                <Button
+                  size="sm"
                   onClick={save}
                   disabled={updateSettings.isPending}
+                  data-testid="save-key-btn"
                 >
                   {saved ? (
                     <>
@@ -295,48 +371,38 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                   ) : (
                     t('settings.saveKey')
                   )}
-                </button>
-              </div>
+                </Button>
+              </Setting>
             </div>
           )}
-        </div>
+        </Panel>
       </section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>{t('settings.aiUsage')}</h2>
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <h2 className="text-lg">{t('settings.aiUsage')}</h2>
         </div>
-        <div className="panel">
+        <Panel>
           <UsageMeter usage={usageData} />
-        </div>
+        </Panel>
       </section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>{t('settings.personalization')}</h2>
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <h2 className="text-lg">{t('settings.personalization')}</h2>
         </div>
-        <div className="panel">
+        <Panel>
           {settingsLoading ? (
             <SkeletonRows n={3} />
           ) : (
-            <div className="settings-group">
-              <div className="setting" style={{ flexWrap: 'wrap' }}>
-                <div
-                  className="setting__main"
-                  style={{ width: '100%', marginBottom: 'var(--sp-3)' }}
-                >
-                  <div className="setting__title">{t('settings.iAm')}</div>
-                  <div className="setting__desc">{t('settings.personalizationDesc')}</div>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    gap: 'var(--sp-3)',
-                    flexWrap: 'wrap',
-                    width: '100%',
-                  }}
-                >
-                  <label style={{ flex: 1, minWidth: 160 }}>
+            <div className="flex flex-col">
+              <Setting
+                title={t('settings.iAm')}
+                desc={t('settings.personalizationDesc')}
+                className="flex-wrap"
+              >
+                <div className="flex flex-wrap gap-3 w-full">
+                  <label className="flex-1 min-w-[160px]">
                     <span className="sr-only">{t('settings.aria.myRole')}</span>
                     <input
                       value={personaDraft.userRole}
@@ -350,7 +416,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                       aria-label={t('settings.aria.myRole')}
                     />
                   </label>
-                  <label style={{ flex: 1, minWidth: 160 }}>
+                  <label className="flex-1 min-w-[160px]">
                     <span className="sr-only">{t('settings.aria.aiRole')}</span>
                     <input
                       value={personaDraft.aiRole}
@@ -364,14 +430,14 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                       aria-label={t('settings.aria.aiRole')}
                     />
                   </label>
-                  <button
-                    className="btn btn--primary btn--sm"
+                  <Button
+                    size="sm"
                     onClick={applyPersona}
                     disabled={personaLoading || updateSettings.isPending}
                   >
                     {personaLoading ? (
                       <>
-                        <IconBolt size={15} className="spin" /> {t('settings.loading')}
+                        <IconBolt size={15} className="animate-spin" /> {t('settings.loading')}
                       </>
                     ) : personaApplied ? (
                       <>
@@ -380,25 +446,19 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                     ) : (
                       t('settings.apply')
                     )}
-                  </button>
+                  </Button>
                 </div>
-              </div>
-              <div className="setting">
-                <div className="setting__main">
-                  <div className="setting__title">{t('settings.preview')}</div>
-                  <div className="setting__desc">
-                    {persona.enabled && persona.userRole && persona.aiRole
-                      ? personaText('homeLead', persona, t)
-                      : t('settings.previewPlaceholder')}
-                  </div>
-                </div>
-                <div
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 'var(--sp-2)',
-                  }}
-                >
+              </Setting>
+
+              <Setting
+                title={t('settings.preview')}
+                desc={
+                  persona.enabled && persona.userRole && persona.aiRole
+                    ? personaText('homeLead', persona, t)
+                    : t('settings.previewPlaceholder')
+                }
+              >
+                <div className="flex items-center gap-2">
                   <input
                     id="persona-toggle"
                     type="checkbox"
@@ -409,208 +469,162 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
                         enabled: e.target.checked,
                       }))
                     }
-                    style={{
-                      width: 'auto',
-                      padding: 0,
-                      accentColor: 'var(--accent)',
-                    }}
+                    className="w-auto p-0 accent-accent"
                   />
-                  <label
-                    htmlFor="persona-toggle"
-                    style={{
-                      fontSize: 'var(--fs-sm)',
-                      color: 'var(--text-muted)',
-                    }}
-                  >
+                  <label htmlFor="persona-toggle" className="text-sm text-text-muted">
                     {t('settings.enablePersona')}
                   </label>
                 </div>
-              </div>
-              <div className="setting">
-                <div className="setting__main">
-                  <div className="setting__desc" style={{ fontSize: 'var(--fs-xs)' }}>
+              </Setting>
+
+              <Setting
+                desc={
+                  <span className="text-xs">
                     {aiKey ? t('settings.personaInfoWithKey') : t('settings.personaInfoNoKey')}
-                  </div>
-                </div>
-              </div>
+                  </span>
+                }
+              />
+
               {personaError && (
-                <div
-                  className="setting"
-                  style={{
-                    background: 'var(--danger-soft)',
-                    borderColor: 'var(--danger-border)',
-                  }}
-                >
-                  <div className="setting__main">
-                    <div className="setting__desc" style={{ color: 'var(--danger)' }}>
-                      {personaError}
-                    </div>
-                  </div>
-                </div>
+                <Setting
+                  desc={<span className="text-danger text-sm">{personaError}</span>}
+                  highlight="danger"
+                />
               )}
             </div>
           )}
-        </div>
+        </Panel>
       </section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>{t('settings.storageLocations')}</h2>
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <h2 className="text-lg">{t('settings.storageLocations')}</h2>
         </div>
-        <div className="panel">
+        <Panel>
           {locsLoading ? (
             <SkeletonRows n={3} />
           ) : (
-            <div className="settings-group">
+            <div className="flex flex-col">
               {locs.map((l) => (
-                <div className="setting" key={l.id}>
-                  <div className="setting__main">
-                    <div className="setting__title">
-                      <IconPin size={14} style={{ verticalAlign: '-2px', marginRight: 6 }} />
+                <Setting
+                  key={l.id}
+                  title={
+                    <>
+                      <IconPin size={14} className="inline align-[-2px] mr-1.5" />
                       {l.label}
-                    </div>
-                  </div>
-                  <button
-                    className="btn btn--ghost btn--sm"
+                    </>
+                  }
+                >
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => removeLoc(l.id)}
-                    aria-label={t('settings.aria.deleteLocation', {
-                      name: l.label,
-                    })}
-                    disabled={deleteLocation.isPending}
+                    aria-label={t('settings.aria.deleteLocation', { name: l.label })}
+                    disabled={deleteLocation.isPending || !isOnline}
+                    title={!isOnline ? t('offline.disabledHint') : undefined}
                   >
                     <IconTrash size={15} />
-                  </button>
-                </div>
+                  </Button>
+                </Setting>
               ))}
-              <div className="setting">
-                <div className="setting__main">
-                  <div className="setting__title">{t('settings.addLocation')}</div>
-                  <div className="setting__desc">{t('settings.addLocationHint')}</div>
-                </div>
-                <div className="key-input">
-                  <input
-                    value={newLoc}
-                    onChange={(e) => setNewLoc(e.target.value)}
-                    placeholder={t('settings.locationName')}
-                    onKeyDown={(e) => e.key === 'Enter' && addLoc()}
-                    aria-label={t('settings.aria.newLocation')}
-                  />
-                  <button
-                    className="btn btn--secondary btn--sm"
-                    onClick={addLoc}
-                    disabled={createLocation.isPending}
-                  >
-                    <IconPlus size={15} /> {t('settings.add')}
-                  </button>
-                </div>
-              </div>
+              <Setting title={t('settings.addLocation')} desc={t('settings.addLocationHint')}>
+                <InlineInput
+                  value={newLoc}
+                  onChange={setNewLoc}
+                  onSubmit={addLoc}
+                  placeholder={t('settings.locationName')}
+                  ariaLabel={t('settings.aria.newLocation')}
+                  disabled={createLocation.isPending || !isOnline}
+                  action={
+                    <>
+                      <IconPlus size={15} /> {t('settings.add')}
+                    </>
+                  }
+                />
+              </Setting>
             </div>
           )}
-        </div>
+        </Panel>
       </section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>{t('settings.recordedStores')}</h2>
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <h2 className="text-lg">{t('settings.recordedStores')}</h2>
         </div>
-        <div className="panel">
+        <Panel>
           {storesLoading ? (
             <SkeletonRows n={3} />
           ) : (
-            <div className="settings-group">
+            <div className="flex flex-col">
               {stores.map((s) => (
-                <div className="setting" key={s.id}>
-                  <div className="setting__main">
-                    <div className="setting__title">{s.label}</div>
-                  </div>
-                  <button
-                    className="btn btn--ghost btn--sm"
+                <Setting key={s.id} title={s.label}>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => removeStore(s.id)}
-                    aria-label={t('settings.aria.deleteStore', {
-                      name: s.label,
-                    })}
-                    disabled={deleteStore.isPending}
+                    aria-label={t('settings.aria.deleteStore', { name: s.label })}
+                    disabled={deleteStore.isPending || !isOnline}
+                    title={!isOnline ? t('offline.disabledHint') : undefined}
                   >
                     <IconTrash size={15} />
-                  </button>
-                </div>
+                  </Button>
+                </Setting>
               ))}
-              <div className="setting">
-                <div className="setting__main">
-                  <div className="setting__title">{t('settings.addStore')}</div>
-                  <div className="setting__desc">{t('settings.addStoreHint')}</div>
-                </div>
-                <div className="key-input">
-                  <input
-                    value={newStore}
-                    onChange={(e) => setNewStore(e.target.value)}
-                    placeholder={t('settings.storeName')}
-                    onKeyDown={(e) => e.key === 'Enter' && addStore()}
-                    aria-label={t('settings.aria.newStore')}
-                  />
-                  <button
-                    className="btn btn--secondary btn--sm"
-                    onClick={addStore}
-                    disabled={createStore.isPending}
-                  >
-                    <IconPlus size={15} /> {t('settings.add')}
-                  </button>
-                </div>
-              </div>
+              <Setting title={t('settings.addStore')} desc={t('settings.addStoreHint')}>
+                <InlineInput
+                  value={newStore}
+                  onChange={setNewStore}
+                  onSubmit={addStore}
+                  placeholder={t('settings.storeName')}
+                  ariaLabel={t('settings.aria.newStore')}
+                  disabled={createStore.isPending || !isOnline}
+                  action={
+                    <>
+                      <IconPlus size={15} /> {t('settings.add')}
+                    </>
+                  }
+                />
+              </Setting>
             </div>
           )}
-        </div>
+        </Panel>
       </section>
 
-      <section className="section">
-        <div className="section__head">
-          <h2>{t('settings.display')}</h2>
+      <section className="mt-8">
+        <div className="flex items-baseline justify-between gap-4 mb-4">
+          <h2 className="text-lg">{t('settings.display')}</h2>
         </div>
-        <div className="panel">
+        <Panel>
           {settingsLoading ? (
             <SkeletonRows n={3} />
           ) : (
-            <div className="settings-group">
-              <div className="setting">
-                <div className="setting__main">
-                  <div className="setting__title">{t('settings.motion')}</div>
-                  <div className="setting__desc">{t('settings.motionDesc')}</div>
-                </div>
-                <div className="motion-scale" role="group" aria-label={t('settings.aria.motion')}>
-                  {MOTION_OPTS.map((m) => (
-                    <button
-                      key={m.id}
-                      aria-pressed={motion === m.id}
-                      onClick={() => {
-                        setMotion(m.id)
-                        saveSettings({ motion_preference: m.id })
-                      }}
-                    >
-                      {t(m.key)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className="setting">
-                <div className="setting__main">
-                  <div className="setting__title">{t('settings.language')}</div>
-                  <div className="setting__desc">{t('settings.languageDesc')}</div>
-                </div>
-                <div className="motion-scale" role="group" aria-label={t('settings.language')}>
-                  {LANGUAGES.map((l) => (
-                    <button
-                      key={l.code}
-                      aria-pressed={currentLang === l.code}
-                      onClick={() => changeLanguage(l.code)}
-                    >
-                      {l.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div className="flex flex-col">
+              <Setting title={t('settings.motion')} desc={t('settings.motionDesc')}>
+                <ToggleGroup
+                  value={motion}
+                  options={MOTION_OPTS.map((m) => ({
+                    id: m.id,
+                    label: t(m.key),
+                  }))}
+                  onChange={(id) => {
+                    setMotion(id)
+                    saveSettings({ motion_preference: id })
+                  }}
+                  ariaLabel={t('settings.aria.motion')}
+                />
+              </Setting>
+
+              <Setting title={t('settings.language')} desc={t('settings.languageDesc')}>
+                <ToggleGroup
+                  value={currentLang}
+                  options={LANGUAGES.map((l) => ({ id: l.code, label: l.label }))}
+                  onChange={changeLanguage}
+                  ariaLabel={t('settings.language')}
+                />
+              </Setting>
             </div>
           )}
-        </div>
+        </Panel>
       </section>
     </>
   )

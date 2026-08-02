@@ -16,6 +16,11 @@ import {
   IconShop,
   IconCalendarBlank,
 } from '../components/icons.jsx'
+import { cn } from '../lib/cn.js'
+import { Button } from '../components/Button.jsx'
+import { Chip } from '../components/Chip.jsx'
+import { Panel, PanelHead, PanelBody, PanelFoot } from '../components/Panel.jsx'
+import { SkeletonLines } from '../components/Skeleton.jsx'
 
 const MAX_SIZE = 5 * 1024 * 1024
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/heic', 'image/webp']
@@ -166,48 +171,38 @@ export function AddFromReceipt({ onDone }) {
 
   return (
     <>
-      <div className="page__head">
-        <p className="page__lead">{personaText('receiptLead', persona, t)}</p>
+      <div className="mb-6">
+        <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+          {personaText('receiptLead', persona, t)}
+        </p>
       </div>
 
       {error && (
-        <div
-          className="panel"
-          style={{
-            marginBottom: 'var(--sp-4)',
-            padding: 'var(--sp-3)',
-            background: 'var(--error-soft)',
-            border: '1px solid var(--error-soft-border)',
-            borderRadius: 'var(--radius-md)',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              gap: 'var(--sp-2)',
-              alignItems: 'flex-start',
-            }}
-          >
-            <IconWarning size={18} style={{ color: 'var(--error)', flexShrink: 0, marginTop: 2 }} />
+        <Panel className="mb-4 p-3 bg-danger-soft border-danger-border">
+          <div className="flex gap-2 items-start">
+            <IconWarning size={18} className="text-danger shrink-0 mt-0.5" />
             <div>
-              <p style={{ fontSize: 'var(--fs-sm)', color: 'var(--error)' }}>{error}</p>
+              <p className="text-sm text-danger">{error}</p>
               {isNoKeyError && (
-                <button
-                  className="btn btn--ghost"
-                  style={{ marginTop: 'var(--sp-2)', fontSize: 'var(--fs-sm)' }}
+                <Button
+                  variant="ghost"
+                  className="mt-2 text-sm"
                   onClick={() => navigate({ to: '/settings' })}
                 >
                   {t('addReceipt.goToSettings') || 'Go to Settings'}
-                </button>
+                </Button>
               )}
             </div>
           </div>
-        </div>
+        </Panel>
       )}
 
       {phase === 'capture' && (
         <div
-          className="dropzone"
+          className={cn(
+            'border-2 border-dashed border-border-strong rounded-lg px-6 py-12 text-center bg-surface-raised',
+            'transition-colors hover:border-accent hover:bg-accent-soft cursor-pointer'
+          )}
           role="button"
           tabIndex={0}
           onDrop={handleDrop}
@@ -221,136 +216,87 @@ export function AddFromReceipt({ onDone }) {
             ref={fileInputRef}
             type="file"
             accept="image/jpeg,image/png,image/heic,image/webp"
-            style={{ display: 'none' }}
+            className="hidden"
             onChange={handleFileChange}
             data-testid="file-input"
           />
-          <div className="dropzone__icon">
+          <div className="w-14 h-14 rounded-lg mx-auto mb-4 bg-accent-soft grid place-items-center text-accent">
             <IconCamera size={26} />
           </div>
-          <div className="dropzone__title">{t('addReceipt.takePhoto')}</div>
-          <div className="dropzone__hint">{t('addReceipt.dropHint')}</div>
-          <div
-            style={{
-              marginTop: 'var(--sp-5)',
-              display: 'flex',
-              gap: 'var(--sp-3)',
-              justifyContent: 'center',
-            }}
-          >
-            <button
-              className="btn btn--primary"
+          <div className="font-semibold text-md">{t('addReceipt.takePhoto')}</div>
+          <div className="text-text-muted text-sm mt-2">{t('addReceipt.dropHint')}</div>
+          <div className="mt-5 flex gap-3 justify-center">
+            <Button
               onClick={(e) => {
                 e.stopPropagation()
                 triggerFileInput(true)
               }}
             >
               <IconCamera size={18} /> {t('addReceipt.openCamera')}
-            </button>
-            <button
-              className="btn btn--secondary"
+            </Button>
+            <Button
+              variant="secondary"
               onClick={(e) => {
                 e.stopPropagation()
                 triggerFileInput(false)
               }}
             >
               <IconUpload size={18} /> {t('addReceipt.uploadFile')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
 
       {phase === 'scanning' && (
-        <div className="panel" style={{ padding: 'var(--sp-9)', textAlign: 'center' }}>
-          <div style={{ margin: '0 auto var(--sp-5)', color: 'var(--accent)' }}>
-            <IconBolt size={32} className="spin" />
+        <Panel className="p-9 text-center">
+          <div className="mx-auto mb-5 text-accent">
+            <IconBolt size={32} className="animate-spin" />
           </div>
-          <div style={{ fontWeight: 600, fontSize: 'var(--fs-md)' }}>
-            {t('addReceipt.scanningTitle')}
-          </div>
-          <div
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 'var(--fs-sm)',
-              marginTop: 'var(--sp-2)',
-            }}
-          >
-            {t('addReceipt.scanningDesc')}
-          </div>
-          <div style={{ maxWidth: 360, margin: 'var(--sp-5) auto 0' }}>
+          <div className="font-semibold text-md">{t('addReceipt.scanningTitle')}</div>
+          <div className="text-text-muted text-sm mt-2">{t('addReceipt.scanningDesc')}</div>
+          <div className="max-w-[360px] mx-auto mt-5">
             <SkeletonLines />
           </div>
-        </div>
+        </Panel>
       )}
 
       {phase === 'review' && (
         <>
-          <div className="receipt-meta">
+          <div className="flex flex-wrap gap-2 mb-4">
             {selectedStore && (
-              <span className="chip chip--loc">
+              <Chip variant="loc">
                 <IconShop size={14} />{' '}
                 {stores.find((s) => s.id === selectedStore)?.label || selectedStore}
-              </span>
+              </Chip>
             )}
-            <span className="chip">
+            <Chip>
               <IconCalendarBlank size={14} /> {date}
-            </span>
-            <span className="chip">{t('addReceipt.itemsRead', { count: items.length })}</span>
-            <span style={{ flex: 1 }} />
-            <span
-              className="chip"
-              style={{
-                background: 'var(--accent-soft)',
-                color: 'var(--accent-hover)',
-                border: '1px solid var(--accent-soft-border)',
-              }}
-            >
-              {t('addReceipt.aiReview')}
-            </span>
+            </Chip>
+            <Chip>{t('addReceipt.itemsRead', { count: items.length })}</Chip>
+            <span className="flex-1" />
+            <Chip variant="accent">{t('addReceipt.aiReview')}</Chip>
           </div>
 
           {imageUrl && (
-            <div
-              style={{
-                marginBottom: 'var(--sp-4)',
-                borderRadius: 'var(--radius-md)',
-                overflow: 'hidden',
-                maxHeight: 200,
-              }}
-            >
+            <div className="mb-4 rounded-md overflow-hidden max-h-[200px]">
               <img
                 src={imageUrl}
                 alt="Receipt"
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  objectFit: 'contain',
-                  maxHeight: 200,
-                }}
+                className="w-full h-auto object-contain max-h-[200px]"
               />
             </div>
           )}
 
-          <div className="panel" style={{ marginBottom: 'var(--sp-4)' }}>
-            <div
-              className="panel__body"
-              style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}
-            >
-              <div style={{ flex: 1, minWidth: 150 }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 'var(--fs-xs)',
-                    color: 'var(--text-muted)',
-                    marginBottom: 'var(--sp-1)',
-                  }}
-                >
+          <Panel className="mb-4">
+            <PanelBody className="flex flex-wrap gap-3">
+              <div className="flex-1 min-w-[150px]">
+                <label className="block text-xs text-text-muted mb-1">
                   {t('history.store') || 'Store'}
                 </label>
                 <select
                   value={selectedStore || ''}
                   onChange={(e) => setSelectedStore(e.target.value || null)}
-                  style={{ width: '100%' }}
+                  className="w-full"
                 >
                   <option value="">{t('addReceipt.selectStore') || 'Select store...'}</option>
                   {stores.map((s) => (
@@ -360,51 +306,36 @@ export function AddFromReceipt({ onDone }) {
                   ))}
                 </select>
               </div>
-              <div style={{ flex: 1, minWidth: 150 }}>
-                <label
-                  style={{
-                    display: 'block',
-                    fontSize: 'var(--fs-xs)',
-                    color: 'var(--text-muted)',
-                    marginBottom: 'var(--sp-1)',
-                  }}
-                >
+              <div className="flex-1 min-w-[150px]">
+                <label className="block text-xs text-text-muted mb-1">
                   {t('history.date') || 'Date'}
                 </label>
                 <input
                   type="date"
                   value={date}
                   onChange={(e) => setDate(e.target.value)}
-                  style={{ width: '100%' }}
+                  className="w-full"
                 />
               </div>
-            </div>
-          </div>
+            </PanelBody>
+          </Panel>
 
-          <div className="panel">
-            <div className="panel__head">
+          <Panel>
+            <PanelHead>
               <h2>{t('addReceipt.reviewTitle')}</h2>
-              <span className="hint">{t('addReceipt.editHint')}</span>
-            </div>
-            <div className="panel__body">
+              <span className="text-sm text-text-muted">{t('addReceipt.editHint')}</span>
+            </PanelHead>
+            <PanelBody className="!py-0">
               {items.map((it) => (
                 <div
-                  className="parsed-row"
                   key={it._id}
-                  style={{ flexWrap: 'wrap', gap: 'var(--sp-2)' }}
+                  className="grid grid-cols-1 sm:grid-cols-[1fr_90px_110px] gap-2 items-center py-3 border-b border-border last:border-b-0"
                 >
-                  <div
-                    style={{
-                      flex: '1 1 100%',
-                      display: 'flex',
-                      gap: 'var(--sp-2)',
-                      alignItems: 'center',
-                    }}
-                  >
+                  <div className="flex gap-2 items-center min-w-0">
                     <select
                       value={selectedItemIds[it._id] || ''}
                       onChange={(e) => selectItemMatch(it._id, e.target.value || null)}
-                      style={{ flex: 1, minWidth: 120 }}
+                      className="min-w-[120px]"
                       aria-label="Match to existing item"
                     >
                       <option value="">{t('addReceipt.keepNew') || '— New item —'}</option>
@@ -418,7 +349,7 @@ export function AddFromReceipt({ onDone }) {
                       value={it.name}
                       onChange={(e) => updateItem(it._id, 'name', e.target.value)}
                       aria-label={t('history.item')}
-                      style={{ flex: 2, minWidth: 120 }}
+                      className="min-w-0"
                       placeholder={t('addReceipt.itemName') || 'Item name'}
                     />
                   </div>
@@ -429,13 +360,13 @@ export function AddFromReceipt({ onDone }) {
                     value={it.qty}
                     onChange={(e) => updateItem(it._id, 'qty', e.target.value)}
                     aria-label={t('common.from')}
-                    style={{ width: 70 }}
+                    className="w-[90px]"
                   />
                   <input
                     value={it.unit}
                     onChange={(e) => updateItem(it._id, 'unit', e.target.value)}
                     aria-label="Unit"
-                    style={{ width: 60 }}
+                    className="w-[110px]"
                   />
                   <input
                     type="number"
@@ -443,94 +374,55 @@ export function AddFromReceipt({ onDone }) {
                     value={it.price}
                     onChange={(e) => updateItem(it._id, 'price', e.target.value)}
                     aria-label={t('history.price')}
-                    style={{ width: 90 }}
+                    className="w-[110px]"
                   />
                 </div>
               ))}
-            </div>
-            <div className="panel__foot">
-              <div
-                style={{
-                  marginRight: 'auto',
-                  color: 'var(--text-muted)',
-                  fontSize: 'var(--fs-sm)',
-                }}
-              >
-                {t('addReceipt.total')}{' '}
-                <strong style={{ color: 'var(--text)' }}>{formatRp(lineTotal)}</strong>
+            </PanelBody>
+            <PanelFoot className="justify-between">
+              <div className="text-text-muted text-sm">
+                {t('addReceipt.total')} <strong className="text-text">{formatRp(lineTotal)}</strong>
               </div>
-              <button className="btn btn--ghost" onClick={handleRetake}>
-                <IconArrowLeft size={18} /> {t('addReceipt.retake')}
-              </button>
-              <button className="btn btn--primary" onClick={handleConfirm} disabled={creating}>
-                {creating ? <IconBolt size={18} className="spin" /> : <IconCheck size={18} />}{' '}
-                {t('addReceipt.confirmAdd')}
-              </button>
-            </div>
-          </div>
+              <div className="flex gap-3">
+                <Button variant="ghost" onClick={handleRetake}>
+                  <IconArrowLeft size={18} /> {t('addReceipt.retake')}
+                </Button>
+                <Button onClick={handleConfirm} disabled={creating}>
+                  {creating ? (
+                    <>
+                      <IconBolt size={18} className="animate-spin" /> {t('addReceipt.confirmAdd')}
+                    </>
+                  ) : (
+                    <>
+                      <IconCheck size={18} /> {t('addReceipt.confirmAdd')}
+                    </>
+                  )}
+                </Button>
+              </div>
+            </PanelFoot>
+          </Panel>
         </>
       )}
 
       {phase === 'done' && (
-        <div className="panel" style={{ padding: 'var(--sp-9)', textAlign: 'center' }}>
-          <div style={{ margin: '0 auto var(--sp-5)', color: 'var(--ok)' }}>
-            <div
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: '50%',
-                background: 'var(--ok-soft)',
-                display: 'grid',
-                placeItems: 'center',
-                margin: '0 auto',
-              }}
-            >
+        <Panel className="p-9 text-center">
+          <div className="mx-auto mb-5 text-ok">
+            <div className="w-14 h-14 rounded-full bg-ok-soft grid place-items-center mx-auto">
               <IconCheck size={28} />
             </div>
           </div>
-          <div style={{ fontWeight: 600, fontSize: 'var(--fs-lg)' }}>
+          <div className="font-semibold text-lg">
             {t('addReceipt.stockAdded', { count: items.length })}
           </div>
-          <div
-            style={{
-              color: 'var(--text-muted)',
-              fontSize: 'var(--fs-sm)',
-              marginTop: 'var(--sp-2)',
-            }}
-          >
-            {t('addReceipt.stockUpdatedDesc')}
-          </div>
-          <div
-            style={{
-              marginTop: 'var(--sp-5)',
-              display: 'flex',
-              gap: 'var(--sp-3)',
-              justifyContent: 'center',
-            }}
-          >
-            <button className="btn btn--secondary" onClick={handleRetake}>
+          <div className="text-text-muted text-sm mt-2">{t('addReceipt.stockUpdatedDesc')}</div>
+          <div className="mt-5 flex gap-3 justify-center">
+            <Button variant="secondary" onClick={handleRetake}>
               <IconReceipt size={18} /> {t('addReceipt.addAnother')}
-            </button>
-            <button className="btn btn--primary" onClick={onDone}>
-              {t('addReceipt.done')}
-            </button>
+            </Button>
+            <Button onClick={onDone}>{t('addReceipt.done')}</Button>
           </div>
-        </div>
+        </Panel>
       )}
     </>
-  )
-}
-
-function SkeletonLines() {
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
-      {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} style={{ display: 'flex', gap: 'var(--sp-3)', alignItems: 'center' }}>
-          <div className="skeleton" style={{ height: 14, flex: 1 }} />
-          <div className="skeleton" style={{ height: 14, width: 60 }} />
-          <div className="skeleton" style={{ height: 14, width: 70 }} />
-        </div>
-      ))}
-    </div>
   )
 }

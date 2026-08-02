@@ -4,7 +4,7 @@ import { getStores, createStore, deleteStore } from '../api.js'
 export function useStores() {
   return useQuery({
     queryKey: ['stores'],
-    queryFn: getStores,
+    queryFn: () => getStores(),
     staleTime: 1000 * 60 * 5,
   })
 }
@@ -14,7 +14,25 @@ export function useCreateStore() {
 
   return useMutation({
     mutationFn: createStore,
-    onSuccess: () => {
+    onMutate: async (label) => {
+      await queryClient.cancelQueries({ queryKey: ['stores'] })
+      const previous = queryClient.getQueryData(['stores'])
+      queryClient.setQueryData(['stores'], (old) => {
+        if (!old?.stores) return old
+        const tempId = `optimistic-${Date.now()}`
+        return {
+          ...old,
+          stores: [...old.stores, { id: tempId, label }],
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['stores'], context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['stores'] })
     },
   })
@@ -25,7 +43,24 @@ export function useDeleteStore() {
 
   return useMutation({
     mutationFn: deleteStore,
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['stores'] })
+      const previous = queryClient.getQueryData(['stores'])
+      queryClient.setQueryData(['stores'], (old) => {
+        if (!old?.stores) return old
+        return {
+          ...old,
+          stores: old.stores.filter((store) => store.id !== id),
+        }
+      })
+      return { previous }
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous !== undefined) {
+        queryClient.setQueryData(['stores'], context.previous)
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['stores'] })
     },
   })

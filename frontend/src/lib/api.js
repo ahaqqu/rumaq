@@ -13,6 +13,7 @@ async function request(path, options = {}) {
       'Content-Type': 'application/json',
       ...options.headers,
     },
+    signal: options.signal,
   })
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }))
@@ -26,12 +27,12 @@ export function getMe() {
   return request('/api/me')
 }
 
-export function getStock({ location, q } = {}) {
+export function getStock({ location, q } = {}, signal) {
   const params = new URLSearchParams()
   if (location) params.set('location', location)
   if (q) params.set('q', q)
   const qs = params.toString()
-  return request(`/api/stock${qs ? `?${qs}` : ''}`)
+  return request(`/api/stock${qs ? `?${qs}` : ''}`, { signal })
 }
 
 export function getHealth() {
@@ -119,8 +120,8 @@ export function deleteStore(id) {
   })
 }
 
-export function getAiUsage() {
-  return request('/api/ai/usage')
+export function getAiUsage(signal) {
+  return request('/api/ai/usage', { signal })
 }
 
 export function testAiKey(provider, key) {
@@ -137,8 +138,8 @@ export function patchStock(id, payload) {
   })
 }
 
-export function getHome() {
-  return request('/api/home')
+export function getHome(signal) {
+  return request('/api/home', { signal })
 }
 
 export function scanReceipt(file) {
@@ -200,8 +201,8 @@ export function sendChatMessage(message, history = []) {
   })
 }
 
-export function getPlans(status = 'active') {
-  return request(`/api/plans?status=${status}`)
+export function getPlans(status = 'active', signal) {
+  return request(`/api/plans?status=${status}`, { signal })
 }
 
 export function generatePlan() {

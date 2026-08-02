@@ -44,29 +44,29 @@ const baseProps = (overrides = {}) => ({
 describe('Assistant', () => {
   it('renders FAB button', () => {
     const { container } = renderWithProviders(React.createElement(Assistant, baseProps()))
-    expect(container.querySelector('.fab')).toBeTruthy()
+    expect(container.querySelector('button[aria-label="assistant.fabAriaLabel"]')).toBeTruthy()
   })
 
   it('opens dialog when open=true', () => {
     const { container } = renderWithProviders(
       React.createElement(Assistant, baseProps({ open: true }))
     )
-    expect(container.querySelector('.assistant')).toBeTruthy()
+    expect(container.querySelector('section[role="dialog"]')).toBeTruthy()
   })
 
   it('shows no-key state when aiKey is missing', () => {
     const { container } = renderWithProviders(
       React.createElement(Assistant, baseProps({ open: true }))
     )
-    expect(container.querySelector('.assistant__keystate')).toBeTruthy()
+    expect(container.querySelector('[class*="text-text-muted"].p-5')).toBeTruthy()
   })
 
   it('shows body when aiKey is present', () => {
     const { container } = renderWithProviders(
       React.createElement(Assistant, baseProps({ open: true, aiKey: 'sk-test' }))
     )
-    expect(container.querySelector('.assistant__body')).toBeTruthy()
-    expect(container.querySelector('.assistant__action')).toBeTruthy()
+    expect(container.querySelector('section[role="dialog"] > div')).toBeTruthy()
+    expect(container.querySelector('button[class*="border border-border bg-surface"]')).toBeTruthy()
   })
 
   it('shows body when backend has_ai_key is true even without local aiKey', () => {
@@ -74,17 +74,8 @@ describe('Assistant', () => {
     const { container } = renderWithProviders(
       React.createElement(Assistant, baseProps({ open: true }))
     )
-    expect(container.querySelector('.assistant__body')).toBeTruthy()
-    expect(container.querySelector('.assistant__action')).toBeTruthy()
-  })
-
-  it('shows body when backend has_ai_key is true even without local aiKey', () => {
-    mockUseSettings.mockReturnValue({ data: { has_ai_key: true } })
-    const { container } = renderWithProviders(
-      React.createElement(Assistant, baseProps({ open: true }))
-    )
-    expect(container.querySelector('.assistant__body')).toBeTruthy()
-    expect(container.querySelector('.assistant__action')).toBeTruthy()
+    expect(container.querySelector('section[role="dialog"] > div')).toBeTruthy()
+    expect(container.querySelector('button[class*="border border-border bg-surface"]')).toBeTruthy()
   })
 
   it('renders chat input when aiKey present', () => {
@@ -102,7 +93,7 @@ describe('Assistant', () => {
     const { container } = renderWithProviders(
       React.createElement(Assistant, baseProps({ open: true, onClose, onNavigate }))
     )
-    const settingsBtn = container.querySelector('.assistant__keystate .btn--primary')
+    const settingsBtn = container.querySelector('button.mt-5')
     if (settingsBtn) {
       fireEvent.click(settingsBtn)
       expect(onClose).toHaveBeenCalled()
@@ -115,7 +106,7 @@ describe('Assistant', () => {
     const { container } = renderWithProviders(
       React.createElement(Assistant, baseProps({ open: true, onClose, aiKey: 'sk-test' }))
     )
-    const scrim = container.querySelector('.scrim')
+    const scrim = container.querySelector('section[role="dialog"]').previousSibling
     if (scrim) {
       fireEvent.click(scrim)
       expect(onClose).toHaveBeenCalled()
@@ -127,7 +118,9 @@ describe('Assistant', () => {
     const { container } = renderWithProviders(
       React.createElement(Assistant, baseProps({ open: true, aiKey: 'sk-test' }))
     )
-    const actionBtns = container.querySelectorAll('.assistant__action')
+    const actionBtns = container.querySelectorAll(
+      'button[class*="border border-border bg-surface"]'
+    )
     expect(actionBtns.length).toBeGreaterThan(0)
     fireEvent.click(actionBtns[0])
     await waitFor(() => {

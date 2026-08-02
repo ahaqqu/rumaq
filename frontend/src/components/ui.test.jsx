@@ -21,32 +21,32 @@ describe('LocChip', () => {
 describe('TimeSignal', () => {
   it('renders danger for expiring tomorrow', () => {
     const { container } = render(React.createElement(TimeSignal, { expiryDays: 1, runOut: 1 }))
-    expect(container.querySelector('.ts--danger')).toBeTruthy()
+    expect(container.querySelector('.text-danger')).toBeTruthy()
   })
 
   it('renders warn for expiring in 3 days', () => {
     const { container } = render(React.createElement(TimeSignal, { expiryDays: 3, runOut: 3 }))
-    expect(container.querySelector('.ts--warn')).toBeTruthy()
+    expect(container.querySelector('.text-warn')).toBeTruthy()
   })
 
   it('renders muted for expiring in 7 days', () => {
     const { container } = render(React.createElement(TimeSignal, { expiryDays: 7, runOut: 5 }))
-    expect(container.querySelector('.ts--muted')).toBeTruthy()
+    expect(container.querySelector('.text-text-muted')).toBeTruthy()
   })
 
   it('shows danger for runOut <= 2 when no expiry', () => {
     const { container } = render(React.createElement(TimeSignal, { expiryDays: null, runOut: 2 }))
-    expect(container.querySelector('.ts--danger')).toBeTruthy()
+    expect(container.querySelector('.text-danger')).toBeTruthy()
   })
 
   it('shows warn for runOut === 3 when no expiry', () => {
     const { container } = render(React.createElement(TimeSignal, { expiryDays: null, runOut: 3 }))
-    expect(container.querySelector('.ts--warn')).toBeTruthy()
+    expect(container.querySelector('.text-warn')).toBeTruthy()
   })
 
   it('shows muted for runOut > 3 when no expiry', () => {
     const { container } = render(React.createElement(TimeSignal, { expiryDays: null, runOut: 10 }))
-    expect(container.querySelector('.ts--muted')).toBeTruthy()
+    expect(container.querySelector('.text-text-muted')).toBeTruthy()
   })
 
   it('sets title when basis is provided', () => {
@@ -62,7 +62,7 @@ describe('TimeSignal', () => {
 
   it('shows muted for expiry days > 3 within useExpiry branch', () => {
     const { container } = render(React.createElement(TimeSignal, { expiryDays: 4, runOut: 5 }))
-    expect(container.querySelector('.ts--muted')).toBeTruthy()
+    expect(container.querySelector('.text-text-muted')).toBeTruthy()
   })
 })
 
@@ -90,13 +90,13 @@ describe('EmptyState', () => {
 describe('SkeletonRows', () => {
   it('renders 5 rows by default', () => {
     const { container } = render(React.createElement(SkeletonRows))
-    const rows = container.querySelectorAll('.row')
+    const rows = container.querySelectorAll('[class*="grid-cols-[1fr_auto]"]')
     expect(rows.length).toBe(5)
   })
 
   it('renders custom n rows', () => {
     const { container } = render(React.createElement(SkeletonRows, { n: 3 }))
-    const rows = container.querySelectorAll('.row')
+    const rows = container.querySelectorAll('[class*="grid-cols-[1fr_auto]"]')
     expect(rows.length).toBe(3)
   })
 })
@@ -104,7 +104,7 @@ describe('SkeletonRows', () => {
 describe('UsageMeter', () => {
   it('renders usage info', () => {
     const { container } = render(React.createElement(UsageMeter))
-    expect(container.querySelector('.usage')).toBeTruthy()
+    expect(container.querySelector('[class*="flex flex-col gap-3 p-5"]')).toBeTruthy()
   })
 
   it('shows warning for high usage', () => {
@@ -113,7 +113,7 @@ describe('UsageMeter', () => {
         usage: { provider: 'Gemini', used: 17, limit: 20 },
       })
     )
-    expect(container.querySelector('.is-warn')).toBeTruthy()
+    expect(container.querySelector('.text-warn')).toBeTruthy()
   })
 
   it('shows danger for maxed usage', () => {
@@ -122,7 +122,7 @@ describe('UsageMeter', () => {
         usage: { provider: 'Gemini', used: 20, limit: 20 },
       })
     )
-    expect(container.querySelector('.is-danger')).toBeTruthy()
+    expect(container.querySelector('.text-danger')).toBeTruthy()
   })
 
   it('shows remaining for normal usage', () => {
@@ -131,7 +131,7 @@ describe('UsageMeter', () => {
         usage: { provider: 'Gemini', used: 5, limit: 20 },
       })
     )
-    expect(container.querySelector('.usage__note')).toBeTruthy()
+    expect(container.querySelector('.text-text-muted')).toBeTruthy()
   })
 })
 

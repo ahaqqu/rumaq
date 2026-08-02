@@ -11,17 +11,7 @@ export function OfflineBanner() {
   return (
     <div
       role="status"
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 'var(--sp-2)',
-        padding: 'var(--sp-2) var(--sp-4)',
-        background: 'var(--surface-raised)',
-        borderBottom: '1px solid var(--border)',
-        color: 'var(--text-faint)',
-        fontSize: 'var(--fs-sm)',
-      }}
+      className="flex items-center justify-center gap-2 px-4 py-2 bg-surface-raised border-b border-border text-text-faint text-sm"
     >
       <IconOffline size={16} />
       {t('offline.banner')}

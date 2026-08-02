@@ -113,21 +113,25 @@ describe('Plan', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
-    expect(container.querySelector('.empty')).toBeTruthy()
+    expect(container.querySelector('[class*="text-center px-6 py-12"]')).toBeTruthy()
   })
 
   it('renders page lead', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
-    expect(container.querySelector('.page__lead')).toBeTruthy()
+    expect(container.querySelector('[class*="max-w-[62ch]"]')).toBeTruthy()
   })
 
   it('renders plan trip cards when active plan exists', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
-    expect(container.querySelector('.trip')).toBeTruthy()
+    expect(
+      container.querySelector(
+        '[class*="bg-surface-raised border border-border rounded-lg overflow-hidden mb-4"]'
+      )
+    ).toBeTruthy()
   })
 
   it('toggles checkbox on plan items', () => {
@@ -139,7 +143,7 @@ describe('Plan', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
-    const checkbox = container.querySelector('.plan-item__check')
+    const checkbox = container.querySelector('input[type="checkbox"]')
     if (checkbox) {
       fireEvent.click(checkbox)
       expect(mutate).toHaveBeenCalled()
@@ -176,7 +180,9 @@ describe('Plan', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
-    const generateBtn = container.querySelector('.btn--primary')
+    const generateBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('plan.generate')
+    )
     expect(generateBtn).toBeTruthy()
   })
 
@@ -189,7 +195,9 @@ describe('Plan', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView })
     )
-    const addKeyBtn = container.querySelector('.btn--primary')
+    const addKeyBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('plan.addApiKey')
+    )
     if (addKeyBtn) {
       fireEvent.click(addKeyBtn)
       expect(setView).toHaveBeenCalledWith('settings')
@@ -201,7 +209,9 @@ describe('Plan', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
-    expect(container.querySelector('.skeleton')).toBeTruthy()
+    expect(
+      container.querySelector('[class*="bg-surface-inset rounded-sm relative overflow-hidden"]')
+    ).toBeTruthy()
   })
 
   it('disables checkbox for bought items', () => {
@@ -219,7 +229,7 @@ describe('Plan', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
-    const checkbox = container.querySelector('.plan-item__check')
+    const checkbox = container.querySelector('input[type="checkbox"]')
     expect(checkbox.disabled).toBe(true)
     fireEvent.click(checkbox)
     expect(mutate).not.toHaveBeenCalled()
@@ -287,7 +297,9 @@ describe('Plan', () => {
     const { container } = renderWithQuery(
       React.createElement(Plan, { askAssistant: vi.fn(), setView: vi.fn() })
     )
-    const saveBtn = container.querySelector('.btn--primary')
+    const saveBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('plan.savePlan')
+    )
     fireEvent.click(saveBtn)
 
     await waitFor(() => expect(reset).toHaveBeenCalled())

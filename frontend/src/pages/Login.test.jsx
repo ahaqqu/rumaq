@@ -30,21 +30,21 @@ describe('Login', () => {
   it('renders Google sign-in button', () => {
     api.emailAuthStatus.mockResolvedValue({ enabled: false })
     const { container } = renderWithQuery(React.createElement(Login))
-    expect(container.querySelector('.login__btn')).toBeTruthy()
+    expect(container.querySelector('button')).toBeTruthy()
     expect(container.textContent).toContain('login.signIn')
   })
 
   it('calls login on Google button click', () => {
     api.emailAuthStatus.mockResolvedValue({ enabled: false })
     const { container } = renderWithQuery(React.createElement(Login))
-    fireEvent.click(container.querySelector('.login__btn'))
+    fireEvent.click(container.querySelector('button'))
     expect(api.login).toHaveBeenCalled()
   })
 
   it('shows email form when email auth is enabled', async () => {
     api.emailAuthStatus.mockResolvedValue({ enabled: true })
     const { container } = renderWithQuery(React.createElement(Login))
-    await waitFor(() => expect(container.querySelector('.login__form')).toBeTruthy())
+    await waitFor(() => expect(container.querySelector('form')).toBeTruthy())
     expect(container.querySelector('input[type="email"]')).toBeTruthy()
     expect(container.querySelector('input[type="password"]')).toBeTruthy()
   })
@@ -59,13 +59,13 @@ describe('Login', () => {
     api.emailLogin.mockResolvedValue({ ok: true })
 
     const { container } = renderWithQuery(React.createElement(Login))
-    await waitFor(() => expect(container.querySelector('.login__form')).toBeTruthy())
+    await waitFor(() => expect(container.querySelector('form')).toBeTruthy())
 
     const emailInput = container.querySelector('input[type="email"]')
     const passwordInput = container.querySelector('input[type="password"]')
     fireEvent.change(emailInput, { target: { value: 'a@b.com' } })
     fireEvent.change(passwordInput, { target: { value: 'secret' } })
-    fireEvent.submit(container.querySelector('.login__form'))
+    fireEvent.submit(container.querySelector('form'))
 
     await waitFor(() => expect(api.emailLogin).toHaveBeenCalledWith('a@b.com', 'secret'))
   })
@@ -75,13 +75,13 @@ describe('Login', () => {
     api.emailLogin.mockRejectedValue(new Error('Invalid credentials'))
 
     const { container } = renderWithQuery(React.createElement(Login))
-    await waitFor(() => expect(container.querySelector('.login__form')).toBeTruthy())
+    await waitFor(() => expect(container.querySelector('form')).toBeTruthy())
 
     const emailInput = container.querySelector('input[type="email"]')
     const passwordInput = container.querySelector('input[type="password"]')
     fireEvent.change(emailInput, { target: { value: 'a@b.com' } })
     fireEvent.change(passwordInput, { target: { value: 'secret' } })
-    fireEvent.submit(container.querySelector('.login__form'))
+    fireEvent.submit(container.querySelector('form'))
 
     await waitFor(() => expect(container.textContent).toContain('Invalid credentials'))
   })
@@ -97,7 +97,7 @@ describe('Login', () => {
     )
 
     const { container } = renderWithQuery(React.createElement(Login))
-    await waitFor(() => expect(container.querySelector('.login__form')).toBeTruthy())
+    await waitFor(() => expect(container.querySelector('form')).toBeTruthy())
 
     const emailInput = container.querySelector('input[type="email"]')
     const passwordInput = container.querySelector('input[type="password"]')

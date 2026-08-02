@@ -4,6 +4,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { BrandMark } from '../components/icons.jsx'
 import { login, emailAuthStatus, emailLogin } from '../lib/api.js'
+import { Button } from '../components/Button.jsx'
 
 export function Login() {
   const { t } = useTranslation()
@@ -35,29 +36,31 @@ export function Login() {
   }
 
   return (
-    <div className="login">
-      <div className="login__card">
+    <div className="min-h-dvh grid place-items-center p-6 bg-surface">
+      <div className="flex flex-col items-center gap-4 max-w-[320px] w-full text-center px-6 py-10 bg-surface-raised border border-border rounded-xl shadow-md">
         <BrandMark size={48} />
-        <h1 className="login__title">RumaQ</h1>
-        <p className="login__desc">{t('login.desc', 'Household shopping & inventory assistant')}</p>
+        <h1 className="text-2xl font-bold tracking-tight">RumaQ</h1>
+        <p className="text-md text-text-muted leading-snug">
+          {t('login.desc', 'Household shopping & inventory assistant')}
+        </p>
 
-        <button className="btn btn--primary btn--block login__btn" onClick={login}>
+        <Button block className="mt-2" onClick={login}>
           {t('login.signIn', 'Sign in with Google')}
-        </button>
+        </Button>
 
         {emailAuth && (
           <>
-            <div className="login__divider">
+            <div className="flex items-center gap-3 w-full text-text-muted text-sm">
               <span>{t('login.or', 'or')}</span>
+              <hr className="flex-1" />
             </div>
 
-            <form className="login__form" onSubmit={handleEmailLogin}>
-              <label className="login__label" htmlFor="email">
+            <form className="flex flex-col gap-2 w-full text-left" onSubmit={handleEmailLogin}>
+              <label className="text-sm font-medium text-text-muted" htmlFor="email">
                 {t('login.email', 'Email')}
               </label>
               <input
                 id="email"
-                className="login__input"
                 type="email"
                 required
                 value={email}
@@ -65,12 +68,11 @@ export function Login() {
                 autoComplete="email"
               />
 
-              <label className="login__label" htmlFor="password">
+              <label className="text-sm font-medium text-text-muted" htmlFor="password">
                 {t('login.password', 'Password')}
               </label>
               <input
                 id="password"
-                className="login__input"
                 type="password"
                 required
                 value={password}
@@ -78,17 +80,13 @@ export function Login() {
                 autoComplete="current-password"
               />
 
-              {error && <p className="login__error">{error}</p>}
+              {error && <p className="text-danger text-sm text-center">{error}</p>}
 
-              <button
-                className="btn btn--primary btn--block login__btn"
-                type="submit"
-                disabled={loading}
-              >
+              <Button block type="submit" disabled={loading} className="mt-1">
                 {loading
                   ? t('login.signingIn', 'Signing in…')
                   : t('login.signInEmail', 'Sign in with email')}
-              </button>
+              </Button>
             </form>
           </>
         )}

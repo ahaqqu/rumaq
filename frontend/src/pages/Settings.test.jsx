@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, fireEvent } from '@testing-library/react'
+import { render, fireEvent, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 import { Settings } from './Settings.jsx'
@@ -82,12 +82,12 @@ describe('Settings', () => {
 
   it('renders page lead', () => {
     const { container } = renderWithQuery(React.createElement(Settings, baseProps))
-    expect(container.querySelector('.page__lead')).toBeTruthy()
+    expect(container.querySelector('[class*="max-w-[62ch]"]')).toBeTruthy()
   })
 
   it('renders API key section', () => {
     const { container } = renderWithQuery(React.createElement(Settings, baseProps))
-    expect(container.querySelector('.section')).toBeTruthy()
+    expect(container.querySelector('section')).toBeTruthy()
   })
 
   it('renders provider select', () => {
@@ -98,7 +98,7 @@ describe('Settings', () => {
 
   it('renders AI usage section', () => {
     const { container } = renderWithQuery(React.createElement(Settings, baseProps))
-    expect(container.querySelector('.usage')).toBeTruthy()
+    expect(container.querySelector('[class*="flex flex-col gap-3 p-5"]')).toBeTruthy()
   })
 
   it('renders persona inputs', () => {
@@ -127,20 +127,20 @@ describe('Settings', () => {
     const { container } = renderWithQuery(React.createElement(Settings, { ...baseProps, setAiKey }))
     const passwordInput = container.querySelector('input[type="password"]')
     if (passwordInput) {
-      fireEvent.change(passwordInput, { target: { value: 'new-key' } })
+      fireEvent.input(passwordInput, { target: { value: 'new-key' } })
     }
-    const saveBtn = container.querySelector('.btn--primary')
+    const saveBtn = container.querySelector('[data-testid="save-key-btn"]')
     if (saveBtn) {
       fireEvent.click(saveBtn)
     }
-    expect(setAiKey).toHaveBeenCalledWith('new-key')
+    await waitFor(() => expect(setAiKey).toHaveBeenCalledWith('new-key'))
   })
 
   it('test button triggers test flow', async () => {
     const { container } = renderWithQuery(
       React.createElement(Settings, { ...baseProps, aiKey: 'existing-key' })
     )
-    const testBtn = Array.from(container.querySelectorAll('.btn--secondary')).find((btn) =>
+    const testBtn = Array.from(container.querySelectorAll('button')).find((btn) =>
       btn.textContent?.includes('settings.test')
     )
     expect(testBtn).toBeTruthy()
@@ -152,7 +152,7 @@ describe('Settings', () => {
     if (locInput) {
       fireEvent.change(locInput, { target: { value: 'Garage' } })
     }
-    const addBtn = Array.from(container.querySelectorAll('.btn--secondary')).find((btn) =>
+    const addBtn = Array.from(container.querySelectorAll('button')).find((btn) =>
       btn.textContent?.includes('settings.add')
     )
     if (addBtn) {
@@ -162,7 +162,9 @@ describe('Settings', () => {
 
   it('removes a location', () => {
     const { container } = renderWithQuery(React.createElement(Settings, baseProps))
-    const deleteBtns = container.querySelectorAll('.btn--ghost')
+    const deleteBtns = Array.from(container.querySelectorAll('button')).filter((btn) =>
+      btn.querySelector('svg')
+    )
     if (deleteBtns.length > 0) {
       fireEvent.click(deleteBtns[0])
     }
@@ -181,7 +183,7 @@ describe('Settings', () => {
     const { container } = renderWithQuery(
       React.createElement(Settings, { ...baseProps, setMotion })
     )
-    const motionBtns = container.querySelectorAll('.motion-scale button')
+    const motionBtns = container.querySelectorAll('[role="group"] button')
     if (motionBtns.length > 0) {
       fireEvent.click(motionBtns[0])
       expect(setMotion).toHaveBeenCalled()
@@ -216,7 +218,7 @@ describe('Settings', () => {
 
   it('applies persona with apply button', () => {
     const { container } = renderWithQuery(React.createElement(Settings, baseProps))
-    const applyBtn = Array.from(container.querySelectorAll('.btn--primary')).find((btn) =>
+    const applyBtn = Array.from(container.querySelectorAll('button')).find((btn) =>
       btn.textContent?.includes('settings.apply')
     )
     if (applyBtn) {

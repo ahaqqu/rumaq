@@ -17,6 +17,8 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: 'auto',
       manifest: {
+        id: '/',
+        scope: '/',
         name: 'RumaQ',
         short_name: 'RumaQ',
         description: 'Household shopping & inventory assistant',
@@ -24,14 +26,38 @@ export default defineConfig({
         background_color: '#f4f8fb',
         display: 'standalone',
         start_url: '/',
+        categories: ['shopping', 'productivity', 'utilities'],
         icons: [
           { src: '/icon-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: '/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+          {
+            src: '/icon-maskable-512x512.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
         ],
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        navigateFallback: '/index.html',
+        navigateFallback: '/offline.html',
+        navigateFallbackDenylist: [/^\/offline\.html$/, /^\/api\//],
+        runtimeCaching: [
+          {
+            urlPattern: /^\/api\/(stock|plans|purchases)(\?.*)?$/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'rumaq-api-reads',
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 300,
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       },
     }),
   ],

@@ -43,12 +43,12 @@ beforeEach(() => {
 describe('AddFromReceipt', () => {
   it('renders capture phase by default', () => {
     const { container } = renderComponent()
-    expect(container.querySelector('.dropzone')).toBeTruthy()
+    expect(container.querySelector('[class*="border-2 border-dashed"]')).toBeTruthy()
   })
 
   it('renders page lead', () => {
     const { container } = renderComponent()
-    expect(container.querySelector('.page__lead')).toBeTruthy()
+    expect(container.querySelector('[class*="max-w-[62ch]"]')).toBeTruthy()
   })
 
   it('shows error for unsupported file type', async () => {
@@ -111,7 +111,9 @@ describe('AddFromReceipt', () => {
     selectFile(container, file)
 
     await waitFor(() => {
-      expect(container.querySelector('.parsed-row')).toBeTruthy()
+      expect(
+        container.querySelector('[class*="grid-cols-1 sm:grid-cols-[1fr_90px_110px]"]')
+      ).toBeTruthy()
     })
   })
 
@@ -139,10 +141,14 @@ describe('AddFromReceipt', () => {
     selectFile(container, file)
 
     await waitFor(() => {
-      expect(container.querySelector('.parsed-row')).toBeTruthy()
+      expect(
+        container.querySelector('[class*="grid-cols-1 sm:grid-cols-[1fr_90px_110px]"]')
+      ).toBeTruthy()
     })
 
-    const confirmBtn = container.querySelector('.btn--primary')
+    const confirmBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('addReceipt.confirmAdd')
+    )
     if (confirmBtn) {
       fireEvent.click(confirmBtn)
     }
@@ -178,13 +184,15 @@ describe('AddFromReceipt', () => {
     api.getStores.mockResolvedValueOnce(MOCK_STORES)
     api.getItems.mockResolvedValueOnce(MOCK_ITEMS)
 
-    const dropzone = container.querySelector('.dropzone')
+    const dropzone = container.querySelector('[class*="border-2 border-dashed"]')
     const file = createFile('test.jpg', 'image/jpeg', 1000)
     fireEvent.dragOver(dropzone)
     fireEvent.drop(dropzone, { dataTransfer: { files: [file] } })
 
     await waitFor(() => {
-      expect(container.querySelector('.parsed-row')).toBeTruthy()
+      expect(
+        container.querySelector('[class*="grid-cols-1 sm:grid-cols-[1fr_90px_110px]"]')
+      ).toBeTruthy()
     })
   })
 
@@ -207,7 +215,9 @@ describe('AddFromReceipt', () => {
       expect(container.textContent).toContain('AI provider not configured')
     })
 
-    const settingsBtn = container.querySelector('.btn--ghost')
+    const settingsBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('addReceipt.goToSettings')
+    )
     if (settingsBtn) {
       fireEvent.click(settingsBtn)
     }
@@ -229,7 +239,11 @@ describe('AddFromReceipt', () => {
     const file = createFile('test.jpg', 'image/jpeg', 1000)
     selectFile(container, file)
 
-    await waitFor(() => expect(container.querySelector('.parsed-row')).toBeTruthy())
+    await waitFor(() =>
+      expect(
+        container.querySelector('[class*="grid-cols-1 sm:grid-cols-[1fr_90px_110px]"]')
+      ).toBeTruthy()
+    )
 
     const nameInput = container.querySelector('input[aria-label="history.item"]')
     if (nameInput) {
@@ -254,7 +268,11 @@ describe('AddFromReceipt', () => {
     const file = createFile('test.jpg', 'image/jpeg', 1000)
     selectFile(container, file)
 
-    await waitFor(() => expect(container.querySelector('.parsed-row')).toBeTruthy())
+    await waitFor(() =>
+      expect(
+        container.querySelector('[class*="grid-cols-1 sm:grid-cols-[1fr_90px_110px]"]')
+      ).toBeTruthy()
+    )
 
     const select = container.querySelector('select[aria-label="Match to existing item"]')
     if (select) {
@@ -280,14 +298,20 @@ describe('AddFromReceipt', () => {
     const file = createFile('test.jpg', 'image/jpeg', 1000)
     selectFile(container, file)
 
-    await waitFor(() => expect(container.querySelector('.parsed-row')).toBeTruthy())
+    await waitFor(() =>
+      expect(
+        container.querySelector('[class*="grid-cols-1 sm:grid-cols-[1fr_90px_110px]"]')
+      ).toBeTruthy()
+    )
 
-    const retakeBtn = Array.from(container.querySelectorAll('.btn--ghost')).find((b) =>
+    const retakeBtn = Array.from(container.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('addReceipt.retake')
     )
     if (retakeBtn) fireEvent.click(retakeBtn)
 
-    await waitFor(() => expect(container.querySelector('.dropzone')).toBeTruthy())
+    await waitFor(() =>
+      expect(container.querySelector('[class*="border-2 border-dashed"]')).toBeTruthy()
+    )
   })
 
   it('renders receipt preview when imageUrl is returned', async () => {
@@ -327,14 +351,20 @@ describe('AddFromReceipt', () => {
     const file = createFile('test.jpg', 'image/jpeg', 1000)
     selectFile(container, file)
 
-    await waitFor(() => expect(container.querySelector('.parsed-row')).toBeTruthy())
+    await waitFor(() =>
+      expect(
+        container.querySelector('[class*="grid-cols-1 sm:grid-cols-[1fr_90px_110px]"]')
+      ).toBeTruthy()
+    )
 
-    const confirmBtn = container.querySelector('.btn--primary')
+    const confirmBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('addReceipt.confirmAdd')
+    )
     if (confirmBtn) fireEvent.click(confirmBtn)
 
     await waitFor(() => expect(container.textContent).toContain('addReceipt.stockAdded'))
 
-    const doneBtn = Array.from(container.querySelectorAll('.btn--primary')).find((b) =>
+    const doneBtn = Array.from(container.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('addReceipt.done')
     )
     if (doneBtn) fireEvent.click(doneBtn)

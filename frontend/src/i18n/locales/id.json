@@ -247,7 +247,8 @@
     "remainingRequests": "Sisa {{remaining}} permintaan hari ini."
   },
   "offline": {
-    "banner": "Kamu sedang offline — perubahan akan disinkronkan saat kembali online"
+    "banner": "Kamu sedang offline — perubahan akan disinkronkan saat kembali online",
+    "disabledHint": "Tersedia saat kembali online"
   },
   "common": {
     "from": "dari",
