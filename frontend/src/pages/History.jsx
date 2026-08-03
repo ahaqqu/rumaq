@@ -6,7 +6,6 @@ import { personaText } from '../lib/persona.js'
 import { IconSpark } from '../components/icons.jsx'
 import { useHistory, usePurchasePatterns, useStores } from '../lib/queries/index.js'
 import { getReceiptUrl } from '../lib/api.js'
-import { cn } from '../lib/cn.js'
 import { Button } from '../components/Button.jsx'
 import { Panel } from '../components/Panel.jsx'
 
@@ -281,7 +280,7 @@ function Group({ g, monthLabel, fmtDate, t, formatRp, onReceiptClick }) {
           {t('history.total')} {formatRp(g.total)}
         </td>
       </tr>
-      {g.rows.map((p, i) =>
+      {g.rows.map((p, _i) =>
         p.items.map((it, j) => (
           <tr key={p.id + it.id + j}>
             {j === 0 ? (

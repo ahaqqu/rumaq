@@ -1089,7 +1089,6 @@ apiApp.post(
   }),
   sValidator('json', purchaseCreateSchema),
   async (c) => {
-    const userId = c.get('userId')
     const householdId = c.get('householdId')
     const body = c.req.valid('json')
 

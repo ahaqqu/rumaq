@@ -68,8 +68,6 @@ defineFeature(feature, (test) => {
   })
 
   test('Save a plan creates an active plan', ({ given, when, then, and }) => {
-    let savedPlanId
-
     given('the database has seed data', async () => {
       await ctx.resetAndSeed()
     })
@@ -91,7 +89,6 @@ defineFeature(feature, (test) => {
         return item
       })
       await ctx.sendRequestWithBody('POST', '/api/plans', { items })
-      savedPlanId = ctx.responseBody?.plan?.id
     })
 
     then('the response status should be 201', () => {

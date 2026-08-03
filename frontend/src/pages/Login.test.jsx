@@ -51,7 +51,6 @@ describe('Login', () => {
 
   it('submits email login and navigates on success', async () => {
     const navigate = vi.fn()
-    const invalidateQueries = vi.fn()
     vi.doMock('@tanstack/react-router', () => ({
       useNavigate: () => navigate,
     }))

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { resolve, dirname, relative, basename } from 'node:path'
+import { resolve, dirname, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -53,11 +53,6 @@ function generateHtml(vitest) {
     const tests = file.assertionResults ?? []
     if (!tests.length) continue
 
-    const fileName = basename(file.name ?? '', '.test.js')
-      .replace(/\.spec$/, '')
-      .replace(/[-_]/g, ' ')
-      .replace(/\b\w/g, (c) => c.toUpperCase())
-
     // Group by ancestorTitles (first element = scenario)
     const groups = {}
     for (const t of tests) {
@@ -88,7 +83,6 @@ function generateHtml(vitest) {
 
       const groupPassed = group.tests.every((t) => t.status === 'passed')
       const groupFailed = group.tests.some((t) => t.status === 'failed')
-      const groupSkipped = group.tests.some((t) => t.status === 'pending' || t.status === 'skipped')
       const groupStatus = groupFailed ? 'failed' : groupPassed ? 'passed' : 'skipped'
 
       scenarioHtml += `<div class="scenario ${groupStatus}">

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, afterEach } from 'vitest'
 import {
   verifyJwt,
   signJwt,
@@ -279,7 +279,7 @@ describe('authApp Hono routes', () => {
       prepare: (sql: string) => {
         sqlStatements.push(sql)
         return {
-          bind: (...args: any[]) => ({
+          bind: () => ({
             first: async () => null,
             all: async () => ({ results: [] }),
             batch: async () => {},
