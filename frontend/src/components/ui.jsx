@@ -1,13 +1,18 @@
 import { useTranslation } from 'react-i18next'
 import { IconBox, IconPin, IconClock, IconShop } from './icons.jsx'
 import { AI_USAGE, usageState } from '../data/mock.js'
+import { cn } from '../lib/cn.js'
+import { Chip } from './Chip.jsx'
+import { Badge } from './Badge.jsx'
+import { EmptyState } from './EmptyState.jsx'
+import { SkeletonRows } from './Skeleton.jsx'
 
 export function LocChip({ loc }) {
   return (
-    <span className="chip chip--loc">
+    <Chip variant="loc">
       <IconPin size={13} />
       {loc}
-    </span>
+    </Chip>
   )
 }
 
@@ -20,13 +25,23 @@ export function TimeSignal({ expiryDays, runOut, basis }) {
   if (useExpiry) {
     if (expiryDays <= 1)
       return (
-        <span className="ts ts--danger" title={title}>
+        <span
+          className="inline-flex items-center gap-1 text-sm font-medium text-danger"
+          title={title}
+        >
           <IconClock size={13} /> {t('ui.expiringTomorrow')}
         </span>
       )
     const tone = expiryDays <= 3 ? 'warn' : 'muted'
     return (
-      <span className={`ts ts--${tone}`} title={title}>
+      <span
+        className={cn(
+          'inline-flex items-center gap-1 text-sm font-medium',
+          tone === 'warn' && 'text-warn',
+          tone === 'muted' && 'text-text-muted'
+        )}
+        title={title}
+      >
         <IconClock size={13} /> {t('ui.expiringIn', { days: expiryDays })}
       </span>
     )
@@ -34,78 +49,68 @@ export function TimeSignal({ expiryDays, runOut, basis }) {
 
   const tone = runOut <= 2 ? 'danger' : runOut <= 3 ? 'warn' : 'muted'
   return (
-    <span className={`ts ts--${tone}`} title={title}>
+    <span
+      className={cn(
+        'inline-flex items-center gap-1 text-sm font-medium',
+        tone === 'danger' && 'text-danger',
+        tone === 'warn' && 'text-warn',
+        tone === 'muted' && 'text-text-muted'
+      )}
+      title={title}
+    >
       <IconClock size={13} /> {t('ui.runsOutIn', { days: runOut })}
     </span>
   )
 }
 
-export function EmptyState({ icon: Icon = IconBox, title, desc, action }) {
-  return (
-    <div className="empty">
-      <div className="empty__icon">
-        <Icon size={40} />
-      </div>
-      <div className="empty__title">{title}</div>
-      <div className="empty__desc">{desc}</div>
-      {action && <div style={{ marginTop: 'var(--sp-5)' }}>{action}</div>}
-    </div>
-  )
-}
-
-export function SkeletonRows({ n = 5 }) {
-  return (
-    <div className="list">
-      {Array.from({ length: n }).map((_, i) => (
-        <div key={i} className="row" style={{ alignItems: 'center' }}>
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 8,
-              flex: 1,
-            }}
-          >
-            <div className="skeleton" style={{ height: 14, width: '38%' }} />
-            <div className="skeleton" style={{ height: 11, width: '62%' }} />
-          </div>
-          <div className="skeleton" style={{ height: 14, width: 60 }} />
-        </div>
-      ))}
-    </div>
-  )
-}
+export { EmptyState, SkeletonRows }
 
 export function UsageMeter({ usage }) {
   const { t } = useTranslation()
   const normalized = usage ? { ...usage, limit: usage.limit ?? usage.daily_limit ?? 20 } : AI_USAGE
   const { pct, remaining, warn, danger } = usageState(normalized)
-  const tone = danger ? 'is-danger' : warn ? 'is-warn' : ''
+  const tone = danger ? 'danger' : warn ? 'warn' : 'muted'
+
   return (
-    <div className="usage">
-      <div className="usage__head">
+    <div className="flex flex-col gap-3 p-5">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="usage__title">{normalized.provider}</div>
-          <div className="usage__sub">
+          <div className="font-semibold text-base">{normalized.provider}</div>
+          <div className="text-sm text-text-muted mt-0.5">
             {t('ui.requestsToday', {
               used: normalized.used,
               limit: normalized.limit,
             })}
           </div>
         </div>
-        <div className={`usage__count ${tone}`}>
+        <div
+          className={cn(
+            'font-bold text-lg tabular-nums',
+            tone === 'danger' && 'text-danger',
+            tone === 'warn' && 'text-warn'
+          )}
+        >
           {normalized.used}/{normalized.limit}
         </div>
       </div>
-      <div className="usage__bar">
-        <div className={`usage__fill ${tone}`} style={{ width: pct + '%' }} />
+      <div className="h-2 rounded-pill bg-surface-inset overflow-hidden">
+        <div
+          className={cn(
+            'h-full rounded-pill bg-accent transition-[width] duration-300 ease-out',
+            tone === 'warn' && 'bg-warn',
+            tone === 'danger' && 'bg-danger'
+          )}
+          style={{ width: pct + '%' }}
+        />
       </div>
       {danger ? (
-        <div className="usage__note is-danger">{t('ui.dailyLimitReachedDesc')}</div>
+        <div className="text-sm text-danger">{t('ui.dailyLimitReachedDesc')}</div>
       ) : warn ? (
-        <div className="usage__note is-warn">{t('ui.closeToLimitDesc', { remaining })}</div>
+        <div className="text-sm text-warn font-medium">
+          {t('ui.closeToLimitDesc', { remaining })}
+        </div>
       ) : (
-        <div className="usage__note">{t('ui.remainingRequests', { remaining })}</div>
+        <div className="text-sm text-text-muted">{t('ui.remainingRequests', { remaining })}</div>
       )}
     </div>
   )
@@ -113,10 +118,12 @@ export function UsageMeter({ usage }) {
 
 export function MetaItem({ icon: Icon, children }) {
   return (
-    <span>
+    <span className="inline-flex items-center gap-1">
       <Icon size={13} />
       {children}
     </span>
   )
 }
+
 export { IconPin, IconClock, IconShop }
+export { Chip, Badge }

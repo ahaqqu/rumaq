@@ -6,6 +6,7 @@ import { AppProvider } from '../context/AppContext.jsx'
 import { AppShell } from '../components/AppShell.jsx'
 import { Login } from '../pages/Login.jsx'
 import { PwaUpdatePrompt } from '../components/PwaUpdatePrompt.jsx'
+import { RouteError } from '../components/RouteError.jsx'
 import { queryClient, persistOptions } from '../lib/queryClient.js'
 import { useMe } from '../lib/queries/me.js'
 import { useSettings } from '../lib/queries/settings.js'
@@ -16,7 +17,7 @@ function AuthGate() {
 
   if (isLoading) return null
 
-  if (!me) {
+  if (!me?.user) {
     return (
       <PersonaProvider>
         <Login />
@@ -59,4 +60,5 @@ function RootComponent() {
 
 export const Route = createRootRoute({
   component: RootComponent,
+  errorComponent: RouteError,
 })

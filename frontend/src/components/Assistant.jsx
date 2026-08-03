@@ -10,10 +10,13 @@ import {
   IconCheck,
   IconKey,
 } from './icons.jsx'
+import { cn } from '../lib/cn.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { useApp } from '../context/AppContext.jsx'
 import { personaText } from '../lib/persona.js'
 import { useUsage, useSendChatMessage, useSettings } from '../lib/queries/index.js'
+import { Button } from './Button.jsx'
+import { EmptyState } from './EmptyState.jsx'
 
 const QUICK = [
   {
@@ -97,30 +100,52 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
   return (
     <>
       <button
-        className="fab"
+        className={cn(
+          'fixed right-6 bottom-6 z-40 h-14 rounded-pill px-6 bg-accent text-on-accent shadow-lg',
+          'inline-flex items-center gap-2 font-semibold transition-all duration-150',
+          'hover:bg-accent-hover hover:-translate-y-px active:scale-[0.97]',
+          'max-sm:right-4 max-sm:bottom-[calc(104px+env(safe-area-inset-bottom))]'
+        )}
         onClick={() => (open ? onClose() : onOpen())}
         aria-label={t('assistant.fabAriaLabel')}
         aria-expanded={open}
       >
-        <span className="fab__pulse" />
+        <span className="w-[9px] h-[9px] rounded-full bg-on-accent animate-[pulse_2.4s_cubic-bezier(0.2,0.8,0.2,1)_infinite]" />
         <IconSpark size={20} />
-        <span>{t('assistant.fabLabel')}</span>
+        <span className="max-sm:hidden">{t('assistant.fabLabel')}</span>
       </button>
 
       {open && (
         <>
-          <div className="scrim" onClick={onClose} />
-          <section className="assistant" role="dialog" aria-label={t('assistant.dialogAriaLabel')}>
-            <header className="assistant__head">
-              <div className="assistant__avatar">
+          <div
+            className="fixed inset-0 z-50 bg-text/32 backdrop-blur-sm animate-[fade_0.2s_ease]"
+            onClick={onClose}
+          />
+          <section
+            className={cn(
+              'fixed z-[51] right-6 bottom-6 w-[min(420px,calc(100vw-32px))] max-h-[min(680px,calc(100dvh-64px))]',
+              'bg-surface-raised border border-border rounded-xl shadow-lg flex flex-col overflow-hidden',
+              'origin-bottom-right animate-[pop_0.22s_cubic-bezier(0.2,0.8,0.2,1)]',
+              'max-sm:right-3 max-sm:left-3 max-sm:bottom-[calc(72px+env(safe-area-inset-bottom))] max-sm:w-auto'
+            )}
+            role="dialog"
+            aria-label={t('assistant.dialogAriaLabel')}
+          >
+            <header className="flex items-center gap-3 px-5 py-4 border-b border-border">
+              <div className="w-9 h-9 rounded-md bg-gradient-to-br from-accent to-accent-hover grid place-items-center text-on-accent">
                 <IconSpark size={18} />
               </div>
               <div>
-                <div className="assistant__title">{t('assistant.title')}</div>
-                <div className="assistant__status">
+                <div className="font-semibold text-base">{t('assistant.title')}</div>
+                <div className="text-xs text-ok flex items-center gap-1">
                   {isConnected ? (
                     <>
-                      <span className={`rail__dot ${danger ? 'is-off' : warn ? 'is-warn' : ''}`} />
+                      <span
+                        className={cn(
+                          'w-2 h-2 rounded-full',
+                          danger ? 'bg-text-faint' : warn ? 'bg-warn' : 'bg-ok'
+                        )}
+                      />
                       {danger
                         ? t('assistant.dailyLimitReached')
                         : t('assistant.ready', { used, limit })}
@@ -131,7 +156,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                 </div>
               </div>
               <button
-                className="assistant__close"
+                className="ml-auto w-9 h-9 rounded-md grid place-items-center text-text-muted hover:bg-surface-sunken hover:text-text transition-colors"
                 onClick={onClose}
                 aria-label={t('assistant.closeAriaLabel')}
               >
@@ -140,79 +165,66 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
             </header>
 
             {!isConnected ? (
-              <div className="assistant__keystate">
-                <div className="empty__icon" style={{ margin: '0 auto var(--sp-4)' }}>
-                  <IconKey size={40} />
-                </div>
-                <div className="empty__title">{t('assistant.connectKeyFirst')}</div>
-                <div className="empty__desc">{t('assistant.bringYourOwnKey')}</div>
-                <button
-                  className="btn btn--primary btn--block"
-                  style={{ marginTop: 'var(--sp-5)' }}
-                  onClick={() => {
-                    onClose()
-                    onNavigate('settings')
-                  }}
-                >
-                  <IconKey size={18} /> {t('assistant.addApiKey')}
-                </button>
+              <div className="p-5 text-center text-text-muted text-sm">
+                <EmptyState
+                  icon={IconKey}
+                  title={t('assistant.connectKeyFirst')}
+                  desc={t('assistant.bringYourOwnKey')}
+                  action={
+                    <Button
+                      className="mt-5"
+                      block
+                      onClick={() => {
+                        onClose()
+                        onNavigate('settings')
+                      }}
+                    >
+                      <IconKey size={18} /> {t('assistant.addApiKey')}
+                    </Button>
+                  }
+                />
               </div>
             ) : (
-              <div className="assistant__body">
-                <p className="assistant__msg">
+              <div className="px-5 py-5 overflow-y-auto flex flex-col gap-4">
+                <p className="text-base leading-normal">
                   {personaText('assistantGreeting', persona, t)}{' '}
                   {personaText('assistantQuestion', persona, t)}
                 </p>
 
-                <div className="assistant__actions">
+                <div className="flex flex-col gap-2">
                   {QUICK.map(({ id, key, descKey, Icon, prompt }) => (
                     <button
                       key={id}
-                      className="assistant__action"
+                      className={cn(
+                        'flex items-center gap-3 px-4 py-3 rounded-md border border-border bg-surface',
+                        'text-left text-sm font-medium text-text transition-colors',
+                        'hover:bg-accent-soft hover:border-accent-soft-border'
+                      )}
                       onClick={() => trigger({ prompt })}
                       disabled={chat.isPending}
                     >
-                      <Icon size={18} />
+                      <Icon size={18} className="text-accent shrink-0" />
                       <span>
                         <div>{t(`assistant.${key}`)}</div>
-                        <div
-                          className="why"
-                          style={{
-                            color: 'var(--text-muted)',
-                            fontSize: 'var(--fs-xs)',
-                          }}
-                        >
-                          {t(`assistant.${descKey}`)}
-                        </div>
+                        <div className="text-text-muted text-xs">{t(`assistant.${descKey}`)}</div>
                       </span>
                     </button>
                   ))}
                 </div>
 
                 {chat.isPending && (
-                  <div
-                    className="assistant__msg"
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 'var(--sp-3)',
-                    }}
-                  >
-                    <IconBolt size={16} className="spin" style={{ color: 'var(--accent)' }} />
+                  <div className="text-base leading-normal flex items-center gap-3">
+                    <IconBolt size={16} className="text-accent animate-spin" />
                     {t('assistant.analyzing')}
                   </div>
                 )}
 
                 {errorState && (
                   <div
-                    className="assistant__msg"
-                    style={{
-                      color:
-                        errorState.kind === 'usage'
-                          ? 'var(--text-muted)'
-                          : 'var(--text-danger, currentColor)',
-                      fontSize: 'var(--fs-sm)',
-                    }}
+                    className={cn(
+                      'text-base leading-normal text-sm',
+                      errorState.kind === 'usage' ? 'text-text-muted' : 'text-danger'
+                    )}
                   >
                     {errorState.kind === 'usage'
                       ? t('assistant.usageLimit')
@@ -220,47 +232,38 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                         ? t('assistant.keyMissing')
                         : t('assistant.error', { message: errorState.message })}
                     {(errorState.kind === 'usage' || errorState.kind === 'missing') && (
-                      <div style={{ marginTop: 'var(--sp-2)' }}>
-                        <button
-                          className="btn btn--secondary btn--sm"
+                      <div className="mt-2">
+                        <Button
+                          size="sm"
+                          variant="secondary"
                           onClick={() => {
                             onClose()
                             onNavigate('settings')
                           }}
                         >
                           {t('assistant.addApiKey')}
-                        </button>
+                        </Button>
                       </div>
                     )}
                   </div>
                 )}
 
                 {reply && typeof reply === 'string' && (
-                  <div className="assistant__proposal">
-                    <p style={{ whiteSpace: 'pre-wrap' }}>{reply}</p>
-                    <div
-                      style={{
-                        display: 'flex',
-                        gap: 'var(--sp-2)',
-                        marginTop: 'var(--sp-4)',
-                      }}
-                    >
-                      <button className="btn btn--primary btn--sm btn--block" onClick={accept}>
+                  <div className="bg-accent-soft border border-accent-soft-border rounded-md p-4">
+                    <p className="whitespace-pre-wrap">{reply}</p>
+                    <div className="flex gap-2 mt-4">
+                      <Button size="sm" className="flex-1" onClick={accept}>
                         <IconCheck size={16} /> {t('assistant.applyToPlan')}
-                      </button>
-                      <button className="btn btn--secondary btn--sm" onClick={() => setReply(null)}>
+                      </Button>
+                      <Button size="sm" variant="secondary" onClick={() => setReply(null)}>
                         {t('assistant.change')}
-                      </button>
+                      </Button>
                     </div>
                   </div>
                 )}
 
                 <form
-                  style={{
-                    marginTop: 'var(--sp-4)',
-                    display: 'flex',
-                    gap: 'var(--sp-2)',
-                  }}
+                  className="mt-1 flex gap-2"
                   onSubmit={(e) => {
                     e.preventDefault()
                     send(input)
@@ -268,21 +271,20 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
                   }}
                 >
                   <input
-                    className="input"
                     type="text"
                     placeholder={t('assistant.inputPlaceholder')}
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     aria-label={t('assistant.inputPlaceholder')}
                   />
-                  <button
+                  <Button
                     type="submit"
-                    className="btn btn--primary btn--sm"
+                    size="sm"
                     disabled={chat.isPending || !input.trim()}
                     aria-label={t('assistant.sendAriaLabel')}
                   >
                     {t('assistant.send')}
-                  </button>
+                  </Button>
                 </form>
               </div>
             )}

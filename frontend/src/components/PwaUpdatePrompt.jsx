@@ -1,4 +1,5 @@
 import { useRegisterSW } from 'virtual:pwa-register/react'
+import { Button } from './Button.jsx'
 
 export function PwaUpdatePrompt() {
   const {
@@ -16,30 +17,14 @@ export function PwaUpdatePrompt() {
   if (!needRefresh) return null
 
   return (
-    <div
-      style={{
-        position: 'fixed',
-        bottom: 16,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 9999,
-        background: 'var(--surface-raised)',
-        border: '1px solid var(--border)',
-        borderRadius: 'var(--r-md)',
-        padding: '12px 20px',
-        display: 'flex',
-        gap: 12,
-        alignItems: 'center',
-        boxShadow: 'var(--shadow-lg)',
-      }}
-    >
-      <span style={{ fontSize: 'var(--fs-sm)' }}>Update available</span>
-      <button className="btn btn--primary btn--sm" onClick={() => updateServiceWorker(true)}>
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[9999] bg-surface-raised border border-border rounded-md px-5 py-3 flex gap-3 items-center shadow-lg">
+      <span className="text-sm">Update available</span>
+      <Button size="sm" onClick={() => updateServiceWorker(true)}>
         Update
-      </button>
-      <button className="btn btn--ghost btn--sm" onClick={() => setNeedRefresh(false)}>
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => setNeedRefresh(false)}>
         Dismiss
-      </button>
+      </Button>
     </div>
   )
 }

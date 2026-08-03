@@ -247,7 +247,8 @@
     "remainingRequests": "{{remaining}} requests left today."
   },
   "offline": {
-    "banner": "You're offline — changes will sync when you reconnect"
+    "banner": "You're offline — changes will sync when you reconnect",
+    "disabledHint": "Available when you're back online"
   },
   "common": {
     "from": "from",

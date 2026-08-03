@@ -6,6 +6,9 @@ import { personaText } from '../lib/persona.js'
 import { IconSpark } from '../components/icons.jsx'
 import { useHistory, usePurchasePatterns, useStores } from '../lib/queries/index.js'
 import { getReceiptUrl } from '../lib/api.js'
+import { cn } from '../lib/cn.js'
+import { Button } from '../components/Button.jsx'
+import { Panel } from '../components/Panel.jsx'
 
 export function History({ askAssistant }) {
   const { t } = useTranslation()
@@ -68,20 +71,15 @@ export function History({ askAssistant }) {
 
   return (
     <>
-      <div className="page__head">
-        <p className="page__lead">{personaText('historyLead', persona, t)}</p>
+      <div className="mb-6">
+        <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+          {personaText('historyLead', persona, t)}
+        </p>
       </div>
 
-      <div className="panel" style={{ padding: 'var(--sp-4)' }}>
-        <div
-          style={{
-            display: 'grid',
-            gap: 'var(--sp-3)',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
-          }}
-        >
+      <Panel className="p-4">
+        <div className="grid gap-3 grid-cols-[repeat(auto-fit,minmax(140px,1fr))]">
           <input
-            className="input"
             type="search"
             placeholder={t('history.searchPlaceholder')}
             aria-label={t('history.searchPlaceholder')}
@@ -92,7 +90,6 @@ export function History({ askAssistant }) {
             }}
           />
           <select
-            className="input"
             value={store}
             onChange={(e) => {
               setStore(e.target.value)
@@ -108,7 +105,6 @@ export function History({ askAssistant }) {
             ))}
           </select>
           <input
-            className="input"
             type="date"
             value={from}
             aria-label={t('history.filterFrom')}
@@ -118,7 +114,6 @@ export function History({ askAssistant }) {
             }}
           />
           <input
-            className="input"
             type="date"
             value={to}
             aria-label={t('history.filterTo')}
@@ -128,66 +123,51 @@ export function History({ askAssistant }) {
             }}
           />
         </div>
-      </div>
+      </Panel>
 
-      {history.isLoading && (
-        <div className="panel" style={{ padding: 'var(--sp-5)', textAlign: 'center' }}>
-          {t('history.loading')}
-        </div>
-      )}
+      {history.isLoading && <Panel className="p-5 text-center">{t('history.loading')}</Panel>}
 
       {history.isError && !history.isLoading && (
-        <div
-          className="panel"
-          style={{
-            padding: 'var(--sp-5)',
-            textAlign: 'center',
-            color: 'var(--text-muted)',
-          }}
-        >
-          {t('history.error')}
-        </div>
+        <Panel className="p-5 text-center text-text-muted">{t('history.error')}</Panel>
       )}
 
       {!history.isLoading && !history.isError && purchases.length === 0 && (
-        <div className="panel" style={{ padding: 'var(--sp-5)', textAlign: 'center' }}>
-          <div className="empty__title">{t('history.empty')}</div>
-          <div className="empty__desc" style={{ color: 'var(--text-muted)' }}>
-            {t('history.emptyDesc')}
-          </div>
-        </div>
+        <Panel className="p-5 text-center">
+          <div className="font-semibold text-text text-sm">{t('history.empty')}</div>
+          <div className="text-sm text-text-muted mt-2">{t('history.emptyDesc')}</div>
+        </Panel>
       )}
 
       {!history.isLoading && !history.isError && purchases.length > 0 && (
         <>
-          <div
-            className="panel"
-            style={{
-              padding: 'var(--sp-4)',
-              display: 'flex',
-              gap: 'var(--sp-4)',
-              flexWrap: 'wrap',
-              color: 'var(--text-muted)',
-              fontSize: 'var(--fs-sm)',
-            }}
-          >
+          <Panel className="p-4 flex flex-wrap gap-4 text-text-muted text-sm">
             <div>
               <strong>{t('history.total')}</strong> {formatRp(totalSpend)}
             </div>
             <div>
               <strong>{t('history.avgPerMonth')}</strong> {formatRp(avgPerMonth)}
             </div>
-          </div>
+          </Panel>
 
-          <div className="panel">
-            <table className="table">
+          <Panel className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
               <thead>
                 <tr>
-                  <th>{t('history.date')}</th>
-                  <th>{t('history.item')}</th>
-                  <th>{t('history.store')}</th>
-                  <th className="num">{t('history.price')}</th>
-                  <th>{t('history.receipt')}</th>
+                  <th className="text-left font-medium text-text-muted px-4 py-3 border-b border-border text-xs uppercase tracking-wide">
+                    {t('history.date')}
+                  </th>
+                  <th className="text-left font-medium text-text-muted px-4 py-3 border-b border-border text-xs uppercase tracking-wide">
+                    {t('history.item')}
+                  </th>
+                  <th className="text-left font-medium text-text-muted px-4 py-3 border-b border-border text-xs uppercase tracking-wide">
+                    {t('history.store')}
+                  </th>
+                  <th className="text-right font-medium text-text-muted px-4 py-3 border-b border-border text-xs uppercase tracking-wide tabular-nums">
+                    {t('history.price')}
+                  </th>
+                  <th className="text-left font-medium text-text-muted px-4 py-3 border-b border-border text-xs uppercase tracking-wide">
+                    {t('history.receipt')}
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -204,56 +184,37 @@ export function History({ askAssistant }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </Panel>
 
           {nextCursor && (
-            <div style={{ textAlign: 'center', marginTop: 'var(--sp-4)' }}>
-              <button
-                className="btn btn--secondary btn--sm"
+            <div className="text-center mt-4">
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={loadMore}
                 disabled={history.isFetching}
               >
                 {history.isFetching ? t('history.loading') : t('history.loadMore')}
-              </button>
+              </Button>
             </div>
           )}
         </>
       )}
 
       {patternItems.length > 0 && (
-        <section className="section">
-          <div className="panel" style={{ padding: 'var(--sp-5)' }}>
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--sp-2)',
-                marginBottom: 'var(--sp-3)',
-              }}
-            >
-              <span style={{ color: 'var(--accent)' }}>
+        <section className="mt-8">
+          <Panel className="p-5">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-accent">
                 <IconSpark size={18} />
               </span>
               <strong>{t('history.patternsTitle')}</strong>
             </div>
-            <ul style={{ display: 'grid', gap: 'var(--sp-2)' }}>
+            <ul className="grid gap-2">
               {patternItems.slice(0, 5).map((p) => (
-                <li
-                  key={p.item_id}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    gap: 'var(--sp-3)',
-                  }}
-                >
+                <li key={p.item_id} className="flex items-center justify-between gap-3">
                   <span>{p.name}</span>
-                  <span
-                    style={{
-                      color: 'var(--text-muted)',
-                      fontSize: 'var(--fs-sm)',
-                    }}
-                  >
+                  <span className="text-text-muted text-sm">
                     {t('history.patternSummary', {
                       name: '',
                       pattern:
@@ -269,56 +230,38 @@ export function History({ askAssistant }) {
                 </li>
               ))}
             </ul>
-            <div style={{ marginTop: 'var(--sp-4)' }}>
-              <button className="btn btn--ghost btn--sm" onClick={askAssistant}>
+            <div className="mt-4">
+              <Button variant="ghost" size="sm" onClick={askAssistant}>
                 {t('history.makePlan')}
-              </button>
+              </Button>
             </div>
-          </div>
+          </Panel>
         </section>
       )}
 
       {lightbox && (
         <div
-          className="scrim"
+          className="fixed inset-0 z-50 bg-text/32 backdrop-blur-sm flex items-center justify-center"
           onClick={() => setLightbox(null)}
           role="dialog"
           aria-modal="true"
           aria-label={t('history.receipt')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
         >
-          <div
-            style={{
-              position: 'relative',
-              maxWidth: '90vw',
-              maxHeight: '90vh',
-            }}
-          >
+          <div className="relative max-w-[90vw] max-h-[90vh]">
             <img
               src={getReceiptUrl(lightbox)}
               alt={t('history.receipt')}
-              style={{
-                maxWidth: '90vw',
-                maxHeight: '90vh',
-                objectFit: 'contain',
-              }}
+              className="max-w-[90vw] max-h-[90vh] object-contain"
             />
-            <button
-              className="btn btn--secondary btn--sm"
+            <Button
+              size="sm"
+              variant="secondary"
+              className="absolute top-2 right-2"
               onClick={() => setLightbox(null)}
-              style={{
-                position: 'absolute',
-                top: 'var(--sp-2)',
-                right: 'var(--sp-2)',
-              }}
               aria-label={t('history.closeReceipt')}
             >
               {t('history.closeReceipt')}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -329,8 +272,11 @@ export function History({ askAssistant }) {
 function Group({ g, monthLabel, fmtDate, t, formatRp, onReceiptClick }) {
   return (
     <>
-      <tr className="month-sep">
-        <td colSpan={5}>
+      <tr className="bg-surface-sunken">
+        <td
+          colSpan={5}
+          className="px-4 py-3 font-semibold text-text-muted text-xs uppercase tracking-wide"
+        >
           {monthLabel(g.month)} · {t('history.purchases_count', { count: g.rows.length })} ·{' '}
           {t('history.total')} {formatRp(g.total)}
         </td>
@@ -339,34 +285,38 @@ function Group({ g, monthLabel, fmtDate, t, formatRp, onReceiptClick }) {
         p.items.map((it, j) => (
           <tr key={p.id + it.id + j}>
             {j === 0 ? (
-              <td style={{ whiteSpace: 'nowrap' }} rowSpan={p.items.length}>
+              <td
+                className="px-4 py-3 border-b border-border whitespace-nowrap"
+                rowSpan={p.items.length}
+              >
                 {fmtDate(p.date)}
               </td>
             ) : null}
-            <td>
+            <td className="px-4 py-3 border-b border-border">
               {it.name || '—'}{' '}
-              <span style={{ color: 'var(--text-muted)' }}>
+              <span className="text-text-muted">
                 · {it.qty}
                 {it.unit ? ` ${it.unit}` : ''}
               </span>
             </td>
-            <td>{p.store_label || '—'}</td>
-            <td className="num">
+            <td className="px-4 py-3 border-b border-border">{p.store_label || '—'}</td>
+            <td className="px-4 py-3 border-b border-border text-right tabular-nums">
               {it.price != null
                 ? formatRp(it.price)
                 : j === p.items.length - 1
                   ? formatRp(p.total)
                   : ''}
             </td>
-            <td>
+            <td className="px-4 py-3 border-b border-border">
               {j === 0 && p.has_receipt ? (
-                <button
-                  className="btn btn--ghost btn--sm"
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => onReceiptClick(p.id)}
                   aria-label={t('history.receipt')}
                 >
                   {t('history.receipt')}
-                </button>
+                </Button>
               ) : null}
             </td>
           </tr>

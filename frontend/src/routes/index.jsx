@@ -1,6 +1,7 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useApp } from '../context/AppContext.jsx'
 import { Home } from '../pages/Home.jsx'
+import { RouteError } from '../components/RouteError.jsx'
 
 function RouteComponent() {
   const navigate = useNavigate()
@@ -16,4 +17,5 @@ function RouteComponent() {
 
 export const Route = createFileRoute('/')({
   component: RouteComponent,
+  errorComponent: RouteError,
 })

@@ -54,42 +54,45 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.page__lead')).toBeTruthy()
+    expect(container.querySelector('[class*="max-w-[62ch]"]')).toBeTruthy()
   })
 
   it('renders stats section', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.stats')).toBeTruthy()
+    expect(container.querySelector('[class*="grid-cols-2 lg:grid-cols-4"]')).toBeTruthy()
   })
 
   it('renders needs attention section', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.section')).toBeTruthy()
+    expect(container.querySelector('section')).toBeTruthy()
   })
 
   it('renders next trip section (empty state)', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(container.querySelectorAll('.section').length).toBeGreaterThanOrEqual(2)
+    expect(container.querySelectorAll('section').length).toBeGreaterThanOrEqual(2)
   })
 
   it('renders quick refill section', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.dropzone__icon')).toBeTruthy()
+    expect(
+      container.querySelector('img[alt="Receipt"]') ||
+        container.querySelector('[class*="w-12 h-12 rounded-lg bg-accent-soft"]')
+    ).toBeTruthy()
   })
 
   it('renders tips section', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.tiptip')).toBeTruthy()
+    expect(container.querySelector('[class*="border-l-[3px] border-l-accent"]')).toBeTruthy()
   })
 
   it('calls askAssistant from tips button', () => {
@@ -97,7 +100,9 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant })
     )
-    const sparkBtns = container.querySelectorAll('.btn--primary.btn--sm')
+    const sparkBtns = Array.from(container.querySelectorAll('button')).filter((b) =>
+      b.textContent?.includes('home.askRecipe')
+    )
     const lastSpark = sparkBtns[sparkBtns.length - 1]
     if (lastSpark) fireEvent.click(lastSpark)
     expect(askAssistant).toHaveBeenCalled()
@@ -108,7 +113,9 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView, askAssistant: vi.fn() })
     )
-    const seeAllBtn = container.querySelector('.btn--ghost')
+    const seeAllBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('home.seeAll')
+    )
     if (seeAllBtn) {
       fireEvent.click(seeAllBtn)
       expect(setView).toHaveBeenCalledWith('inventory')
@@ -120,9 +127,10 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView, askAssistant: vi.fn() })
     )
-    const btns = container.querySelectorAll('.btn--primary')
-    const addBtn = Array.from(btns).find(
-      (b) => b.textContent?.includes('addReceipt') || b.textContent?.includes('nav.addFromReceipt')
+    const addBtn = Array.from(container.querySelectorAll('button')).find(
+      (b) =>
+        b.textContent?.includes('home.addFromReceipt') ||
+        b.textContent?.includes('nav.addFromReceipt')
     )
     if (addBtn) {
       fireEvent.click(addBtn)
@@ -134,7 +142,7 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    const statNums = container.querySelectorAll('.stat__num')
+    const statNums = container.querySelectorAll('[class*="text-xl font-bold tracking-tight"]')
     expect(statNums.length).toBe(4)
     expect(statNums[0].textContent).toBe('3')
   })
@@ -154,7 +162,11 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.tripcard')).toBeTruthy()
+    expect(
+      container.querySelector(
+        '[class*="bg-accent-soft border border-accent-soft-border rounded-lg p-6"]'
+      )
+    ).toBeTruthy()
     expect(container.textContent).toContain('home.shopAt')
   })
 
@@ -174,7 +186,9 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView, askAssistant: vi.fn() })
     )
-    const planBtn = container.querySelector('.tripcard .btn--primary')
+    const planBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('home.seePlan')
+    )
     if (planBtn) {
       fireEvent.click(planBtn)
       expect(setView).toHaveBeenCalledWith('plan')
@@ -194,9 +208,9 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    const statNums = container.querySelectorAll('.stat__num')
+    const statNums = container.querySelectorAll('[class*="text-xl font-bold tracking-tight"]')
     expect(
-      statNums[1].classList.contains('is-warn') || statNums[2].classList.contains('is-warn')
+      statNums[1].classList.contains('text-warn') || statNums[2].classList.contains('text-warn')
     ).toBe(true)
   })
 
@@ -209,6 +223,6 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.empty')).toBeTruthy()
+    expect(container.querySelector('[class*="text-center px-6 py-12"]')).toBeTruthy()
   })
 })

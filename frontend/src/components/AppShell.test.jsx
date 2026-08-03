@@ -59,14 +59,14 @@ describe('AppShell', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
-    expect(container.querySelector('.app')).toBeTruthy()
+    expect(container.querySelector('[class*="min-h-dvh"]')).toBeTruthy()
   })
 
   it('renders rail navigation', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
-    expect(container.querySelector('.rail')).toBeTruthy()
+    expect(container.querySelector('aside')).toBeTruthy()
   })
 
   it('renders children', () => {
@@ -80,21 +80,24 @@ describe('AppShell', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
-    expect(container.querySelector('.bottombar')).toBeTruthy()
+    expect(container.querySelector('nav[aria-label="nav.home"]')).toBeTruthy()
   })
 
   it('renders topbar', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
-    expect(container.querySelector('.topbar')).toBeTruthy()
+    expect(container.querySelector('header')).toBeTruthy()
   })
 
   it('renders user initials when no picture', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
-    expect(container.querySelector('.rail__avatar--initials').textContent).toBe('A')
+    const initials = Array.from(container.querySelectorAll('[class*="rounded-pill"]')).find(
+      (el) => el.textContent === 'A'
+    )
+    expect(initials).toBeTruthy()
   })
 
   it('calls logout on logout button click', () => {
@@ -103,7 +106,7 @@ describe('AppShell', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
-    const logoutBtn = container.querySelector('.rail__logout')
+    const logoutBtn = container.querySelector('button.text-xs.text-text-faint')
     if (logoutBtn) fireEvent.click(logoutBtn)
     expect(mutate).toHaveBeenCalled()
   })
@@ -113,7 +116,7 @@ describe('AppShell', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
-    expect(container.querySelector('.rail__usage')).toBeTruthy()
+    expect(container.querySelector('[class*="h-[5px]"]')).toBeTruthy()
   })
 
   it('shows danger usage tone', () => {
@@ -123,6 +126,6 @@ describe('AppShell', () => {
     const { container } = renderWithProviders(
       React.createElement(AppShell, null, React.createElement('div', null, 'content'))
     )
-    expect(container.querySelector('.is-danger')).toBeTruthy()
+    expect(container.querySelector('.text-danger')).toBeTruthy()
   })
 })

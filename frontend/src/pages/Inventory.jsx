@@ -5,6 +5,10 @@ import { useStock, useUpdateStock, useLocations } from '../lib/queries/index.js'
 import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
 import { IconSearch, IconBox, IconPlus, IconMinus } from '../components/icons.jsx'
+import { cn } from '../lib/cn.js'
+import { Button } from '../components/Button.jsx'
+import { Chip } from '../components/Chip.jsx'
+import { Panel } from '../components/Panel.jsx'
 
 function getDaysUntil(expiryDate) {
   if (!expiryDate) return null
@@ -51,48 +55,34 @@ export function Inventory() {
 
   return (
     <>
-      <div className="page__head">
-        <p className="page__lead">{personaText('inventoryLead', persona, t)}</p>
+      <div className="mb-6">
+        <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+          {personaText('inventoryLead', persona, t)}
+        </p>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 'var(--sp-3)',
-          flexWrap: 'wrap',
-          marginBottom: 'var(--sp-4)',
-        }}
-      >
-        <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
+      <div className="flex flex-wrap gap-3 mb-4">
+        <div className="relative flex-1 min-w-[220px]">
           <IconSearch
             size={18}
-            style={{
-              position: 'absolute',
-              left: 12,
-              top: 12,
-              color: 'var(--text-faint)',
-            }}
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-text-faint"
           />
           <input
             value={q}
             onChange={(e) => handleSearch(e.target.value)}
             placeholder={t('inventory.searchPlaceholder')}
             aria-label={t('inventory.searchAriaLabel')}
-            style={{ paddingLeft: 40 }}
+            className="pl-10"
           />
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 'var(--sp-2)',
-          flexWrap: 'wrap',
-          marginBottom: 'var(--sp-5)',
-        }}
-      >
+      <div className="flex flex-wrap gap-2 mb-5">
         <button
-          className="chip chip--filter"
+          className={cn(
+            'inline-flex items-center gap-2 rounded-pill text-xs font-medium px-3 py-1 min-h-9 px-4 py-2 text-sm bg-surface-raised border border-border-strong text-text-muted hover:bg-surface-sunken select-none',
+            loc === 'all' && 'bg-accent-soft border-accent-soft-border text-accent-hover'
+          )}
           aria-pressed={loc === 'all'}
           onClick={() => setLoc('all')}
         >
@@ -101,7 +91,10 @@ export function Inventory() {
         {locations.map((locItem) => (
           <button
             key={locItem.id}
-            className="chip chip--filter"
+            className={cn(
+              'inline-flex items-center gap-2 rounded-pill text-xs font-medium px-3 py-1 min-h-9 px-4 py-2 text-sm bg-surface-raised border border-border-strong text-text-muted hover:bg-surface-sunken select-none',
+              loc === locItem.id && 'bg-accent-soft border-accent-soft-border text-accent-hover'
+            )}
             aria-pressed={loc === locItem.id}
             onClick={() => setLoc(locItem.id)}
           >
@@ -110,7 +103,7 @@ export function Inventory() {
         ))}
       </div>
 
-      <div className="panel">
+      <Panel>
         {isLoading ? (
           <SkeletonRows n={5} />
         ) : rows.length === 0 ? (
@@ -120,14 +113,17 @@ export function Inventory() {
             desc={t('inventory.noMatchDesc')}
           />
         ) : (
-          <div className="list">
+          <div className="flex flex-col">
             {rows.map((s) => (
-              <div className="row" key={s.id}>
-                <div className="row__main">
-                  <div className="row__name">
+              <div
+                className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-4 border-b border-border last:border-b-0 hover:bg-surface-sunken transition-colors"
+                key={s.id}
+              >
+                <div className="min-w-0">
+                  <div className="font-semibold text-sm flex items-center gap-3 flex-wrap">
                     {s.name} <LocChip loc={s.location} />
                   </div>
-                  <div className="row__meta">
+                  <div className="flex items-center gap-4 mt-2 text-sm text-text-muted flex-wrap">
                     <TimeSignal
                       expiryDays={getDaysUntil(s.expiry_date)}
                       runOut={s.run_out_days}
@@ -135,21 +131,21 @@ export function Inventory() {
                     />
                   </div>
                 </div>
-                <div className="row__side">
-                  <div className="row__qty row__qty--editable">
+                <div className="text-right flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
                     <button
-                      className="btn btn--icon btn--sm"
+                      className="w-7 h-7 rounded-md inline-flex items-center justify-center text-text-muted hover:bg-surface-sunken hover:text-text disabled:opacity-50"
                       onClick={() => handleQtyUpdate(s.id, -1)}
                       disabled={s.qty <= 0}
                       aria-label={t('inventory.decreaseQty')}
                     >
                       <IconMinus size={14} />
                     </button>
-                    <span className="row__qty-value">
+                    <span className="font-semibold min-w-[3ch] text-center">
                       {s.qty} {s.unit}
                     </span>
                     <button
-                      className="btn btn--icon btn--sm"
+                      className="w-7 h-7 rounded-md inline-flex items-center justify-center text-text-muted hover:bg-surface-sunken hover:text-text"
                       onClick={() => handleQtyUpdate(s.id, 1)}
                       aria-label={t('inventory.increaseQty')}
                     >
@@ -161,7 +157,7 @@ export function Inventory() {
             ))}
           </div>
         )}
-      </div>
+      </Panel>
     </>
   )
 }

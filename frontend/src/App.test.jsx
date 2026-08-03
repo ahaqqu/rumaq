@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
 import React from 'react'
 import { App } from './App.jsx'
 
-const mockGetMe = vi.fn()
-
 vi.mock('./lib/api.js', () => ({
-  getMe: (...args) => mockGetMe(...args),
+  getMe: vi.fn().mockResolvedValue({
+    user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null },
+  }),
   getSettings: vi.fn().mockResolvedValue({
     motion_preference: 'standard',
     language: null,
@@ -30,6 +30,13 @@ vi.mock('./lib/api.js', () => ({
   }),
   getPurchasePatterns: vi.fn().mockResolvedValue({ patterns: [] }),
   getStores: vi.fn().mockResolvedValue({ stores: [] }),
+  getHome: vi.fn().mockResolvedValue({
+    total_items: 0,
+    expiring_7d: 0,
+    running_out_7d: 0,
+    low_stock: [],
+    next_trip: null,
+  }),
   patchSettings: vi.fn().mockResolvedValue({}),
   logout: vi.fn().mockResolvedValue({ ok: true }),
   login: vi.fn(),
@@ -48,16 +55,12 @@ vi.mock('./data/mock.js', async () => {
 })
 
 describe('App', () => {
-  beforeEach(() => {
-    mockGetMe.mockResolvedValue({
-      user: { id: 'u1', email: 'a@b.com', name: 'Alice', picture: null },
-    })
-  })
-
   it('renders without crashing', async () => {
-    const { container } = render(React.createElement(App))
-    await waitFor(() => expect(container.querySelector('.app')).toBeTruthy())
-    expect(container.querySelector('.app')).toBeTruthy()
+    render(React.createElement(App))
+    await waitFor(() => expect(document.body.textContent).toContain('RumaQ'), {
+      timeout: 5000,
+    })
+    expect(document.body.textContent).toContain('RumaQ')
   })
 
   it('sets motion on document', async () => {

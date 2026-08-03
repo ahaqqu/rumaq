@@ -1,7 +1,19 @@
 import { vi } from 'vitest'
 import React from 'react'
+import { QueryClientProvider } from '@tanstack/react-query'
 
 import en from './i18n/locales/en.json'
+
+vi.mock('idb-keyval', () => ({
+  get: vi.fn(),
+  set: vi.fn(),
+  del: vi.fn(),
+}))
+
+vi.mock('@tanstack/react-query-persist-client', () => ({
+  PersistQueryClientProvider: ({ client, children }) =>
+    React.createElement(QueryClientProvider, { client }, children),
+}))
 
 vi.mock('react-i18next', () => {
   const t = (key, opts) => {

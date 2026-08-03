@@ -73,7 +73,7 @@ describe('Inventory', () => {
 
   it('renders page lead', () => {
     const { container } = renderWithQuery(React.createElement(Inventory))
-    expect(container.querySelector('.page__lead')).toBeTruthy()
+    expect(container.querySelector('[class*="max-w-[62ch]"]')).toBeTruthy()
   })
 
   it('renders search input', () => {
@@ -83,18 +83,18 @@ describe('Inventory', () => {
 
   it('renders location filter chips', () => {
     const { container } = renderWithQuery(React.createElement(Inventory))
-    const chips = container.querySelectorAll('.chip--filter')
+    const chips = container.querySelectorAll('[class*="rounded-pill"]')
     expect(chips.length).toBeGreaterThan(0)
   })
 
   it('renders stock list', () => {
     const { container } = renderWithQuery(React.createElement(Inventory))
-    expect(container.querySelector('.list')).toBeTruthy()
+    expect(container.querySelector('[class*="flex flex-col"]')).toBeTruthy()
   })
 
   it('shows items in the list', () => {
     const { container } = renderWithQuery(React.createElement(Inventory))
-    const rows = container.querySelectorAll('.row')
+    const rows = container.querySelectorAll('[class*="grid-cols-[1fr_auto]"]')
     expect(rows.length).toBeGreaterThan(0)
   })
 
@@ -107,12 +107,12 @@ describe('Inventory', () => {
         vi.advanceTimersByTime(400)
       })
     }
-    expect(container.querySelector('.empty')).toBeTruthy()
+    expect(container.querySelector('[class*="text-center px-6 py-12"]')).toBeTruthy()
   })
 
   it('filters by location chip click', () => {
     const { container } = renderWithQuery(React.createElement(Inventory))
-    const chips = container.querySelectorAll('.chip--filter')
+    const chips = container.querySelectorAll('[class*="rounded-pill"]')
     if (chips.length > 1) {
       fireEvent.click(chips[1])
       expect(chips[1].getAttribute('aria-pressed')).toBe('true')
@@ -121,7 +121,7 @@ describe('Inventory', () => {
 
   it('resets to all locations', () => {
     const { container } = renderWithQuery(React.createElement(Inventory))
-    const chips = container.querySelectorAll('.chip--filter')
+    const chips = container.querySelectorAll('[class*="rounded-pill"]')
     if (chips.length > 1) {
       fireEvent.click(chips[1])
       fireEvent.click(chips[0])

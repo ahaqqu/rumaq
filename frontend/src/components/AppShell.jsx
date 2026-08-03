@@ -11,11 +11,14 @@ import {
   BrandMark,
 } from './icons.jsx'
 import { AI_USAGE, usageState } from '../data/mock.js'
+import { cn } from '../lib/cn.js'
 import { useApp } from '../context/AppContext.jsx'
 import { useMe, useLogout } from '../lib/queries/me.js'
 import { useSettings } from '../lib/queries/index.js'
 import { Assistant } from './Assistant.jsx'
 import { OfflineBanner } from './OfflineBanner.jsx'
+import { Button } from './Button.jsx'
+import { NavItem } from './NavItem.jsx'
 
 const NAV = [
   { id: 'home', key: 'nav.home', Icon: IconHome, to: '/' },
@@ -38,7 +41,7 @@ export function AppShell({ children }) {
   const hasBackendKey = settings?.has_ai_key === true
   const isAiConnected = Boolean(aiKey) || hasBackendKey
   const { pct, warn, danger } = usageState()
-  const usageTone = danger ? 'is-danger' : warn ? 'is-warn' : ''
+  const usageTone = danger ? 'text-danger' : warn ? 'text-warn' : ''
 
   const currentRouteId = matches[matches.length - 1]?.routeId || '/'
   const currentNav = NAV.find((n) => n.to === currentRouteId)
@@ -48,39 +51,42 @@ export function AppShell({ children }) {
   const user = me?.user
 
   return (
-    <div className="app">
-      <aside className="rail" aria-label={t('nav.home')}>
-        <div className="brand">
-          <BrandMark size={32} />
-          <div className="brand__name">RumaQ</div>
+    <div className="grid min-h-dvh lg:grid-cols-[248px_1fr]">
+      <aside
+        className="hidden lg:flex sticky top-0 h-dvh flex-col px-4 py-5 gap-2 bg-surface-raised border-r border-border"
+        aria-label={t('nav.home')}
+      >
+        <div className="flex items-center justify-center gap-3 pb-5 px-2 pt-2">
+          <BrandMark size={56} />
+          <div className="font-bold text-[26px] tracking-tight">RumaQ</div>
         </div>
-        <Link to="/add" className="btn btn--primary btn--block rail__add">
-          <IconReceipt size={18} /> {t('nav.addFromReceipt')}
+
+        <Link to="/add" className="mx-1 mb-4">
+          <Button block>
+            <IconReceipt size={18} /> {t('nav.addFromReceipt')}
+          </Button>
         </Link>
-        <nav className="nav">
+
+        <nav className="flex flex-col gap-0.5" aria-label={t('nav.home')}>
           {NAV.map(({ id, key, Icon, to }) => (
-            <Link
-              key={id}
-              to={to}
-              className="nav__item"
-              aria-current={isActive(to) ? 'page' : undefined}
-            >
-              <Icon size={18} /> {t(key)}
-            </Link>
+            <NavItem key={id} to={to} active={isActive(to)}>
+              <Icon size={18} className="shrink-0 opacity-90" /> {t(key)}
+            </NavItem>
           ))}
         </nav>
-        <div className="rail__foot">
+
+        <div className="mt-auto flex flex-col gap-3 pt-4 border-t border-border">
           {user && (
-            <div className="rail__user">
+            <div className="flex items-center gap-3 p-2 border-b border-border mb-0.5">
               {user.picture && !imgError ? (
                 <img
-                  className="rail__avatar"
+                  className="w-9 h-9 rounded-pill object-cover shrink-0"
                   src={user.picture}
                   alt=""
                   onError={() => setImgError(true)}
                 />
               ) : (
-                <div className="rail__avatar rail__avatar--initials">
+                <div className="w-9 h-9 rounded-pill grid place-items-center bg-accent text-on-accent font-semibold text-sm shrink-0">
                   {(user.name || '')
                     .split(' ')
                     .filter(Boolean)
@@ -90,78 +96,98 @@ export function AppShell({ children }) {
                     .toUpperCase() || (user.email || '?')[0].toUpperCase()}
                 </div>
               )}
-              <div className="rail__user-info">
-                <div className="rail__user-name">{user.name || t('nav.settings')}</div>
-                <button className="rail__logout" onClick={() => logout.mutate()}>
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis">
+                  {user.name || t('nav.settings')}
+                </div>
+                <button
+                  className="text-xs text-text-faint font-medium hover:text-danger underline-offset-2 hover:underline"
+                  onClick={() => logout.mutate()}
+                >
                   {t('nav.logout', 'Logout')}
                 </button>
               </div>
             </div>
           )}
-          <div className="rail__keystate">
-            <span className={`rail__dot ${isAiConnected ? '' : 'is-off'}`} />
+
+          <div className="flex items-center gap-2 text-sm text-text-muted px-2">
+            <span
+              className={cn(
+                'w-2 h-2 rounded-full shrink-0',
+                isAiConnected ? 'bg-ok' : 'bg-text-faint'
+              )}
+            />
             {isAiConnected ? t('assistant.connected') : t('assistant.noKey')}
           </div>
+
           {isAiConnected && (
-            <div className="rail__usage">
-              <div className="rail__usage-row">
-                <span className="rail__usage-label">
+            <div className="flex flex-col gap-2 px-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-text-muted">
                   {t('common.requestsToday', {
                     used: AI_USAGE.used,
                     limit: AI_USAGE.limit,
                   })}
                 </span>
-                <span className={`rail__usage-count ${usageTone}`}>
+                <span className={cn('font-semibold tabular-nums', usageTone)}>
                   {AI_USAGE.used}/{AI_USAGE.limit}
                 </span>
               </div>
-              <div className="rail__mini-bar">
-                <div className={`rail__mini-fill ${usageTone}`} style={{ width: pct + '%' }} />
+              <div className="h-[5px] rounded-pill bg-surface-inset overflow-hidden">
+                <div
+                  className={cn(
+                    'h-full rounded-pill bg-accent transition-[width] duration-300',
+                    warn && 'bg-warn',
+                    danger && 'bg-danger'
+                  )}
+                  style={{ width: pct + '%' }}
+                />
               </div>
               {danger ? (
-                <div className="rail__usage-note is-danger">{t('ui.dailyLimitReached')}</div>
+                <div className="text-xs text-danger">{t('ui.dailyLimitReached')}</div>
               ) : warn ? (
-                <div className="rail__usage-note is-warn">{t('assistant.closeToLimit')}</div>
+                <div className="text-xs text-warn">{t('assistant.closeToLimit')}</div>
               ) : null}
             </div>
           )}
         </div>
       </aside>
 
-      <div className="main">
+      <div className="min-w-0 flex flex-col">
         <OfflineBanner />
-        <header className="topbar">
-          <h1 className="topbar__title">{title}</h1>
-          <div className="topbar__spacer" />
-          <Link to="/add" className="topbar__btn" aria-label={t('nav.addFromReceipt')}>
+        <header className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 lg:px-6 lg:py-4 bg-surface/82 backdrop-blur border-b border-border">
+          <h1 className="font-semibold text-sm lg:text-base truncate">{title}</h1>
+          <div className="flex-1" />
+          <Link
+            to="/add"
+            className="w-10 h-10 rounded-md grid place-items-center text-text-muted border border-border bg-surface-raised hover:bg-surface-sunken hover:text-text transition-colors shrink-0"
+            aria-label={t('nav.addFromReceipt')}
+          >
             <IconReceipt size={18} />
           </Link>
-          <Link to="/settings" className="topbar__btn" aria-label={t('nav.settings')}>
+          <Link
+            to="/settings"
+            className="w-10 h-10 rounded-md grid place-items-center text-text-muted border border-border bg-surface-raised hover:bg-surface-sunken hover:text-text transition-colors shrink-0"
+            aria-label={t('nav.settings')}
+          >
             <IconSettings size={18} />
           </Link>
         </header>
 
-        <main className="page">{children}</main>
+        <main className="px-4 py-5 lg:px-6 lg:pb-24 pb-[calc(168px+env(safe-area-inset-bottom))] max-w-[1080px]">
+          {children}
+        </main>
       </div>
 
-      <nav className="bottombar" aria-label={t('nav.home')}>
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-30 flex justify-around bg-surface-raised/92 backdrop-blur border-t border-border pb-[env(safe-area-inset-bottom)]"
+        aria-label={t('nav.home')}
+      >
         {NAV.filter((n) => n.id !== 'settings').map(({ id, key, Icon, to }) => (
-          <Link
-            key={id}
-            to={to}
-            className="bottombar__item"
-            aria-current={isActive(to) ? 'page' : undefined}
-          >
+          <NavItem key={id} to={to} active={isActive(to)} mobile>
             <Icon size={20} /> {t(key)}
-          </Link>
+          </NavItem>
         ))}
-        <Link
-          to="/settings"
-          className="bottombar__item"
-          aria-current={isActive('/settings') ? 'page' : undefined}
-        >
-          <IconSettings size={20} /> {t('nav.settings')}
-        </Link>
       </nav>
 
       <Assistant

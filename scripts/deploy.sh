@@ -109,6 +109,8 @@ resolve_wrangler_config() {
     sed -i "s|^database_id = \"YOUR_DATABASE_ID\"|database_id = \"$CLOUDFLARE_DATABASE_ID\"|" "$tmp"
   fi
 
+  sed -i "s|^database_name = \"[^\"]*\"|database_name = \"$DB_NAME\"|" "$tmp"
+
   printf '%s' "$tmp"
 }
 
@@ -450,8 +452,8 @@ do_cloudflare() {
   validate_deploy_env
   setup_database_remote
   ensure_r2_bucket
-  put_worker_secrets
   deploy_worker
+  put_worker_secrets
   build_frontend
   if ! $DRY_RUN; then
     pages_deploy

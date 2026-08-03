@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { AddFromReceipt } from '../pages/AddFromReceipt.jsx'
+import { RouteError } from '../components/RouteError.jsx'
 
 function RouteComponent() {
   const navigate = useNavigate()
@@ -9,4 +10,5 @@ function RouteComponent() {
 
 export const Route = createFileRoute('/add')({
   component: RouteComponent,
+  errorComponent: RouteError,
 })

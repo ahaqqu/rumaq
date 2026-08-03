@@ -107,14 +107,14 @@ describe('History', () => {
     const { container } = renderWithProviders(
       React.createElement(History, { askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.page__lead')).toBeTruthy()
+    expect(container.querySelector('[class*="max-w-[62ch]"]')).toBeTruthy()
   })
 
   it('renders table', () => {
     const { container } = renderWithProviders(
       React.createElement(History, { askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.table')).toBeTruthy()
+    expect(container.querySelector('table')).toBeTruthy()
   })
 
   it('renders month groups', () => {
@@ -129,7 +129,7 @@ describe('History', () => {
     const { container } = renderWithProviders(
       React.createElement(History, { askAssistant: vi.fn() })
     )
-    const monthSep = container.querySelector('.month-sep')
+    const monthSep = container.querySelector('.bg-surface-sunken')
     expect(monthSep).toBeTruthy()
   })
 
@@ -143,7 +143,9 @@ describe('History', () => {
   it('renders make plan button that calls askAssistant', () => {
     const askAssistant = vi.fn()
     const { container } = renderWithProviders(React.createElement(History, { askAssistant }))
-    const sectionBtn = container.querySelector('section.section button.btn--ghost')
+    const sectionBtn = Array.from(container.querySelectorAll('section button')).find((b) =>
+      b.textContent?.includes('history.makePlan')
+    )
     expect(sectionBtn).toBeTruthy()
     fireEvent.click(sectionBtn)
     expect(askAssistant).toHaveBeenCalled()
@@ -159,7 +161,7 @@ describe('History', () => {
     const { container } = renderWithProviders(
       React.createElement(History, { askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.empty__title')).toBeTruthy()
+    expect(container.querySelector('.font-semibold.text-text.text-sm')).toBeTruthy()
   })
 
   it('renders error state', () => {
@@ -216,7 +218,7 @@ describe('History', () => {
     )
     const receiptBtn = container.querySelector('button[aria-label="history.receipt"]')
     if (receiptBtn) fireEvent.click(receiptBtn)
-    const scrim = container.querySelector('.scrim')
+    const scrim = container.querySelector('[class*="fixed inset-0 z-50 bg-text/32"]')
     if (scrim) fireEvent.click(scrim)
     expect(container.querySelector('img[alt="history.receipt"]')).toBeFalsy()
   })
@@ -231,9 +233,9 @@ describe('History', () => {
     const { container } = renderWithProviders(
       React.createElement(History, { askAssistant: vi.fn() })
     )
-    const loadMoreBtn =
-      container.querySelector('button[disabled="false"]') ||
-      container.querySelector('.btn--secondary')
+    const loadMoreBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('history.loadMore')
+    )
     expect(loadMoreBtn).toBeTruthy()
   })
 

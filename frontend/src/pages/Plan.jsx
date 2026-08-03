@@ -13,6 +13,10 @@ import {
   IconBolt,
   IconClose,
 } from '../components/icons.jsx'
+import { cn } from '../lib/cn.js'
+import { Button } from '../components/Button.jsx'
+import { Chip } from '../components/Chip.jsx'
+import { Panel, PanelHead, PanelBody } from '../components/Panel.jsx'
 
 function formatPrice(amount, currency) {
   return new Intl.NumberFormat('id-ID', {
@@ -41,38 +45,22 @@ export function Plan({ askAssistant, setView }) {
   const renderProposalBanner = () => {
     if (!assistantProposal) return null
     return (
-      <div
-        className="panel"
-        style={{
-          padding: 'var(--sp-5)',
-          marginBottom: 'var(--sp-4)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'var(--sp-3)',
-        }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 'var(--sp-3)',
-          }}
-        >
-          <span style={{ color: 'var(--accent)' }}>
+      <Panel className="p-5 mb-4 flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-accent">
             <IconSpark size={18} />
           </span>
           <strong>{t('assistant.applyToPlan')}</strong>
           <button
-            className="assistant__close"
+            className="ml-auto w-9 h-9 rounded-md grid place-items-center text-text-muted hover:bg-surface-sunken hover:text-text transition-colors"
             onClick={() => setAssistantProposal(null)}
             aria-label={t('assistant.closeAriaLabel')}
-            style={{ marginLeft: 'auto' }}
           >
             <IconClose size={16} />
           </button>
         </div>
-        <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{assistantProposal}</p>
-      </div>
+        <p className="whitespace-pre-wrap m-0">{assistantProposal}</p>
+      </Panel>
     )
   }
 
@@ -119,31 +107,33 @@ export function Plan({ askAssistant, setView }) {
 
   if (settingsLoading || plansLoading) {
     return (
-      <div className="panel">
+      <Panel>
         <SkeletonRows n={4} />
-      </div>
+      </Panel>
     )
   }
 
   if (!hasAiKey) {
     return (
       <>
-        <div className="page__head">
-          <p className="page__lead">{personaText('planLeadNoKey', persona, t)}</p>
+        <div className="mb-6">
+          <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+            {personaText('planLeadNoKey', persona, t)}
+          </p>
         </div>
         {renderProposalBanner()}
-        <div className="panel">
+        <Panel>
           <EmptyState
             icon={IconKey}
             title={t('plan.connectApiKey')}
             desc={t('plan.bringYourOwnKey')}
             action={
-              <button className="btn btn--primary" onClick={() => setView('settings')}>
+              <Button onClick={() => setView('settings')}>
                 <IconKey size={18} /> {t('plan.addApiKey')}
-              </button>
+              </Button>
             }
           />
-        </div>
+        </Panel>
       </>
     )
   }
@@ -151,13 +141,15 @@ export function Plan({ askAssistant, setView }) {
   if (generateMutation.isPending) {
     return (
       <>
-        <div className="page__head">
-          <p className="page__lead">{personaText('planLead', persona, t)}</p>
+        <div className="mb-6">
+          <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+            {personaText('planLead', persona, t)}
+          </p>
         </div>
         {renderProposalBanner()}
-        <div className="panel">
+        <Panel>
           <SkeletonRows n={4} />
-        </div>
+        </Panel>
       </>
     )
   }
@@ -168,78 +160,72 @@ export function Plan({ askAssistant, setView }) {
 
     return (
       <>
-        <div className="page__head">
-          <p className="page__lead">{personaText('planLead', persona, t)}</p>
+        <div className="mb-6">
+          <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+            {personaText('planLead', persona, t)}
+          </p>
         </div>
         {renderProposalBanner()}
-        <div
-          style={{
-            display: 'flex',
-            gap: 'var(--sp-3)',
-            marginBottom: 'var(--sp-5)',
-            flexWrap: 'wrap',
-          }}
-        >
-          <button
-            className="btn btn--primary"
-            onClick={handleSaveDraft}
-            disabled={saveMutation.isPending}
-          >
+
+        <div className="flex flex-wrap gap-3 mb-5">
+          <Button onClick={handleSaveDraft} disabled={saveMutation.isPending}>
             <IconCheck size={18} /> {t('plan.savePlan')}
-          </button>
-          <button
-            className="btn btn--secondary"
+          </Button>
+          <Button
+            variant="secondary"
             onClick={() => generateMutation.mutate()}
             disabled={generateMutation.isPending}
           >
             <IconSpark size={18} /> {t('plan.regenerate')}
-          </button>
-          <button
-            className="btn btn--ghost"
-            onClick={handleDiscardDraft}
-            disabled={saveMutation.isPending}
-          >
+          </Button>
+          <Button variant="ghost" onClick={handleDiscardDraft} disabled={saveMutation.isPending}>
             {t('plan.discardDraft')}
-          </button>
+          </Button>
           {grandTotal > 0 && (
-            <div className="chip" style={{ alignSelf: 'center' }}>
+            <Chip className="self-center">
               {t('plan.stores', { count: stores.length })} · {formatPrice(grandTotal, currency)}
-            </div>
+            </Chip>
           )}
         </div>
+
         {stores.map((store) => (
-          <div className="trip" key={store.store_id} style={{ marginBottom: 'var(--sp-4)' }}>
-            <div className="trip__head">
-              <div className="trip__store">
+          <Panel key={store.store_id} className="mb-4">
+            <PanelHead className="!py-4">
+              <div className="font-semibold flex items-center gap-3">
                 <IconShop size={18} /> {store.store_label}
               </div>
-              <div className="trip__total">
+              <div className="text-text-muted text-sm">
                 {t('home.itemCount', { count: store.items.length })} ·{' '}
                 {formatPrice(
                   store.items.reduce((s, it) => s + (it.price_estimate || 0), 0),
                   currency
                 )}
               </div>
-            </div>
-            <div className="trip__items">
-              {store.items.map((it) => (
-                <div className="plan-item" key={it.name}>
-                  <div className="plan-item__main">
-                    <div className="plan-item__name">
-                      {it.name} · {it.qty}
-                      {it.unit ? ` ${it.unit}` : ''}
+            </PanelHead>
+            <PanelBody className="!py-0 !px-0">
+              <div className="flex flex-col">
+                {store.items.map((it) => (
+                  <div
+                    className="grid grid-cols-[1fr_auto] items-center gap-4 px-5 py-3 border-b border-border last:border-b-0"
+                    key={it.name}
+                  >
+                    <div className="min-w-0">
+                      <div className="font-medium">
+                        {it.name} · {it.qty}
+                        {it.unit ? ` ${it.unit}` : ''}
+                      </div>
+                      <div className="text-xs text-text-muted mt-0.5">{it.why}</div>
                     </div>
-                    <div className="plan-item__why">{it.why}</div>
+                    {it.price_estimate != null && (
+                      <div className="text-sm font-semibold">
+                        {formatPrice(it.price_estimate, currency)}
+                      </div>
+                    )}
                   </div>
-                  {it.price_estimate != null && (
-                    <div className="plan-item__price">
-                      {formatPrice(it.price_estimate, currency)}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
+                ))}
+              </div>
+            </PanelBody>
+          </Panel>
         ))}
       </>
     )
@@ -248,26 +234,27 @@ export function Plan({ askAssistant, setView }) {
   if (!activePlan) {
     return (
       <>
-        <div className="page__head">
-          <p className="page__lead">{personaText('planLead', persona, t)}</p>
+        <div className="mb-6">
+          <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+            {personaText('planLead', persona, t)}
+          </p>
         </div>
         {renderProposalBanner()}
-        <div className="panel">
+        <Panel>
           <EmptyState
             icon={IconSpark}
             title={t('plan.noActivePlan')}
             desc={t('plan.generatePrompt')}
             action={
-              <button
-                className="btn btn--primary"
+              <Button
                 onClick={() => generateMutation.mutate()}
                 disabled={generateMutation.isPending}
               >
                 <IconSpark size={18} /> {t('plan.generate')}
-              </button>
+              </Button>
             }
           />
-        </div>
+        </Panel>
       </>
     )
   }
@@ -277,125 +264,108 @@ export function Plan({ askAssistant, setView }) {
 
   return (
     <>
-      <div className="page__head">
-        <p className="page__lead">{personaText('planLead', persona, t)}</p>
+      <div className="mb-6">
+        <p className="text-md text-text-muted leading-snug max-w-[62ch]">
+          {personaText('planLead', persona, t)}
+        </p>
       </div>
 
       {renderProposalBanner()}
 
-      <div
-        style={{
-          display: 'flex',
-          gap: 'var(--sp-3)',
-          marginBottom: 'var(--sp-5)',
-          flexWrap: 'wrap',
-        }}
-      >
-        <button
-          className="btn btn--secondary"
+      <div className="flex flex-wrap gap-3 mb-5">
+        <Button
+          variant="secondary"
           onClick={() => generateMutation.mutate()}
           disabled={generateMutation.isPending}
         >
           <IconSpark size={18} /> {t('plan.regenerate')}
-        </button>
+        </Button>
         {grandTotal > 0 && (
-          <div className="chip" style={{ alignSelf: 'center' }}>
+          <Chip className="self-center">
             {t('plan.stores', { count: stores.length })} · {formatPrice(grandTotal, currency)}
-          </div>
+          </Chip>
         )}
       </div>
 
       {stores.map((store) => (
-        <div className="trip" key={store.store_id} style={{ marginBottom: 'var(--sp-4)' }}>
-          <div className="trip__head">
-            <div className="trip__store">
+        <Panel key={store.store_id} className="mb-4">
+          <PanelHead className="!py-4">
+            <div className="font-semibold flex items-center gap-3">
               <IconShop size={18} /> {store.store_label}
             </div>
-            <div className="trip__total">
+            <div className="text-text-muted text-sm">
               {t('home.itemCount', { count: store.items.length })} ·{' '}
               {formatPrice(
                 store.items.reduce((s, it) => s + (it.price_estimate || 0), 0),
                 currency
               )}
             </div>
-          </div>
-          <div className="trip__items">
-            {store.items.map((it) => {
-              const isDone = it.status === 'bought'
-              const isSkipped = it.status === 'skipped'
-              return (
-                <label
-                  className={`plan-item${isDone ? ' is-done' : ''}${isSkipped ? ' is-skipped' : ''}`}
-                  key={it.id}
-                >
-                  <input
-                    type="checkbox"
-                    className="plan-item__check"
-                    checked={isDone}
-                    disabled={isDone || isSkipped}
-                    onChange={() => handleCheckItem(activePlan.id, it.id, it.status)}
-                  />
-                  <div className="plan-item__main">
-                    <div className="plan-item__name">
-                      {it.item_name || it.name} · {it.qty}
-                      {it.unit ? ` ${it.unit}` : ''}
+          </PanelHead>
+          <PanelBody className="!py-0 !px-0">
+            <div className="flex flex-col">
+              {store.items.map((it) => {
+                const isDone = it.status === 'bought'
+                const isSkipped = it.status === 'skipped'
+                return (
+                  <label
+                    className={cn(
+                      'grid grid-cols-[auto_1fr_auto] items-center gap-4 px-5 py-3 border-b border-border last:border-b-0',
+                      isDone && 'opacity-45',
+                      (isDone || isSkipped) && 'cursor-default'
+                    )}
+                    key={it.id}
+                  >
+                    <input
+                      type="checkbox"
+                      className="w-5 h-5 accent-accent"
+                      checked={isDone}
+                      disabled={isDone || isSkipped}
+                      onChange={() => handleCheckItem(activePlan.id, it.id, it.status)}
+                    />
+                    <div className="min-w-0">
+                      <div className={cn('font-medium', isDone && 'line-through')}>
+                        {it.item_name || it.name} · {it.qty}
+                        {it.unit ? ` ${it.unit}` : ''}
+                      </div>
+                      {it.why && <div className="text-xs text-text-muted mt-0.5">{it.why}</div>}
                     </div>
-                    {it.why && <div className="plan-item__why">{it.why}</div>}
-                  </div>
-                  {it.price_estimate != null && (
-                    <div className="plan-item__price">
-                      {formatPrice(it.price_estimate, currency)}
-                    </div>
-                  )}
-                </label>
-              )
-            })}
-          </div>
-        </div>
+                    {it.price_estimate != null && (
+                      <div className="text-sm font-semibold">
+                        {formatPrice(it.price_estimate, currency)}
+                      </div>
+                    )}
+                  </label>
+                )
+              })}
+            </div>
+          </PanelBody>
+        </Panel>
       ))}
 
-      {allDone && (
-        <div
-          className="panel"
-          style={{
-            padding: 'var(--sp-5)',
-            display: 'flex',
-            gap: 'var(--sp-4)',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ color: 'var(--ok)' }}>
+      {allDone ? (
+        <Panel className="p-5 flex gap-4 items-center">
+          <div className="text-ok">
             <IconCheck size={22} />
           </div>
-          <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
+          <div className="flex-1 text-sm">
             <strong>{t('plan.allBought')}</strong> {t('plan.allBoughtDesc')}
           </div>
-          <button className="btn btn--primary btn--sm" onClick={() => generateMutation.mutate()}>
+          <Button size="sm" onClick={() => generateMutation.mutate()}>
             <IconSpark size={16} /> {t('plan.generateNext')}
-          </button>
-        </div>
-      )}
-
-      {!allDone && (
-        <div
-          className="panel"
-          style={{
-            padding: 'var(--sp-5)',
-            display: 'flex',
-            gap: 'var(--sp-4)',
-            alignItems: 'center',
-          }}
-        >
-          <div style={{ color: 'var(--accent)' }}>
+          </Button>
+        </Panel>
+      ) : (
+        <Panel className="p-5 flex gap-4 items-center">
+          <div className="text-accent">
             <IconBolt size={20} />
           </div>
-          <div style={{ flex: 1, fontSize: 'var(--fs-sm)' }}>
+          <div className="flex-1 text-sm">
             {t('plan.basedOnItems', { count: activePlan.items.length })}
           </div>
-          <button className="btn btn--ghost btn--sm" onClick={askAssistant}>
+          <Button variant="ghost" size="sm" onClick={askAssistant}>
             {t('plan.askAssistant')}
-          </button>
-        </div>
+          </Button>
+        </Panel>
       )}
     </>
   )
