@@ -201,11 +201,12 @@ authApp.get(
       c.env.WORKER_JWT_SECRET
     )
 
+    const isHttps = String(c.env.PAGES_ORIGIN || '').startsWith('https://')
     setCookie(c, COOKIE_NAME, jwt, {
       path: '/',
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
+      secure: isHttps,
+      sameSite: isHttps ? 'None' : 'Lax',
       maxAge: 60 * 60 * 24 * 30,
     })
 
@@ -230,11 +231,12 @@ authApp.all(
     },
   }),
   (c) => {
+    const isHttps = String(c.env.PAGES_ORIGIN || '').startsWith('https://')
     setCookie(c, COOKIE_NAME, '', {
       path: '/',
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
+      secure: isHttps,
+      sameSite: isHttps ? 'None' : 'Lax',
       maxAge: 0,
     })
     if (c.req.method === 'GET') {
@@ -353,11 +355,12 @@ authApp.post(
       c.env.WORKER_JWT_SECRET
     )
 
+    const isHttps = String(c.env.PAGES_ORIGIN || '').startsWith('https://')
     setCookie(c, COOKIE_NAME, jwt, {
       path: '/',
       httpOnly: true,
-      secure: true,
-      sameSite: 'None',
+      secure: isHttps,
+      sameSite: isHttps ? 'None' : 'Lax',
       maxAge: 60 * 60 * 24 * 30,
     })
 

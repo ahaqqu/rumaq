@@ -133,7 +133,7 @@ export function History({ askAssistant }) {
 
       {!history.isLoading && !history.isError && purchases.length === 0 && (
         <Panel className="p-5 text-center">
-          <div className="font-semibold text-text text-base">{t('history.empty')}</div>
+          <div className="font-semibold text-text text-sm">{t('history.empty')}</div>
           <div className="text-sm text-text-muted mt-2">{t('history.emptyDesc')}</div>
         </Panel>
       )}

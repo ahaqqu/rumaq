@@ -120,7 +120,7 @@ export function Inventory() {
                 key={s.id}
               >
                 <div className="min-w-0">
-                  <div className="font-semibold text-base flex items-center gap-3 flex-wrap">
+                  <div className="font-semibold text-sm flex items-center gap-3 flex-wrap">
                     {s.name} <LocChip loc={s.location} />
                   </div>
                   <div className="flex items-center gap-4 mt-2 text-sm text-text-muted flex-wrap">

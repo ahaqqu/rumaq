@@ -303,10 +303,7 @@ export function applyTheme(persona, element = document.documentElement) {
   element.style.setProperty('--accent', oklch(0.48, 0.13, h))
   element.style.setProperty('--accent-hover', oklch(0.42, 0.14, h))
   element.style.setProperty('--accent-pressed', oklch(0.37, 0.14, h))
-  element.style.setProperty('--accent-soft', oklch(0.9, 0.05, h))
-  element.style.setProperty('--accent-soft-border', oklch(0.78, 0.07, h))
-  element.style.setProperty('--surface', oklch(0.945, 0.028, h))
-  element.style.setProperty('--surface-raised', oklch(0.975, 0.018, h))
-  element.style.setProperty('--surface-sunken', oklch(0.915, 0.032, h))
+  element.style.setProperty('--accent-soft', oklch(0.93, 0.04, h))
+  element.style.setProperty('--accent-soft-border', oklch(0.82, 0.06, h))
   element.dataset.persona = `${persona.userRole}|${persona.aiRole}`
 }

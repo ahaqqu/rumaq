@@ -283,7 +283,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
 
       <section className="mt-8">
         <div className="flex items-baseline justify-between gap-4 mb-4">
-          <h2 className="text-lg">{t('settings.aiApiKey')}</h2>
+          <h2 className="text-base">{t('settings.aiApiKey')}</h2>
         </div>
         <Panel>
           {settingsLoading ? (
@@ -592,7 +592,7 @@ export function Settings({ aiKey, setAiKey, motion, setMotion }) {
 
       <section className="mt-8">
         <div className="flex items-baseline justify-between gap-4 mb-4">
-          <h2 className="text-lg">{t('settings.display')}</h2>
+          <h2 className="text-base">{t('settings.display')}</h2>
         </div>
         <Panel>
           {settingsLoading ? (

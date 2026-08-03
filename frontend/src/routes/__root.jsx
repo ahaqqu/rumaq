@@ -17,7 +17,7 @@ function AuthGate() {
 
   if (isLoading) return null
 
-  if (!me) {
+  if (!me?.user) {
     return (
       <PersonaProvider>
         <Login />

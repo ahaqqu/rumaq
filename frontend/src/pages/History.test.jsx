@@ -161,7 +161,7 @@ describe('History', () => {
     const { container } = renderWithProviders(
       React.createElement(History, { askAssistant: vi.fn() })
     )
-    expect(container.querySelector('.font-semibold.text-text.text-base')).toBeTruthy()
+    expect(container.querySelector('.font-semibold.text-text.text-sm')).toBeTruthy()
   })
 
   it('renders error state', () => {

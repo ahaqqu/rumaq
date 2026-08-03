@@ -411,7 +411,7 @@ export function AddFromReceipt({ onDone }) {
               <IconCheck size={28} />
             </div>
           </div>
-          <div className="font-semibold text-lg">
+          <div className="font-semibold text-base">
             {t('addReceipt.stockAdded', { count: items.length })}
           </div>
           <div className="text-text-muted text-sm mt-2">{t('addReceipt.stockUpdatedDesc')}</div>

@@ -51,6 +51,7 @@ export function Login() {
         {emailAuth && (
           <>
             <div className="flex items-center gap-3 w-full text-text-muted text-sm">
+              <hr className="flex-1" />
               <span>{t('login.or', 'or')}</span>
               <hr className="flex-1" />
             </div>
@@ -66,6 +67,7 @@ export function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 autoComplete="email"
+                className="bg-surface"
               />
 
               <label className="text-sm font-medium text-text-muted" htmlFor="password">
@@ -78,6 +80,7 @@ export function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                className="bg-surface"
               />
 
               {error && <p className="text-danger text-sm text-center">{error}</p>}

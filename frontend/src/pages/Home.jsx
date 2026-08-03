@@ -44,7 +44,7 @@ export function Home({ setView, askAssistant }) {
       </div>
 
       <div className="flex items-baseline justify-between gap-4 mb-4 mt-0.5">
-        <h2 className="text-lg">{t('home.stockStatus')}</h2>
+        <h2 className="text-base">{t('home.stockStatus')}</h2>
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <Stat num={totalItems} label={t('home.itemsMonitored')} />
@@ -55,7 +55,7 @@ export function Home({ setView, askAssistant }) {
 
       <section className="mt-8">
         <div className="flex items-baseline justify-between gap-4 mb-4">
-          <h2 className="text-lg">{t('home.needsAttention')}</h2>
+          <h2 className="text-base">{t('home.needsAttention')}</h2>
           <Button variant="ghost" size="sm" onClick={() => setView('inventory')}>
             {t('home.seeAll')}
           </Button>
@@ -96,7 +96,7 @@ export function Home({ setView, askAssistant }) {
 
       <section className="mt-9">
         <div className="flex items-baseline justify-between gap-4 mb-4">
-          <h2 className="text-lg">{t('home.nextTrip')}</h2>
+          <h2 className="text-base">{t('home.nextTrip')}</h2>
           <Button variant="ghost" size="sm" onClick={askAssistant}>
             <IconSpark size={15} /> {t('home.askPlan')}
           </Button>
@@ -104,7 +104,7 @@ export function Home({ setView, askAssistant }) {
         {nextTrip ? (
           <div className="bg-accent-soft border border-accent-soft-border rounded-lg p-6 grid grid-cols-1 md:grid-cols-[1fr_auto] gap-6 items-center">
             <div>
-              <div className="text-lg font-semibold">
+              <div className="text-base font-semibold">
                 {t('home.shopAt', { store: nextTrip.store })}
               </div>
               <div className="text-text-muted mt-2">
@@ -130,7 +130,7 @@ export function Home({ setView, askAssistant }) {
       </section>
 
       <section className="mt-9">
-        <h2 className="text-lg mb-4">{t('home.quickRefill')}</h2>
+        <h2 className="text-base mb-4">{t('home.quickRefill')}</h2>
         <Panel className="p-6 flex flex-wrap gap-5 items-center">
           <div className="w-12 h-12 rounded-lg bg-accent-soft grid place-items-center text-accent m-0">
             <IconReceipt size={24} />
@@ -166,10 +166,10 @@ export function Home({ setView, askAssistant }) {
 function Stat({ num, label, warn }) {
   return (
     <div className="bg-surface-raised border border-border rounded-lg p-5">
-      <div className={cn('text-2xl font-bold tracking-tight', warn ? 'text-warn' : 'text-text')}>
+      <div className={cn('text-xl font-bold tracking-tight', warn ? 'text-warn' : 'text-text')}>
         {num}
       </div>
-      <div className="text-base text-text-muted mt-2 font-medium">{label}</div>
+      <div className="text-sm text-text-muted mt-2 font-medium">{label}</div>
     </div>
   )
 }

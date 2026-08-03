@@ -56,9 +56,9 @@ export function AppShell({ children }) {
         className="hidden lg:flex sticky top-0 h-dvh flex-col px-4 py-5 gap-2 bg-surface-raised border-r border-border"
         aria-label={t('nav.home')}
       >
-        <div className="flex items-center gap-3 pb-5 px-2 pt-2">
-          <BrandMark size={32} />
-          <div className="font-semibold text-lg tracking-tight">RumaQ</div>
+        <div className="flex items-center justify-center gap-3 pb-5 px-2 pt-2">
+          <BrandMark size={56} />
+          <div className="font-bold text-[26px] tracking-tight">RumaQ</div>
         </div>
 
         <Link to="/add" className="mx-1 mb-4">
@@ -101,7 +101,7 @@ export function AppShell({ children }) {
                   {user.name || t('nav.settings')}
                 </div>
                 <button
-                  className="text-xs text-text-faint font-medium hover:text-danger"
+                  className="text-xs text-text-faint font-medium hover:text-danger underline-offset-2 hover:underline"
                   onClick={() => logout.mutate()}
                 >
                   {t('nav.logout', 'Logout')}
@@ -155,26 +155,26 @@ export function AppShell({ children }) {
 
       <div className="min-w-0 flex flex-col">
         <OfflineBanner />
-        <header className="sticky top-0 z-20 flex items-center gap-4 px-6 py-4 bg-surface/82 backdrop-blur border-b border-border">
-          <h1 className="font-semibold text-base">{title}</h1>
+        <header className="sticky top-0 z-20 flex items-center gap-3 px-4 py-3 lg:px-6 lg:py-4 bg-surface/82 backdrop-blur border-b border-border">
+          <h1 className="font-semibold text-sm lg:text-base truncate">{title}</h1>
           <div className="flex-1" />
           <Link
             to="/add"
-            className="w-10 h-10 rounded-md grid place-items-center text-text-muted border border-border bg-surface-raised hover:bg-surface-sunken hover:text-text transition-colors"
+            className="w-10 h-10 rounded-md grid place-items-center text-text-muted border border-border bg-surface-raised hover:bg-surface-sunken hover:text-text transition-colors shrink-0"
             aria-label={t('nav.addFromReceipt')}
           >
             <IconReceipt size={18} />
           </Link>
           <Link
             to="/settings"
-            className="w-10 h-10 rounded-md grid place-items-center text-text-muted border border-border bg-surface-raised hover:bg-surface-sunken hover:text-text transition-colors"
+            className="w-10 h-10 rounded-md grid place-items-center text-text-muted border border-border bg-surface-raised hover:bg-surface-sunken hover:text-text transition-colors shrink-0"
             aria-label={t('nav.settings')}
           >
             <IconSettings size={18} />
           </Link>
         </header>
 
-        <main className="px-4 py-5 lg:px-6 lg:pb-16 pb-[calc(64px+env(safe-area-inset-bottom))] max-w-[1080px]">
+        <main className="px-4 py-5 lg:px-6 lg:pb-24 pb-[calc(168px+env(safe-area-inset-bottom))] max-w-[1080px]">
           {children}
         </main>
       </div>
@@ -188,9 +188,6 @@ export function AppShell({ children }) {
             <Icon size={20} /> {t(key)}
           </NavItem>
         ))}
-        <NavItem to="/settings" active={isActive('/settings')} mobile>
-          <IconSettings size={20} /> {t('nav.settings')}
-        </NavItem>
       </nav>
 
       <Assistant

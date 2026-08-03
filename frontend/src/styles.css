@@ -61,9 +61,9 @@
   --font-size-base: 15px;
   --font-size-md: 16px;
   --font-size-lg: 18px;
-  --font-size-xl: 22px;
-  --font-size-2xl: 28px;
-  --font-size-3xl: 34px;
+  --font-size-xl: 20px;
+  --font-size-2xl: 24px;
+  --font-size-3xl: 28px;
 
   --line-height-tight: 1.2;
   --line-height-snug: 1.35;
@@ -86,7 +86,7 @@
 
 :root,
 [data-theme='rumaq'] {
-  /* Surfaces (Whisper commitment, calm sky) */
+  /* Surfaces: calm blue-gray so panels and backgrounds are clearly layered. */
   --surface: oklch(0.945 0.028 230);
   --surface-raised: oklch(0.975 0.018 230);
   --surface-sunken: oklch(0.915 0.032 230);
@@ -105,18 +105,18 @@
   --accent: oklch(0.48 0.13 230);
   --accent-hover: oklch(0.42 0.14 230);
   --accent-pressed: oklch(0.37 0.14 230);
-  --accent-soft: oklch(0.9 0.05 230);
-  --accent-soft-border: oklch(0.78 0.07 230);
+  --accent-soft: oklch(0.93 0.04 230);
+  --accent-soft-border: oklch(0.82 0.06 230);
   --on-accent: oklch(0.99 0.01 230);
 
   /* State */
-  --warn: oklch(0.72 0.14 65);
-  --warn-soft: oklch(0.93 0.05 65);
+  --warn: oklch(0.65 0.14 65);
+  --warn-soft: oklch(0.95 0.04 65);
   --warn-border: oklch(0.85 0.07 65);
-  --danger: oklch(0.58 0.16 25);
-  --danger-soft: oklch(0.93 0.04 25);
+  --danger: oklch(0.55 0.16 25);
+  --danger-soft: oklch(0.95 0.035 25);
   --danger-border: oklch(0.85 0.07 25);
-  --ok: oklch(0.62 0.11 155);
+  --ok: oklch(0.58 0.11 155);
   --ok-soft: oklch(0.93 0.035 155);
 
   /* Kumo mapping — keep Kumo components aligned with RumaQ palette */
@@ -170,17 +170,31 @@ h4 {
 }
 
 h1 {
-  font-size: var(--font-size-2xl);
+  font-size: var(--font-size-lg);
   letter-spacing: -0.01em;
 }
 
 h2 {
-  font-size: var(--font-size-xl);
+  font-size: var(--font-size-md);
   letter-spacing: -0.01em;
 }
 
 h3 {
-  font-size: var(--font-size-md);
+  font-size: var(--font-size-base);
+}
+
+@media (min-width: 1024px) {
+  h1 {
+    font-size: var(--font-size-xl);
+  }
+
+  h2 {
+    font-size: var(--font-size-lg);
+  }
+
+  h3 {
+    font-size: var(--font-size-md);
+  }
 }
 
 p {
@@ -196,7 +210,10 @@ a:hover {
   text-decoration: underline;
 }
 
-button,
+button {
+  font: inherit;
+}
+
 input,
 select,
 textarea {
@@ -206,37 +223,37 @@ textarea {
 
 button {
   cursor: pointer;
-  background: none;
-  border: none;
 }
 
 button:disabled {
   cursor: not-allowed;
 }
 
-input,
-textarea,
-select {
-  background: var(--surface-raised);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: var(--spacing-3) var(--spacing-4);
-  width: 100%;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
+@layer base {
+  input,
+  textarea,
+  select {
+    background: var(--surface-raised);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-3) var(--spacing-4);
+    width: 100%;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+  }
 
-input::placeholder {
-  color: var(--text-faint);
-}
+  input::placeholder {
+    color: var(--text-faint);
+  }
 
-input:focus,
-textarea:focus,
-select:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 35%, transparent);
+  input:focus,
+  textarea:focus,
+  select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px color-mix(in oklch, var(--accent) 35%, transparent);
+  }
 }
 
 :focus-visible {

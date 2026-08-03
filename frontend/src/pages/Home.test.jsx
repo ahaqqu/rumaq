@@ -142,7 +142,7 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    const statNums = container.querySelectorAll('[class*="text-2xl font-bold tracking-tight"]')
+    const statNums = container.querySelectorAll('[class*="text-xl font-bold tracking-tight"]')
     expect(statNums.length).toBe(4)
     expect(statNums[0].textContent).toBe('3')
   })
@@ -208,7 +208,7 @@ describe('Home', () => {
     const { container } = renderWithQuery(
       React.createElement(Home, { setView: vi.fn(), askAssistant: vi.fn() })
     )
-    const statNums = container.querySelectorAll('[class*="text-2xl font-bold tracking-tight"]')
+    const statNums = container.querySelectorAll('[class*="text-xl font-bold tracking-tight"]')
     expect(
       statNums[1].classList.contains('text-warn') || statNums[2].classList.contains('text-warn')
     ).toBe(true)

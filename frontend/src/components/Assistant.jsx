@@ -104,7 +104,7 @@ export function Assistant({ open, onOpen, onClose, aiKey, onNavigate }) {
           'fixed right-6 bottom-6 z-40 h-14 rounded-pill px-6 bg-accent text-on-accent shadow-lg',
           'inline-flex items-center gap-2 font-semibold transition-all duration-150',
           'hover:bg-accent-hover hover:-translate-y-px active:scale-[0.97]',
-          'max-sm:right-4 max-sm:bottom-[calc(72px+env(safe-area-inset-bottom))]'
+          'max-sm:right-4 max-sm:bottom-[calc(104px+env(safe-area-inset-bottom))]'
         )}
         onClick={() => (open ? onClose() : onOpen())}
         aria-label={t('assistant.fabAriaLabel')}
