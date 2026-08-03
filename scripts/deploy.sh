@@ -452,8 +452,8 @@ do_cloudflare() {
   validate_deploy_env
   setup_database_remote
   ensure_r2_bucket
-  put_worker_secrets
   deploy_worker
+  put_worker_secrets
   build_frontend
   if ! $DRY_RUN; then
     pages_deploy
