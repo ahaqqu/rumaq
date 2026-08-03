@@ -109,6 +109,8 @@ resolve_wrangler_config() {
     sed -i "s|^database_id = \"YOUR_DATABASE_ID\"|database_id = \"$CLOUDFLARE_DATABASE_ID\"|" "$tmp"
   fi
 
+  sed -i "s|^database_name = \"[^\"]*\"|database_name = \"$DB_NAME\"|" "$tmp"
+
   printf '%s' "$tmp"
 }
 
