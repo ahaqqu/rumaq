@@ -87,7 +87,7 @@ defineFeature(feature, (test) => {
       })
     })
 
-    when(/I send a (POST) request to (\S+) with a test image/, async (method, path) => {
+    when(/I send a (POST) request to (\S+) with a test image/, async (_method, _path) => {
       const img = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
       await ctx.sendMultipart(
         'POST',
@@ -125,7 +125,7 @@ defineFeature(feature, (test) => {
       })
     })
 
-    when(/I send a (POST) request to (\S+) with a test image/, async (method, path) => {
+    when(/I send a (POST) request to (\S+) with a test image/, async (_method, _path) => {
       const img = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10])
       await ctx.sendMultipart(
         'POST',

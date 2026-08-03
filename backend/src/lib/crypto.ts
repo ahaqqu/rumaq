@@ -62,7 +62,6 @@ export async function decryptAiKey(cipherText: string, key: string): Promise<str
   const combined = new Uint8Array(base64UrlDecode(raw))
   const iv = combined.slice(0, 12)
   const data = combined.slice(12)
-  const encoder = new TextEncoder()
   const aesKey = await deriveAesKey(key, ['decrypt'])
   const plain = await crypto.subtle.decrypt({ name: 'AES-GCM', iv, tagLength: 128 }, aesKey, data)
   return new TextDecoder().decode(plain)

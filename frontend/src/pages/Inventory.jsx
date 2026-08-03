@@ -6,8 +6,6 @@ import { usePersona } from '../context/PersonaContext.jsx'
 import { personaText } from '../lib/persona.js'
 import { IconSearch, IconBox, IconPlus, IconMinus } from '../components/icons.jsx'
 import { cn } from '../lib/cn.js'
-import { Button } from '../components/Button.jsx'
-import { Chip } from '../components/Chip.jsx'
 import { Panel } from '../components/Panel.jsx'
 
 function getDaysUntil(expiryDate) {

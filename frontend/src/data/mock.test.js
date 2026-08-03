@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import {
   STORES,
   STOCK,
@@ -9,7 +9,6 @@ import {
   storeLabel,
   relUpdated,
   usageState,
-  AI_USAGE,
 } from './mock.js'
 import { i18n } from '../i18n/index.js'
 

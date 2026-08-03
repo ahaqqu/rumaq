@@ -5,6 +5,9 @@ import { fileURLToPath } from 'node:url'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
+  staged: {
+    '*': 'vp check --fix',
+  },
   check: {
     fmt: true,
     lint: true,
@@ -30,6 +33,8 @@ export default defineConfig({
     rules: {
       'import/no-default-export': 'error',
       'import/no-anonymous-default-export': 'error',
+      // Treat unused identifiers as hard errors so CI blocks them.
+      'no-unused-vars': 'error',
     },
     overrides: [
       {

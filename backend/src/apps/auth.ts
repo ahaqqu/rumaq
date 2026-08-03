@@ -119,7 +119,6 @@ authApp.get(
     const finalUserId = crypto.randomUUID()
     const householdId = crypto.randomUUID()
     const settingsId = crypto.randomUUID()
-    const now = new Date().toISOString()
 
     const userStmt = c.env.DB.prepare(
       `INSERT INTO users (id, email, name, picture, google_id)

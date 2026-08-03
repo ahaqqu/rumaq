@@ -83,6 +83,5 @@ run('wrangler', ['d1', 'migrations', 'apply', DB_NAME, '--local', '--config', LO
   cwd: resolve('backend'),
 })
 
-const CLOUDFLARE_TOML = resolve('backend', 'wrangler.cloudflare.toml')
 console.log('\nDone. Run the following to apply to production:')
 console.log(`  vp run db:migrate --filter backend`)

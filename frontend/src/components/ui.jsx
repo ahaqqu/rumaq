@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next'
-import { IconBox, IconPin, IconClock, IconShop } from './icons.jsx'
+import { IconPin, IconClock, IconShop } from './icons.jsx'
 import { AI_USAGE, usageState } from '../data/mock.js'
 import { cn } from '../lib/cn.js'
 import { Chip } from './Chip.jsx'
