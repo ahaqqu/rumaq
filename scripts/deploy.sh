@@ -256,6 +256,10 @@ setup_database_remote() {
 
   if [[ -n $db_id && $db_id != "YOUR_DATABASE_ID" ]]; then
     sed -i "s|^database_id = \"YOUR_DATABASE_ID\"|database_id = \"$db_id\"|" "$config_file"
+    # Make the discovered ID available to the rest of the deploy pipeline
+    # (especially deploy_worker) without requiring manual .env updates.
+    CLOUDFLARE_DATABASE_ID="$db_id"
+    export CLOUDFLARE_DATABASE_ID
   fi
 
   run_when_live "remote D1 migration" wrangler_cmd "$config_file" "$DB_NAME" --remote
